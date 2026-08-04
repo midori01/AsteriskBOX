@@ -8,6 +8,7 @@ plugins {
 
 tasks.register<UpdateResourceFileAssetsTask>("updateResourceFileAssets") {
     singBoxVersion.set(ProjectConfig.SING_BOX_VERSION)
+    githubToken.set(project.findProperty("github.token") as? String ?: System.getenv("GITHUB_TOKEN") ?: "")
     singBoxCoreJniLibsDir.set(layout.projectDirectory.dir("app/build/generated/singBoxCoreJniLibs"))
     resourceFileAssetsDir.set(layout.projectDirectory.dir("app/build/generated/resourceFileAssets"))
 }

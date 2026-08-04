@@ -21,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -123,6 +124,7 @@ private fun SettingsContent(
     val updateAppState = LocalUpdateAppState.current
     val navigator = LocalNavigator.current
     val services = LocalAppServices.current
+    val latestAppState = rememberUpdatedState(appState)
     val networkInterfaces = services.networkInterfaces
     val switchRunModeUseCase = services.switchRunModeUseCase
     val rootBootScriptUseCase = services.rootBootScriptUseCase
@@ -161,9 +163,9 @@ private fun SettingsContent(
     )
     val runModeItems = listOf(
         RunModeVpnService to stringResource(R.string.settings_run_mode_vpn_service),
+        RunModeEbpf to stringResource(R.string.settings_run_mode_ebpf),
         RunModeTproxy to stringResource(R.string.settings_run_mode_tproxy),
         RunModeTun to stringResource(R.string.settings_run_mode_tun),
-        RunModeEbpf to stringResource(R.string.settings_run_mode_ebpf),
         RunModeTun2Socks to stringResource(R.string.settings_run_mode_tun2socks),
         RunModeBpf2Socks to stringResource(R.string.settings_run_mode_bpf2socks),
     )
@@ -191,6 +193,7 @@ private fun SettingsContent(
     val rootEbpfSelinuxPolicyWarningSummary = stringResource(R.string.settings_root_ebpf_selinux_policy_warning_summary)
     val rootEbpfSelinuxPolicyWarningConfirm = stringResource(R.string.settings_root_ebpf_selinux_policy_warning_confirm)
     val serviceStoppedMessage = stringResource(R.string.proxy_service_stopped)
+    val serviceStartedMessage = stringResource(R.string.proxy_service_started)
     val logLevelFailedMessage = stringResource(R.string.settings_log_level)
     val ignoredInterfacesErrorDetail = stringResource(R.string.settings_ignored_interfaces_error_detail)
     val backupExportedMessage = stringResource(R.string.settings_backup_exported)
@@ -428,12 +431,37 @@ private fun SettingsContent(
                                             state.copy(
                                                 runMode = result.runMode,
                                                 proxyRunning = result.proxyRunning,
-                                                enableRootBootScript = false,
+                                                enableRootBootScript = state.enableRootBootScript,
                                                 enableRootEbpfRules = state.enableRootEbpfRules && result.runMode.isRootRunMode(),
                                             ).withPrunedManagedInboundReferences()
                                         }
+                                        if (stateSnapshot.proxyRunning) {
+                                            val newState = stateSnapshot.copy(
+                                                runMode = result.runMode,
+                                                proxyRunning = false,
+                                                enableRootEbpfRules = stateSnapshot.enableRootEbpfRules && result.runMode.isRootRunMode(),
+                                            ).withPrunedManagedInboundReferences()
+                                            services.appScope.launch {
+                                                val startResult = proxyServiceUseCase.restart(newState)
+                                                when (startResult) {
+                                                    is ProxyServiceResult.Success -> {
+                                                        updateAppState { state ->
+                                                            state.copy(
+                                                                proxyRunning = startResult.proxyRunning,
+                                                                localProxyPort = startResult.appState?.localProxyPort ?: state.localProxyPort,
+                                                                singBoxControlPort = startResult.appState?.singBoxControlPort ?: state.singBoxControlPort,
+                                                            )
+                                                        }
+                                                        tipNotifier.show(serviceStartedMessage)
+                                                    }
+                                                    is ProxyServiceResult.Failed -> {
+                                                        updateAppState { state -> state.copy(proxyRunning = false) }
+                                                        tipNotifier.showError(startResult.error, serviceStartedMessage)
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
-
                                     is SwitchRunModeResult.RootUnavailable -> {
                                         updateAppState { state -> state.copy(proxyRunning = result.proxyRunning) }
                                         tipNotifier.show(rootRequiredMessage)

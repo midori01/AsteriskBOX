@@ -30,7 +30,7 @@ val DefaultSingBoxDnsServers = listOf(
         id = 2,
         remarks = "proxy",
         type = "tls",
-        server = "1.1.1.1",
+        server = "8.8.8.8",
         detour = APP_GLOBAL_SELECTOR,
     ),
 )
@@ -116,5 +116,5 @@ val SingBoxSnifferProtocols = listOf(
     "rdp",
     "ntp",
 )
-val DefaultSingBoxSnifferProtocols = listOf("http", "tls", "quic")
+val DefaultSingBoxSnifferProtocols = listOf("http", "tls", "quic", "stun", "dns", "bittorrent", "dtls", "ssh", "rdp", "ntp")
 const val DefaultSingBoxSnifferTimeout = "300ms"

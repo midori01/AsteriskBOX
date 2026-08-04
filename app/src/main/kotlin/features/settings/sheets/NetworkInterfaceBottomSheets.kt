@@ -13,6 +13,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import org.asterisk.zcc.abox.R
 import ui.icons.AsteriskIcons as Icons
 import androidx.compose.ui.res.stringResource
@@ -125,7 +132,9 @@ internal fun outletInterfaceOptions(interfaces: List<String>): List<String> {
 }
 
 internal fun List<String>.orderedBy(options: List<String>): List<String> {
-    return options.filter { it in this }
+    val ordered = options.filter { it in this }
+    val custom = this.filter { it !in options }
+    return ordered + custom
 }
 
 @Composable
@@ -241,6 +250,61 @@ internal fun IgnoredInterfacesBottomSheet(
             formattedErrorMessage?.takeIf(String::isNotBlank)?.let { SheetStatusText(it) }
             if (!loading && formattedErrorMessage == null && interfaces.isEmpty()) {
                 SheetStatusText(stringResource(R.string.settings_ignored_interfaces_empty))
+            }
+           if (!loading && formattedErrorMessage == null) {
+                val customInterfaces = selectedInterfaces.filter { it !in interfaces }
+                if (customInterfaces.isNotEmpty()) {
+                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                        customInterfaces.forEach { name ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = name,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                IconButton(onClick = {
+                                    onSelectedInterfacesChange(selectedInterfaces - name)
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Close,
+                                        contentDescription = stringResource(R.string.common_delete),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (!loading && formattedErrorMessage == null) {
+                var customInput by remember { mutableStateOf("") }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    SettingsTextField(
+                        value = customInput,
+                        onValueChange = { customInput = it },
+                        label = stringResource(R.string.settings_ignored_interfaces_custom_input),
+                        errorText = null,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    TextButton(
+                        text = stringResource(R.string.common_add),
+                        icon = Icons.Rounded.Add,
+                        enabled = customInput.isNotBlank(),
+                        onClick = {
+                            val trimmed = customInput.trim()
+                            if (trimmed.isNotEmpty() && trimmed !in selectedInterfaces) {
+                                onSelectedInterfacesChange(selectedInterfaces + trimmed)
+                                customInput = ""
+                            }
+                        },
+                    )
+                }
             }
             InterfaceOptionGrid(
                 interfaces = interfaces,

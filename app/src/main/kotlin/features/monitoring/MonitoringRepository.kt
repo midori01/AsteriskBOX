@@ -117,18 +117,19 @@ internal class MonitoringRepository(
             networkPageSessionId = pageSessionId
         }
         observerRegistry.acquire(intent)
+        if (intent == MonitoringIntent.Home) {
+            refreshPublicNetworkProbe()
+        }
         return MonitoringObservation {
             observerRegistry.release(intent)
         }
     }
 
     fun refreshPublicNetworkProbe(family: AddressFamily? = null) {
-        if (!networkPageWasVisible) return
         startPublicNetworkProbe(family)
     }
 
     fun refreshNetworkStatus() {
-        if (!networkPageWasVisible) return
         refreshLocalNetworkSnapshot()
         startPublicNetworkProbe()
     }
@@ -514,10 +515,10 @@ internal class MonitoringRepository(
         }
         publicProbeJob = appScope.launch {
             try {
-                if (generation != publicProbeGeneration || !networkPageWasVisible) return@launch
+                if (generation != publicProbeGeneration) return@launch
                 val batch = if (family == null) publicNetworkProbeClient.probe() else null
                 val single = family?.let { selected -> publicNetworkProbeClient.probe(selected) }
-                if (generation != publicProbeGeneration || !networkPageWasVisible) return@launch
+                if (generation != publicProbeGeneration) return@launch
                 val completedAt = System.currentTimeMillis()
                 mutableState.update { current ->
                     val next = current.copy(
@@ -545,7 +546,7 @@ internal class MonitoringRepository(
             } catch (error: CancellationException) {
                 throw error
             } finally {
-                if (generation == publicProbeGeneration && networkPageWasVisible) {
+                if (generation == publicProbeGeneration) {
                     mutableState.update { current ->
                         current.copy(
                             network = current.network.copy(

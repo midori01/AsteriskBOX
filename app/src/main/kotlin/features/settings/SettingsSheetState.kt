@@ -97,14 +97,8 @@ internal class SettingsSheetState(
         ignoredInterfacesError = null
         try {
             val options = outletInterfaceOptions(networkInterfaces.listNetworkInterfaces())
-            val prunedSelection = appState.ignoredInterfaces.orderedBy(options)
             ignoredInterfaceOptions = options
-            ignoredInterfacesDraft = ignoredInterfacesDraft.orderedBy(options)
-            if (prunedSelection != appState.ignoredInterfaces) {
-                updateAppState { state ->
-                    state.copy(ignoredInterfaces = state.ignoredInterfaces.orderedBy(options))
-                }
-            }
+            ignoredInterfacesDraft = ignoredInterfacesDraft
         } catch (error: Throwable) {
             if (error is CancellationException) throw error
             reportFailure(

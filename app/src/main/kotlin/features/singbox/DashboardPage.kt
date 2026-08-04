@@ -360,7 +360,7 @@ private fun HomeControllerCard(
         modifier = HomeContentModifier,
         density = FocusDensity.Large,
         tone = homeFocusTone(controllerState.serviceStatus),
-        summary = runModeLabel(controllerState.runMode),
+        summary = "${stringResource(R.string.settings_run_mode)}: ${runModeLabel(controllerState.runMode)}",
         stateIcon = Icons.Rounded.PowerSettingsNew,
         metrics = {
             HomeFocusMetric(

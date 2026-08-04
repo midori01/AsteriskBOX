@@ -9,6 +9,7 @@ import app.modes.OutboundListLayoutAuto
 import app.modes.OutboundListSortDefault
 import app.modes.ProxyAppListModeGlobal
 import app.modes.RunModeVpnService
+import app.modes.RunModeEbpf
 import app.modes.SingBoxModeRule
 import app.modes.SingBoxProxyLayoutAuto
 import app.modes.SingBoxProxySortDefault
@@ -46,18 +47,18 @@ data class AppState(
     val selectors: List<SingBoxSelectorState> = emptyList(),
     val nextSelectorId: Int = 1,
     val selectorSelections: Map<String, String> = emptyMap(),
-    val routeAutoDetectInterface: Boolean = false,
+    val routeAutoDetectInterface: Boolean = true,
     val routeOverrideAndroidVpn: Boolean = false,
     val routeDefaultNetworkStrategy: String = "",
     val routeDefaultNetworkTypes: List<String> = emptyList(),
     val routeDefaultFallbackNetworkTypes: List<String> = emptyList(),
     val routeDefaultFallbackDelay: String = "",
-    val routeFindProcess: Boolean = false,
+    val routeFindProcess: Boolean = true,
     val routeFinal: String = "",
     val routeRules: List<SingBoxRouteRuleState> = DefaultSingBoxRouteRules,
     val nextRouteRuleId: Int =
         (DefaultSingBoxRouteRules.maxOfOrNull(SingBoxRouteRuleState::id) ?: 0) + 1,
-    val runMode: Int = RunModeVpnService,
+    val runMode: Int = RunModeEbpf,
     val singBoxMode: Int = SingBoxModeRule,
     val singBoxProxyLayout: Int = SingBoxProxyLayoutAuto,
     val singBoxProxySort: Int = SingBoxProxySortDefault,
@@ -96,7 +97,7 @@ data class AppState(
     val snifferProtocols: List<String> = DefaultSingBoxSnifferProtocols,
     val snifferTimeout: String = DefaultSingBoxSnifferTimeout,
 
-    val enableIpv6: Boolean = false,
+    val enableIpv6: Boolean = true,
     val enableIpv6Prefer: Boolean = false,
 
     val dnsFinal: String = DefaultSingBoxDnsFinal,
@@ -118,7 +119,7 @@ data class AppState(
     val transparentProxyPort: String = DefaultTproxyPort.toString(),
     val enableRootBootScript: Boolean = false,
     val enableRootEbpfRules: Boolean = false,
-    val enableRootEbpfDirectCidrBypass: Boolean = false,
+    val enableRootEbpfDirectCidrBypass: Boolean = true,
     val enableRootIpv6Disabler: Boolean = false,
     val socks5ProxyPort: String = DefaultTun2SocksProxyPort.toString(),
     val bpf2SocksBridgePort: String = RootBpf2SocksDefaultBridgePort.toString(),

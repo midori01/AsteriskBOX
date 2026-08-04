@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name">AsteriskBOX</string>
+    <string name="app_name">MidoriBOX</string>
     <string name="error_backup_file_open_failed">Failed to open backup file</string>
     <string name="error_backup_file_too_large">Backup file is too large (maximum 32 MB)</string>
     <string name="error_backup_file_creator_missing">Backup file creator is not registered</string>
@@ -33,7 +33,7 @@
     <string name="proxy_traffic_stats_notification_channel">Proxy statistics</string>
     <string name="proxy_traffic_stats_notification_speed">Speed: ↑ %1$s / ↓ %2$s</string>
     <string name="proxy_traffic_stats_notification_traffic">Traffic: ↑ %1$s / ↓ %2$s</string>
-    <string name="quick_settings_tile_label">AsteriskBOX</string>
+    <string name="quick_settings_tile_label">MidoriBOX</string>
     <string name="quick_settings_tile_running">Proxy running</string>
     <string name="quick_settings_tile_stopped">Proxy stopped</string>
     <string name="quick_settings_tile_processing">Processing…</string>
@@ -251,11 +251,11 @@
     <string name="settings_advanced">Advanced settings</string>
     <string name="settings_run_mode">Run mode</string>
     <string name="settings_run_mode_vpn_service">VPN Service</string>
-    <string name="settings_run_mode_tproxy">TPROXY (ROOT)</string>
-    <string name="settings_run_mode_tun">TUN (ROOT)</string>
-    <string name="settings_run_mode_tun2socks">TUN2SOCKS (ROOT)</string>
-    <string name="settings_run_mode_bpf2socks">BPF2SOCKS (ROOT)</string>
-    <string name="settings_run_mode_ebpf">eBPF (ROOT)</string>
+    <string name="settings_run_mode_tproxy">TPROXY</string>
+    <string name="settings_run_mode_tun">TUN</string>
+    <string name="settings_run_mode_tun2socks">TUN2SOCKS</string>
+    <string name="settings_run_mode_bpf2socks">BPF2SOCKS</string>
+    <string name="settings_run_mode_ebpf">eBPF</string>
     <string name="settings_root_required">No ROOT access detected!</string>
     <string name="settings_proxy_tproxy">Proxy settings (TPROXY)</string>
     <string name="settings_proxy_tun">Proxy settings (TUN)</string>
@@ -332,6 +332,7 @@
     <string name="settings_ignored_interfaces_empty">No network outlet interfaces found</string>
     <string name="settings_ignored_interfaces_error">Failed to load interfaces: {message}</string>
     <string name="settings_ignored_interfaces_error_detail">Unable to read network interfaces</string>
+    <string name="settings_ignored_interfaces_custom_input">Custom interfaces</string>
     <string name="settings_private_addresses">Private addresses</string>
     <string name="settings_private_addresses_summary">Private addresses do not enter the proxy core. Add them below if needed</string>
     <string name="settings_private_addresses_none">Not configured</string>
@@ -1164,7 +1165,7 @@
     <string name="common_unknown">Unknown</string>
     <string name="common_error_details">%1$s: %2$s</string>
     <string name="home_network_speed_summary">↑ %1$s   ↓ %2$s</string>
-    <string name="home_network_summary">IPv4 · %1$s\nIPv6 · %2$s</string>
+    <string name="home_network_summary">Local · %1$s\nPublic · %2$s</string>
     <string name="monitor_speed_per_second">%1$s/s</string>
     <string name="monitor_rate_pair">↓ %1$s/s · ↑ %2$s/s</string>
     <string name="monitor_network_public_ipv4">Public IPv4</string>

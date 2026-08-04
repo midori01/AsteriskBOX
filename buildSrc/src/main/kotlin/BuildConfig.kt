@@ -10,7 +10,7 @@ import org.gradle.api.tasks.TaskAction
 
 object ProjectConfig {
     const val JVM_VERSION = 26
-    const val PROJECT_NAME = "AsteriskBOX"
+    const val PROJECT_NAME = "MidoriBOX"
     const val VERSION_NAME = "1.0.7"
     const val PACKAGE_NAME = "org.asterisk.zcc.abox"
     const val ASTERISKD_VERSION = "v1.0.4"
@@ -18,11 +18,11 @@ object ProjectConfig {
     const val BPF_MATCHER_VERSION = "v1.0.1"
     const val SETUIDGID_VERSION = "v1.0.0"
     const val ANDROID_LIB_BOX_LITE_VERSION = "v1.14.0-beta.9-reF1nd"
-    const val SING_BOX_VERSION = ANDROID_LIB_BOX_LITE_VERSION
+    const val SING_BOX_VERSION = "v1.14.0-beta.9-with-ebpf"
     const val HEV_SOCKS5_TUNNEL_VERSION = "2.17.0"
     const val TARGET_SDK = 37
     const val MIN_SDK = 24
-    val SUPPORTED_ANDROID_ABIS = listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+    val SUPPORTED_ANDROID_ABIS = listOf("arm64-v8a")
 }
 
 fun org.gradle.api.Project.getGitVersionCode(): Int {

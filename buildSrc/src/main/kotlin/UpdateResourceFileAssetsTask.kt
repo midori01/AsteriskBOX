@@ -14,6 +14,7 @@ import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URI
 import java.util.zip.GZIPInputStream
+import java.util.zip.ZipInputStream
 
 abstract class UpdateResourceFileAssetsTask : DefaultTask() {
     @get:Input
@@ -24,6 +25,9 @@ abstract class UpdateResourceFileAssetsTask : DefaultTask() {
 
     @get:OutputDirectory
     abstract val resourceFileAssetsDir: DirectoryProperty
+
+    @get:Input
+    abstract val githubToken: Property<String>
 
     init {
         group = "resources"
@@ -48,36 +52,125 @@ abstract class UpdateResourceFileAssetsTask : DefaultTask() {
     }
 
     private fun downloadAndExtractSingBox(asset: SingBoxAsset, target: File) {
+        if (asset.androidAbi != "arm64-v8a") {
+            logger.lifecycle("Skipping ${asset.androidAbi}: midori01/sing-box only provides arm64")
+            target.parentFile.mkdirs()
+            target.writeBytes(ByteArray(0))
+            return
+        }
         if (useExistingFile(target)) return
         target.parentFile.mkdirs()
-        val archive = target.resolveSibling("${target.name}.tar.gz.tmp")
-        val extracted = target.resolveSibling("${target.name}.extract.tmp")
-        archive.delete()
-        extracted.delete()
+        val tempTarget = target.resolveSibling("${target.name}.tmp")
+        tempTarget.delete()
         try {
-            val version = singBoxVersion.get()
-            val rawVersion = version.removePrefix("v")
-            val releaseName = "sing-box-$rawVersion-android-${asset.releaseArch}.tar.gz"
-            val url = "https://github.com/reF1nd/sing-box-releases/releases/download/$version/$releaseName"
-            downloadToFile(url, archive)
-            extractTarGzipEntry(
-                archive = archive,
-                target = extracted,
-                predicate = { entryName -> entryName.substringAfterLast('/') == "sing-box" },
-            )
-            if (extracted.length() <= 0L) {
-                throw GradleException("Extracted sing-box binary is empty: $releaseName")
+            val artifactUrl = getLatestArtifactDownloadUrl()
+            downloadArtifactZip(artifactUrl, tempTarget)
+            if (tempTarget.length() <= 0L) {
+                throw GradleException("Downloaded sing-box binary is empty")
             }
             if (target.exists() && !target.delete()) {
                 throw GradleException("Unable to replace ${target.absolutePath}")
             }
-            if (!extracted.renameTo(target)) {
-                throw GradleException("Unable to move ${extracted.absolutePath} to ${target.absolutePath}")
+            if (!tempTarget.renameTo(target)) {
+                throw GradleException("Unable to move ${tempTarget.absolutePath} to ${target.absolutePath}")
             }
             logger.lifecycle("Updated ${target.absolutePath} (${target.length()} bytes)")
         } finally {
-            archive.delete()
-            extracted.delete()
+            tempTarget.delete()
+        }
+    }
+
+    private fun getLatestArtifactDownloadUrl(): String {
+        val repo = "midori01/sing-box"
+        val runsUrl = "https://api.github.com/repos/$repo/actions/runs"
+        val token = githubToken.get()
+        val runsJson = githubApiCall("$runsUrl?status=success&per_page=1", token)
+        if (runsJson.contains("\"total_count\":0")) {
+            throw GradleException("No successful workflow runs found for $repo")
+        }
+        val runId = runsJson
+            .substringAfter("\"id\":")
+            .substringBefore(",")
+            .trim()
+        if (runId.isEmpty()) throw GradleException("Unable to parse run ID from: $runsJson")
+
+        val artifactsJson = githubApiCall("$runsUrl/$runId/artifacts", token)
+        val artifactName = "sing-box-android-arm64-with-ebpf"
+        val artifactId = artifactsJson
+            .substringBefore("\"name\":\"$artifactName\"")
+            .substringAfterLast("\"id\":")
+            .substringBefore(",")
+            .trim()
+        if (artifactId.isEmpty()) throw GradleException("Artifact '$artifactName' not found in run $runId")
+
+        return "https://api.github.com/repos/$repo/actions/artifacts/$artifactId/zip"
+    }
+
+    private fun githubApiCall(url: String, token: String): String {
+        val connection = (URI.create(url).toURL().openConnection() as HttpURLConnection).apply {
+            connectTimeout = 15_000
+            readTimeout = 30_000
+            requestMethod = "GET"
+            setRequestProperty("User-Agent", "MidoriBOX-Gradle")
+            setRequestProperty("Accept", "application/vnd.github+json")
+            if (token.isNotEmpty()) {
+                setRequestProperty("Authorization", "Bearer $token")
+            }
+        }
+        try {
+            val code = connection.responseCode
+            if (code !in 200..299) {
+                throw GradleException("GitHub API failed: HTTP $code")
+            }
+            return connection.inputStream.use { it.bufferedReader().readText() }
+        } finally {
+            connection.disconnect()
+        }
+    }
+
+    private fun downloadArtifactZip(url: String, target: File) {
+        val token = githubToken.get()
+        logger.lifecycle("Downloading artifact from $url")
+        val connection = (URI.create(url).toURL().openConnection() as HttpURLConnection).apply {
+            connectTimeout = 15_000
+            readTimeout = 120_000
+            instanceFollowRedirects = true
+            requestMethod = "GET"
+            setRequestProperty("User-Agent", "MidoriBOX-Gradle")
+            if (token.isNotEmpty()) {
+                setRequestProperty("Authorization", "Bearer $token")
+            }
+        }
+        try {
+            val code = connection.responseCode
+            if (code !in 200..299) {
+                throw GradleException("Failed to download artifact: HTTP $code")
+            }
+            val tempDir = target.resolveSibling("${target.name}.extract").also { it.mkdirs() }
+            try {
+                ZipInputStream(connection.inputStream).use { zip ->
+                    var entry = zip.nextEntry
+                    while (entry != null) {
+                        val entryFile = File(tempDir, entry.name.substringAfterLast('/'))
+                        if (!entry.isDirectory) {
+                            entryFile.outputStream().use { out -> zip.copyTo(out) }
+                        }
+                        zip.closeEntry()
+                        entry = zip.nextEntry
+                    }
+                }
+                val extractedFiles = tempDir.listFiles()?.filter { it.isFile } ?: emptyList()
+                if (extractedFiles.isEmpty()) throw GradleException("Artifact zip is empty")
+                val binary = extractedFiles.first()
+                binary.renameTo(target)
+            } finally {
+                tempDir.deleteRecursively()
+            }
+        } finally {
+            connection.disconnect()
+        }
+        if (target.length() <= 0L) {
+            throw GradleException("Downloaded artifact is empty: $url")
         }
     }
 
@@ -113,7 +206,7 @@ abstract class UpdateResourceFileAssetsTask : DefaultTask() {
             readTimeout = 120_000
             instanceFollowRedirects = true
             requestMethod = "GET"
-            setRequestProperty("User-Agent", "AsteriskBOX-Gradle")
+            setRequestProperty("User-Agent", "MidoriBOX-Gradle")
         }
         try {
             val code = connection.responseCode

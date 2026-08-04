@@ -3,7 +3,7 @@
 
 @file:Suppress("UnstableApiUsage")
 
-rootProject.name = "AsteriskBOX"
+rootProject.name = "MidoriBOX"
 
 pluginManagement {
     repositories {

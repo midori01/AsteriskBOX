@@ -74,8 +74,7 @@ internal object SingBoxDnsCompiler {
                     "strategy",
                     when {
                         appState.enableIpv6Prefer -> "prefer_ipv6"
-                        !appState.enableIpv6 -> "ipv4_only"
-                        else -> "prefer_ipv4"
+                        else -> "ipv4_only"
                     },
                 )
                 appState.dnsCacheCapacity.toLongOrNull()
