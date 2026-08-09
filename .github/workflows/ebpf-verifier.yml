@@ -2,19 +2,6 @@ name: Verify eBPF program loading
 
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - '.github/workflows/ebpf-verifier.yml'
-      - 'box.go'
-      - 'option/ebpf.go'
-      - 'common/dialer/default.go'
-      - 'common/dialer/ebpf_self_bypass_*.go'
-      - 'common/ebpf/**'
-      - 'common/listener/listener_tcp.go'
-      - 'common/listener/listener_udp.go'
-      - 'protocol/ebpf/**'
-      - 'protocol/tailscale/endpoint.go'
-      - 'route/network*.go'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
