@@ -12,15 +12,8 @@ jobs:
         include:
           - goarch: arm64
             compiler: aarch64-linux-android35-clang
-          - goarch: arm
-            goarm: "7"
-            compiler: armv7a-linux-androideabi35-clang
-          - goarch: amd64
-            compiler: x86_64-linux-android35-clang
-          - goarch: "386"
-            compiler: i686-linux-android35-clang
     env:
-      TAGS: with_gvisor,with_quic,with_dhcp,with_utls,with_clash_api,with_ebpf,badlinkname,tfogo_checklinkname0
+      TAGS: with_quic,badlinkname,tfogo_checklinkname0,with_provider,with_ebpf
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -38,15 +31,17 @@ jobs:
         with:
           ndk-version: r29
 
-      - name: Build
+      - name: Build with eBPF
         env:
           CGO_ENABLED: "1"
           GOOS: android
           GOARCH: ${{ matrix.goarch }}
-          GOARM: ${{ matrix.goarm }}
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          BPF_CLANG: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang
           CC: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.compiler }}
         run: |
+          make ebpf_generate
+          make ebpf_check
           make build
 
       - name: Upload

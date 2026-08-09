@@ -222,14 +222,14 @@ func NewInbound(ctx context.Context, router adapter.Router, logger log.ContextLo
 		sharedNetworkEnabled:       sharedNetworkEnabled,
 		sharedIPv6Mode:             sharedIPv6Mode,
 		sharedNetworkMapCapacity:   sharedNetworkMapCapacity,
-		localBypassPrivateAddress:  options.Local.BypassPrivateAddress == nil || *options.Local.BypassPrivateAddress,
-		sharedBypassPrivateAddress: options.Shared.BypassPrivateAddress == nil || *options.Shared.BypassPrivateAddress,
+		localBypassPrivateAddress:  options.Local.BypassPrivateAddress != nil && *options.Local.BypassPrivateAddress,
+		sharedBypassPrivateAddress: options.Shared.BypassPrivateAddress != nil && *options.Shared.BypassPrivateAddress,
 		sharedNetworkIncludeMAC:    sharedNetworkIncludeMAC,
 		sharedNetworkExcludeMAC:    sharedNetworkExcludeMAC,
 		cgroupPolicy: ECommon.CgroupPolicy{
 			HijackDNS:            dnsMode != dnsModeOff,
 			DNSRespectBypass:     dnsMode == dnsModeRespectBypass,
-			BypassPrivateAddress: options.Local.BypassPrivateAddress == nil || *options.Local.BypassPrivateAddress,
+			BypassPrivateAddress: options.Local.BypassPrivateAddress != nil && *options.Local.BypassPrivateAddress,
 			IncludeUIDConfigured: len(options.Local.IncludeUID) > 0 ||
 				len(options.Local.IncludeUIDRange) > 0 || len(options.Local.IncludePackage) > 0,
 			IncludeUID: includeUIDRanges,
