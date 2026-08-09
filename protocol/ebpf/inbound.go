@@ -239,7 +239,7 @@ func NewInbound(ctx context.Context, router adapter.Router, logger log.ContextLo
 		sharedEnabled:           sharedEnabled,
 		sharedDataPlane:         sharedDataPlane,
 		sharedIPv6:              sharedEnabled && enabledByDefault(options.Shared.IPv6),
-		sharedBypassPrivate:     options.Shared.BypassPrivateAddress == nil || *options.Shared.BypassPrivateAddress,
+		sharedBypassPrivate:     options.Shared.BypassPrivateAddress != nil && *options.Shared.BypassPrivateAddress,
 		localBypassPort:         localBypassPort,
 		endpointConnectedBypass: endpointConnectedBypass,
 		endpointConnectedPorts:  endpointConnectedPorts,
@@ -249,7 +249,7 @@ func NewInbound(ctx context.Context, router adapter.Router, logger log.ContextLo
 		sharedExcludeMAC:        sharedExcludeMAC,
 		localPolicy: commonEBPF.LocalPolicy{
 			DNSMode:              toCommonDNSMode(localDNSMode),
-			BypassPrivateAddress: options.Local.BypassPrivateAddress == nil || *options.Local.BypassPrivateAddress,
+			BypassPrivateAddress: options.Local.BypassPrivateAddress != nil && *options.Local.BypassPrivateAddress,
 			IncludeUIDConfigured: len(options.Local.IncludeUID) > 0 ||
 				len(options.Local.IncludeUIDRange) > 0 || len(options.Local.IncludePackage) > 0,
 			IncludeUID: includeUIDRanges,
