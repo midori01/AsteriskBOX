@@ -39,13 +39,8 @@ internal class AppSettingsPreferences(
     }
 
     fun load(): AppState {
-        val defaults = AppState(singBoxControlSecret = UUID.randomUUID().toString())
-        val singBoxControlSecret = preferences
-            .getString(KeySingBoxControlSecret, null)
-            ?.takeIf(String::isNotBlank)
-            ?: defaults.singBoxControlSecret.also { secret ->
-                preferences.edit { putString(KeySingBoxControlSecret, secret) }
-            }
+        val defaults = AppState()
+        val singBoxControlSecret = ""
         return defaults.copy(
             colorMode = preferences.getInt(KeyColorMode, defaults.colorMode),
             languageMode = preferences.getInt(KeyLanguageMode, defaults.languageMode),

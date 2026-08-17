@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name">AsteriskBOX</string>
+    <string name="app_name">MidoriBOX</string>
     <string name="error_backup_file_open_failed">无法打开备份文件</string>
     <string name="error_backup_file_too_large">备份文件过大（最大 32 MB）</string>
     <string name="error_backup_file_creator_missing">备份文件创建请求器未注册</string>
@@ -33,7 +33,7 @@
     <string name="proxy_traffic_stats_notification_channel">代理统计</string>
     <string name="proxy_traffic_stats_notification_speed">速度：↑ %1$s / ↓ %2$s</string>
     <string name="proxy_traffic_stats_notification_traffic">流量：↑ %1$s / ↓ %2$s</string>
-    <string name="quick_settings_tile_label">AsteriskBOX</string>
+    <string name="quick_settings_tile_label">MidoriBOX</string>
     <string name="quick_settings_tile_running">代理运行中</string>
     <string name="quick_settings_tile_stopped">代理已停止</string>
     <string name="quick_settings_tile_processing">正在处理…</string>
@@ -249,11 +249,11 @@
     <string name="settings_advanced">高级设置</string>
     <string name="settings_run_mode">运行模式</string>
     <string name="settings_run_mode_vpn_service">VPN Service</string>
-    <string name="settings_run_mode_tproxy">TPROXY（ROOT）</string>
-    <string name="settings_run_mode_tun">TUN（ROOT）</string>
-    <string name="settings_run_mode_tun2socks">TUN2SOCKS（ROOT）</string>
-    <string name="settings_run_mode_bpf2socks">BPF2SOCKS（ROOT）</string>
-    <string name="settings_run_mode_ebpf">eBPF（ROOT）</string>
+    <string name="settings_run_mode_tproxy">TPROXY</string>
+    <string name="settings_run_mode_tun">TUN</string>
+    <string name="settings_run_mode_tun2socks">TUN2SOCKS</string>
+    <string name="settings_run_mode_bpf2socks">BPF2SOCKS</string>
+    <string name="settings_run_mode_ebpf">eBPF</string>
     <string name="settings_root_required">获取ROOT权限失败！</string>
     <string name="settings_proxy_tproxy">代理设置（TPROXY）</string>
     <string name="settings_proxy_tun">代理设置（TUN）</string>
@@ -331,6 +331,10 @@
     <string name="settings_ignored_interfaces_selected">已选择：{interfaces}</string>
     <string name="settings_ignored_interfaces_empty">尚未配置忽略接口</string>
     <string name="settings_ignored_interfaces_invalid">请使用 1–15 个字母、数字、_、. 或 -。+ 仅可出现一次且必须位于末尾。</string>
+    <string name="settings_ignored_interfaces_loading">正在加载网络接口…</string>
+    <string name="settings_ignored_interfaces_error">接口加载失败：{message}</string>
+    <string name="settings_ignored_interfaces_error_detail">无法读取网络接口</string>
+    <string name="settings_ignored_interfaces_custom_input">自定义接口</string>
     <string name="settings_private_addresses">私有地址设置</string>
     <string name="settings_private_addresses_summary">私有地址不会进入代理核心，若需要请添加到下方</string>
     <string name="settings_private_addresses_none">未配置</string>
@@ -881,7 +885,7 @@
     <string name="outbound_editor_section_protocol">协议</string>
     <string name="outbound_editor_section_protocol_summary">所选代理协议的专属选项</string>
     <string name="outbound_editor_section_tls">TLS</string>
-    <string name="outbound_editor_section_tls_summary">sing-box TLS、uTLS 与 Reality 客户端选项</string>
+    <string name="outbound_editor_section_tls_summary">sing-box TLS 与 Reality 客户端选项</string>
     <string name="outbound_editor_section_transport">V2Ray 传输层</string>
     <string name="outbound_editor_section_transport_summary">可选的 HTTP、WebSocket、QUIC、gRPC 或 HTTPUpgrade 传输</string>
     <string name="outbound_editor_section_multiplex">多路复用</string>
@@ -1015,8 +1019,6 @@
     <string name="outbound_field_user">用户</string>
     <string name="outbound_field_user_key">用户密钥</string>
     <string name="outbound_field_username">用户名</string>
-    <string name="outbound_field_utls">uTLS</string>
-    <string name="outbound_field_utls_fingerprint">uTLS 指纹</string>
     <string name="outbound_field_uuid">UUID</string>
 
     <!-- DNS and routing management -->
@@ -1171,7 +1173,7 @@
     <string name="common_unknown">未知</string>
     <string name="common_error_details">%1$s：%2$s</string>
     <string name="home_network_speed_summary">↑ %1$s   ↓ %2$s</string>
-    <string name="home_network_summary">IPv4 · %1$s\nIPv6 · %2$s</string>
+    <string name="home_network_summary">本地 · %1$s\n公网 · %2$s</string>
     <string name="monitor_speed_per_second">%1$s/s</string>
     <string name="monitor_rate_pair">↓ %1$s/s · ↑ %2$s/s</string>
     <string name="monitor_network_public_ipv4">公网 IPv4</string>

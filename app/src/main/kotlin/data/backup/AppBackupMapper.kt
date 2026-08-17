@@ -8,6 +8,7 @@ import app.ServiceControlSchedule
 import app.ServiceControlSettings
 import app.ServiceControlWifi
 import app.ServiceControlWifiRule
+import app.modes.RunModeEbpf
 import app.CustomResourceFileState
 import app.OutboundGroupState
 import app.OutboundGroupUpdateStatus
@@ -20,7 +21,6 @@ import app.SingBoxSelectorState
 import app.isManagedSingBoxTag
 import app.selectableManagedOutbounds
 import app.withCanonicalManagedTagReferences
-import app.modes.RunModeVpnService
 
 internal fun AppState.toAppBackupFile(
     createdAtMillis: Long,
@@ -267,7 +267,7 @@ private fun AppBackupData.toAppState(): AppState {
         routeFinal = settings.routeFinal,
         routeRules = routeRules,
         nextRouteRuleId = nextId(defaults.nextRouteRuleId, routeRules.map(SingBoxRouteRuleState::id)),
-        runMode = RunModeVpnService,
+        runMode = RunModeEbpf,
         singBoxMode = settings.singBoxMode,
         singBoxProxyLayout = settings.singBoxProxyLayout,
         singBoxProxySort = settings.singBoxProxySort,

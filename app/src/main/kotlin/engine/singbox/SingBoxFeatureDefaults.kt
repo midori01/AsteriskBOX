@@ -116,5 +116,5 @@ val SingBoxSnifferProtocols = listOf(
     "rdp",
     "ntp",
 )
-val DefaultSingBoxSnifferProtocols = listOf("http", "tls", "quic")
+val DefaultSingBoxSnifferProtocols = listOf("http", "tls", "quic", "stun", "dns", "bittorrent", "dtls", "ssh", "rdp", "ntp")
 const val DefaultSingBoxSnifferTimeout = "300ms"

@@ -49,7 +49,14 @@ android {
         abi {
             isEnable = !isBuildingAppBundle
             reset()
-            include(*ProjectConfig.SUPPORTED_ANDROID_ABIS.toTypedArray())
+            include(
+                *(project.findProperty("android.splits.abi.include") as? String)
+                    ?.split(",")
+                    ?.map { it.trim() }
+                    ?.filter { it in ProjectConfig.SUPPORTED_ANDROID_ABIS }
+                    ?.toTypedArray()
+                    ?: ProjectConfig.SUPPORTED_ANDROID_ABIS.toTypedArray()
+            )
             isUniversalApk = !isBuildingAppBundle
         }
     }

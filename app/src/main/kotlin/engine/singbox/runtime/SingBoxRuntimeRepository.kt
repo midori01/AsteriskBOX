@@ -5,11 +5,7 @@ package engine.singbox.runtime
 
 import android.content.Context
 import app.AppState
-import app.modes.RunModeVpnService
-import engine.proxy.ProxyEngineStartRequest
 import engine.singbox.singBoxControlConfig
-import engine.singbox.singBoxModeName
-import engine.vpn.VpnSingBoxConfigFactory
 import features.logs.AndroidAppLogger
 import io.nekohasekai.libbox.Libbox
 import io.nekohasekai.libbox.StatusMessage
@@ -25,7 +21,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -134,13 +129,7 @@ internal class SingBoxRuntimeRepository(
     }
 
     suspend fun patchMode(appState: AppState): Result<Unit> = runCatching {
-        if (appState.runMode == RunModeVpnService) {
-            requireActiveSession(appState).setMode(appState.singBoxModeName())
-        } else {
-            // The standard core's stable API service does not register ClashServer; enabling it
-            // through experimental.clash_api is intentionally forbidden by this application.
-            reloadConfiguration(appState)
-        }
+        reloadConfiguration(appState)
     }
 
     suspend fun patchLogLevel(appState: AppState): Result<Unit> = runCatching {
@@ -149,28 +138,7 @@ internal class SingBoxRuntimeRepository(
 
     private suspend fun reloadConfiguration(appState: AppState) {
         if (!appState.proxyRunning) return
-        val active = requireActiveSession(appState)
-        val activeGeneration = synchronized(sessionLock) {
-            check(session === active) { "sing-box API session changed before reload" }
-            generation
-        }
-        withContext(Dispatchers.IO) {
-            if (appState.runMode == RunModeVpnService) {
-                VpnSingBoxConfigFactory.create(appContext, ProxyEngineStartRequest(appState))
-                check(updateServiceStartedAtIfCurrent(activeGeneration, active, 0L)) {
-                    "sing-box API session changed during reload"
-                }
-                try {
-                    active.reloadService()
-                } catch (error: Throwable) {
-                    refreshServiceStartedAt(activeGeneration, active)
-                    throw error
-                }
-                replaceSession(appState, appState.commandTarget())
-            } else {
-                error("ROOT runtime configuration changes require a supervised restart")
-            }
-        }
+        error("ROOT runtime configuration changes require a supervised restart")
     }
 
     suspend fun selectProxy(
@@ -262,17 +230,6 @@ internal class SingBoxRuntimeRepository(
                             return@launch
                         }
                         refreshServiceStartedAt(nextGeneration, next)
-                        if (appState.runMode == RunModeVpnService) {
-                            runCatching {
-                                next.setMode(appState.singBoxModeName())
-                            }.onFailure { error ->
-                                AndroidAppLogger.warn(
-                                    LogTag,
-                                    "Failed to restore sing-box Clash mode",
-                                    error,
-                                )
-                            }
-                        }
                         return@launch
                     }
                     lastError = result.exceptionOrNull()
@@ -512,8 +469,7 @@ internal class SingBoxRuntimeRepository(
     }
 
     private fun AppState.commandTarget(): SingBoxCommandTarget {
-        val local = runMode == RunModeVpnService
-        return SingBoxCommandTarget(local = local, control = singBoxControlConfig())
+        return SingBoxCommandTarget(local = false, control = singBoxControlConfig())
     }
 
     private fun refreshDeviceState() {

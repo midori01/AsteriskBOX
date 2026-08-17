@@ -5,10 +5,9 @@ package engine.singbox
 
 import android.content.Context
 import app.AppState
+import app.modes.SingBoxTunStackMixed
 import app.modes.SingBoxModeDirect
 import app.modes.SingBoxModeGlobal
-import app.modes.SingBoxTunStackGvisor
-import app.modes.SingBoxTunStackMixed
 import engine.singbox.config.SingBoxConfigCompiler
 import java.security.MessageDigest
 
@@ -29,7 +28,6 @@ internal object SingBoxConfigFactory {
 
     fun tunStack(appState: AppState): String =
         when (appState.singBoxTunStack) {
-            SingBoxTunStackGvisor -> "gvisor"
             SingBoxTunStackMixed -> "mixed"
             else -> "system"
         }

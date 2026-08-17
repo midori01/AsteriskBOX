@@ -28,7 +28,6 @@ import app.modes.RunModeEbpf
 import app.modes.RunModeTproxy
 import app.modes.RunModeTun
 import app.modes.RunModeTun2Socks
-import app.modes.RunModeVpnService
 import app.modes.SingBoxModeDirect
 import app.modes.SingBoxModeGlobal
 import app.modes.isRootRunMode
@@ -240,9 +239,6 @@ private fun compileInbounds(
 
     retained += compileLocalInbound(appState)
     when (runMode) {
-        RunModeVpnService -> if (!appState.enableVpnHevTun) {
-            retained += compileTunInbound(appState, rootMode = false)
-        }
         RunModeTproxy -> retained += buildJsonObject {
             put("type", "tproxy")
             put("tag", APP_ROOT_INBOUND)
@@ -279,7 +275,6 @@ internal fun compileEbpfInbound(
         put("dns_mode", if (appState.enableLocalDns) "hijack" else "off")
         putJsonObject("local") {
             put("ipv6_mode", ipv6Mode)
-            put("bypass_private_address", false)
             if (uidPolicy.includeUids.isNotEmpty()) {
                 putJsonArray("include_uid") {
                     uidPolicy.includeUids.distinct().sorted().forEach(::add)
@@ -302,7 +297,6 @@ internal fun compileEbpfInbound(
                 putJsonArray("interface") {
                     sharedInterfaces.forEach(::add)
                 }
-                put("bypass_private_address", false)
                 put("ipv6_mode", ipv6Mode)
             }
         }
@@ -364,7 +358,6 @@ private fun compileTunInbound(appState: AppState, rootMode: Boolean): JsonObject
         put(
             "stack",
             when (appState.singBoxTunStack) {
-                app.modes.SingBoxTunStackGvisor -> "gvisor"
                 app.modes.SingBoxTunStackMixed -> "mixed"
                 else -> "system"
             },
@@ -692,14 +685,10 @@ internal fun compileRoute(
     val managedRules = appState.routeRules
         .filter(SingBoxRouteRuleState::enabled)
         .mapNotNull { rule ->
-            if (appState.runMode == RunModeVpnService) {
-                compileManagedRouteRule(rule)
-            } else {
-                when (val resolved = rule.resolveClashMode(appState.singBoxMode)) {
-                    StaticRouteMatch.Never -> null
-                    StaticRouteMatch.Always -> compileManagedRouteAction(rule)
-                    is StaticRouteMatch.Rule -> compileManagedRouteRule(resolved.state)
-                }
+            when (val resolved = rule.resolveClashMode(appState.singBoxMode)) {
+                StaticRouteMatch.Never -> null
+                StaticRouteMatch.Always -> compileManagedRouteAction(rule)
+                is StaticRouteMatch.Rule -> compileManagedRouteRule(resolved.state)
             }
         }
     val injectedRules = buildList {
@@ -712,49 +701,22 @@ internal fun compileRoute(
                 },
             )
         }
-        if (appState.runMode == RunModeVpnService) {
-            add(
+        when (appState.singBoxMode) {
+            SingBoxModeDirect -> add(
                 buildJsonObject {
-                    put("clash_mode", "Global")
-                    put("action", "route")
-                    put("outbound", APP_GLOBAL_SELECTOR)
-                },
-            )
-            add(
-                buildJsonObject {
-                    put("clash_mode", "Direct")
                     put("action", "route")
                     put("outbound", APP_DIRECT_OUTBOUND)
                 },
             )
-        } else {
-            when (appState.singBoxMode) {
-                SingBoxModeDirect -> add(
-                    buildJsonObject {
-                        put("action", "route")
-                        put("outbound", APP_DIRECT_OUTBOUND)
-                    },
-                )
-                SingBoxModeGlobal -> add(
-                    buildJsonObject {
-                        put("action", "route")
-                        put("outbound", APP_GLOBAL_SELECTOR)
-                    },
-                )
-            }
+            SingBoxModeGlobal -> add(
+                buildJsonObject {
+                    put("action", "route")
+                    put("outbound", APP_GLOBAL_SELECTOR)
+                },
+            )
         }
     }
-    val ruleModeFallback = if (appState.runMode == RunModeVpnService) {
-        listOf(
-            buildJsonObject {
-                put("clash_mode", "Rule")
-                put("action", "route")
-                put("outbound", finalOutbound)
-            },
-        )
-    } else {
-        emptyList()
-    }
+    val ruleModeFallback = emptyList<JsonObject>()
     return JsonObject(
         buildMap {
             sourceRoute

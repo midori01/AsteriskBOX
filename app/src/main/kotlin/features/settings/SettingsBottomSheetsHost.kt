@@ -16,7 +16,6 @@ import app.LocalAppServices
 import app.modes.RunModeBpf2Socks
 import app.modes.RunModeTproxy
 import app.modes.RunModeTun2Socks
-import app.modes.RunModeVpnService
 import engine.singbox.config.validateSingBoxRuntimeConfiguration
 import features.logs.FailureLogContext
 import features.logs.reportFailure
@@ -204,7 +203,7 @@ internal fun SettingsBottomSheetsHost(
         ipv4Cidr = sheetState.tunSettingsDraft.ipv4Cidr,
         ipv6Cidr = sheetState.tunSettingsDraft.ipv6Cidr,
         showTunStack = appState.runMode != RunModeTun2Socks,
-        showVpnDns = appState.runMode == RunModeVpnService,
+        showVpnDns = false,
         onTunStackChange = { sheetState.tunSettingsDraft = sheetState.tunSettingsDraft.copy(tunStack = it) },
         onMtuChange = {
             sheetState.tunSettingsDraft = sheetState.tunSettingsDraft.copy(mtu = it)
@@ -224,7 +223,7 @@ internal fun SettingsBottomSheetsHost(
                             tunStack
                         },
                         tunMtu = mtu,
-                        tunVpnDns = if (state.runMode == RunModeVpnService) vpnDns else state.tunVpnDns,
+                        tunVpnDns = state.tunVpnDns,
                         tunIpv4Cidr = ipv4Cidr,
                         tunIpv6Cidr = ipv6Cidr,
                     )

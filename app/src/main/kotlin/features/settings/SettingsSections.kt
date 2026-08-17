@@ -7,7 +7,6 @@ import app.modes.RunModeBpf2Socks
 import app.modes.RunModeEbpf
 import app.modes.RunModeTun
 import app.modes.RunModeTun2Socks
-import app.modes.RunModeVpnService
 import app.modes.isRootRunMode
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -32,7 +31,6 @@ import ui.theme.AsteriskMotion
 @Composable
 internal fun settingsTunStackOptions() = listOf(
     stringResource(R.string.settings_tun_stack_system),
-    stringResource(R.string.settings_tun_stack_gvisor),
     stringResource(R.string.settings_tun_stack_mixed),
 )
 
@@ -260,7 +258,7 @@ internal fun SettingsProxyModeSections(
     val bypassControlEffectsMotion = AsteriskMotion.fastEffects<Float>()
     val bypassControlSizeMotion = AsteriskMotion.fastSpatial<IntSize>()
     AnimatedVisibility(
-        visible = runMode == RunModeVpnService,
+        visible = false,
         enter = AsteriskMotion.contentEnter(),
         exit = ExitTransition.None,
     ) {
