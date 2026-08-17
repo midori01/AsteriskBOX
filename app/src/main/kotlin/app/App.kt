@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import app.effects.ProxyStatusSynchronizer
@@ -41,6 +42,9 @@ import system.AndroidUserSpaceProvider
 import ui.AppTheme
 import ui.feedback.AndroidToastTipNotifier
 import ui.keyColorFor
+import kotlinx.coroutines.flow.collect
+import app.modes.isRootRunMode
+import org.asterisk.zcc.abox.R
 
 @Composable
 fun App(
@@ -50,7 +54,6 @@ fun App(
     backupFilePicker: suspend () -> Uri?,
     backupFileCreator: suspend (String) -> Uri?,
     logFileCreator: suspend (String) -> Uri?,
-    requestVpnPermission: suspend (Intent) -> Boolean,
 ) {
     val appContext = LocalContext.current.applicationContext
     val systemUiSnapshot = appContext.currentSystemUiSnapshot()
@@ -135,7 +138,6 @@ fun App(
         AndroidProxyEngine(
             context = appContext,
             rootAccess = rootAccess,
-            requestVpnPermission = requestVpnPermission,
         )
     }
     val rootBootScriptUseCase = remember(appContext, rootAccess) {
@@ -165,6 +167,13 @@ fun App(
         ApplyServiceControlUseCase(proxyEngine)
     }
     val tipNotifier = remember(appContext) { AndroidToastTipNotifier(appContext) }
+    LaunchedEffect(stateStore, rootAccess, tipNotifier) {
+        stateStore.state.collect { state ->
+            if (state.runMode.isRootRunMode() && !rootAccess.hasRootAccess()) {
+                tipNotifier.show(appContext.getString(R.string.settings_root_required))
+            }
+        }
+    }
     val services = remember(
         appScope,
         proxyEngine,

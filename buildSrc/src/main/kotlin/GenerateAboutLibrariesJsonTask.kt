@@ -61,18 +61,6 @@ abstract class GenerateAboutLibrariesJsonTask : DefaultTask() {
                         listOf("Apache-2.0"),
                     )
                 },
-            "com.github.asterisk4magisk:libbox" to
-                { version: String ->
-                    library(
-                        "com.github.asterisk4magisk:libbox",
-                        version,
-                        "AndroidLibBoxLite",
-                        "Pinned Android JNI and command API bindings for sing-box.",
-                        "https://github.com/Asterisk4Magisk/AndroidLibBoxLite",
-                        "https://github.com/Asterisk4Magisk/AndroidLibBoxLite",
-                        listOf("LGPL-3.0"),
-                    )
-                },
         )
         val bundledRuntimeLibraries = listOf(
             library(
@@ -82,15 +70,6 @@ abstract class GenerateAboutLibrariesJsonTask : DefaultTask() {
                 "A root Android daemon that synchronizes local-address bypass rules and pinned eBPF maps.",
                 "https://github.com/Asterisk4Magisk/asteriskd",
                 "https://github.com/Asterisk4Magisk/asteriskd",
-                listOf("GPL-3.0"),
-            ),
-            library(
-                "github:Asterisk4Magisk/bpf2socks",
-                ProjectConfig.BPF2SOCKS_VERSION,
-                "bpf2socks",
-                "A root Android/Linux traffic bridge that forwards TCP and UDP through a SOCKS5 upstream using eBPF.",
-                "https://github.com/Asterisk4Magisk/bpf2socks",
-                "https://github.com/Asterisk4Magisk/bpf2socks",
                 listOf("GPL-3.0"),
             ),
             library(
@@ -110,15 +89,6 @@ abstract class GenerateAboutLibrariesJsonTask : DefaultTask() {
                 "https://github.com/reF1nd/sing-box-releases",
                 "https://github.com/reF1nd/sing-box-releases",
                 listOf("GPL-3.0"),
-            ),
-            library(
-                "github:heiher/hev-socks5-tunnel",
-                ProjectConfig.HEV_SOCKS5_TUNNEL_VERSION,
-                "hev-socks5-tunnel",
-                "A tun2socks tunnel that forwards TUN traffic to a SOCKS5 server.",
-                "https://github.com/heiher/hev-socks5-tunnel",
-                "https://github.com/heiher/hev-socks5-tunnel",
-                listOf("MIT"),
             ),
         )
 

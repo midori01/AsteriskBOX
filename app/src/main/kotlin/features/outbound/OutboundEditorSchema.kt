@@ -75,15 +75,14 @@ internal object OutboundEditorRegistry {
     val descriptors: List<OutboundEditorDescriptor> = listOf(
         OutboundEditorDescriptor("socks", "SOCKS"),
         OutboundEditorDescriptor("http", "HTTP"),
-        OutboundEditorDescriptor("naive", "NaiveProxy"),
         OutboundEditorDescriptor("shadowsocks", "Shadowsocks"),
-        OutboundEditorDescriptor("vmess", "VMess"),
-        OutboundEditorDescriptor("trojan", "Trojan"),
-        OutboundEditorDescriptor("hysteria", "Hysteria"),
-        OutboundEditorDescriptor("vless", "VLESS"),
         OutboundEditorDescriptor("shadowtls", "ShadowTLS"),
+        OutboundEditorDescriptor("trojan", "Trojan"),
+        OutboundEditorDescriptor("vmess", "VMess"),
+        OutboundEditorDescriptor("vless", "VLESS"),
         OutboundEditorDescriptor("tuic", "TUIC"),
-        OutboundEditorDescriptor("hysteria2", "Hysteria 2"),
+        OutboundEditorDescriptor("hysteria", "Hysteria"),
+        OutboundEditorDescriptor("hysteria2", "Hysteria2"),
         OutboundEditorDescriptor("anytls", "AnyTLS"),
         OutboundEditorDescriptor("snell", "Snell"),
         OutboundEditorDescriptor("ssh", "SSH"),
@@ -101,13 +100,6 @@ internal object OutboundEditorRegistry {
     private fun createSchema(type: String): OutboundEditorSchema = when (type) {
         "socks" -> schema(type, descriptor(type).title, socksOutboundFields())
         "http" -> schema(type, descriptor(type).title, httpOutboundFields(), tls = true)
-        "naive" -> schema(
-            type,
-            descriptor(type).title,
-            naiveOutboundFields(),
-            tls = true,
-            tlsFieldSpecs = naiveTlsFields(),
-        )
         "shadowsocks" -> schema(
             type,
             descriptor(type).title,
@@ -314,16 +306,6 @@ internal object OutboundEditorRegistry {
             conditions = listOf(
                 OutboundFieldCondition("tls.enabled"),
                 OutboundFieldCondition("tls.ech.enabled"),
-            ),
-        ),
-        field("tls.utls.enabled", "uTLS", OutboundFieldKind.BOOLEAN, conditions = on("tls.enabled")),
-        select(
-            "tls.utls.fingerprint",
-            "uTLS fingerprint",
-            listOf("", "chrome", "firefox", "edge", "safari", "360", "qq", "ios", "android", "random", "randomized"),
-            conditions = listOf(
-                OutboundFieldCondition("tls.enabled"),
-                OutboundFieldCondition("tls.utls.enabled"),
             ),
         ),
         field("tls.reality.enabled", "Reality", OutboundFieldKind.BOOLEAN, conditions = on("tls.enabled")),
@@ -590,7 +572,6 @@ internal val SingBoxTlsCipherSuites = listOf(
 )
 
 internal val MandatoryTlsOutboundTypes = setOf(
-    "naive",
     "hysteria",
     "shadowtls",
     "tuic",
@@ -738,8 +719,6 @@ internal fun outboundFieldLabelResource(label: String): Int = when (label) {
     "User" -> R.string.outbound_field_user
     "User key" -> R.string.outbound_field_user_key
     "Username" -> R.string.outbound_field_username
-    "uTLS" -> R.string.outbound_field_utls
-    "uTLS fingerprint" -> R.string.outbound_field_utls_fingerprint
     "UUID" -> R.string.outbound_field_uuid
     else -> error("Missing outbound field string resource: $label")
 }

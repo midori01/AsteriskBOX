@@ -14,19 +14,6 @@
             ]
         },
         {
-            "uniqueId": "com.github.asterisk4magisk:libbox",
-            "artifactVersion": "v1.15.0-alpha.2-reF1nd",
-            "name": "AndroidLibBoxLite",
-            "description": "Pinned Android JNI and command API bindings for sing-box.",
-            "website": "https://github.com/Asterisk4Magisk/AndroidLibBoxLite",
-            "scm": {
-                "url": "https://github.com/Asterisk4Magisk/AndroidLibBoxLite"
-            },
-            "licenses": [
-                "LGPL-3.0"
-            ]
-        },
-        {
             "uniqueId": "androidx.navigation3:navigation3-runtime",
             "artifactVersion": "1.1.7",
             "name": "Androidx Navigation 3 Runtime",

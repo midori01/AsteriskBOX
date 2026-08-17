@@ -4,7 +4,6 @@
 package engine.stats
 
 import app.AppState
-import app.modes.RunModeVpnService
 import engine.singbox.SingBoxControlConfig
 import engine.singbox.singBoxControlConfig
 
@@ -19,6 +18,6 @@ internal fun AppState.toSingBoxTrafficStatsRuntime(
     if (!enableTrafficStatsNotification) return null
     return SingBoxTrafficStatsRuntime(
         control = singBoxControlConfig(),
-        local = runMode == RunModeVpnService,
+        local = false,
     )
 }

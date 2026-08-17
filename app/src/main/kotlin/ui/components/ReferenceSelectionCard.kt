@@ -18,7 +18,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import engine.singbox.SingBoxSnifferProtocols
 import engine.singbox.config.APP_ROOT_INBOUND
-import engine.singbox.config.APP_TUN_INBOUND
 import org.asterisk.zcc.abox.R
 
 @Composable
@@ -81,7 +80,6 @@ internal fun managedInboundChoices(tags: List<String>): List<Pair<String, String
     tags.map { tag ->
         val label = stringResource(
             when (tag) {
-                APP_TUN_INBOUND -> R.string.managed_inbound_tun
                 APP_ROOT_INBOUND -> R.string.managed_inbound_root
                 else -> R.string.managed_inbound_local
             },

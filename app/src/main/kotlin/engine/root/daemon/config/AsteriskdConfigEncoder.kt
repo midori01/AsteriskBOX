@@ -32,7 +32,7 @@ private fun AsteriskdConfig.toJsonObject(): JsonObject = buildJsonObject {
     put("network", network.toJsonObject())
     put("modeOptions", modeOptions.toJsonObject())
     put("matcher", matcher?.toJsonObject() ?: JsonNull)
-    put("helper", helper?.toJsonObject() ?: JsonNull)
+    put("helper", JsonNull)
     put("serviceControl", serviceControl.toJsonObject())
 }
 
@@ -99,42 +99,6 @@ private fun AsteriskdMatcher.toJsonObject(): JsonObject = buildJsonObject {
     put("executablePath", executablePath)
 }
 
-private fun AsteriskdHelper.toJsonObject(): JsonObject = when (this) {
-    is AsteriskdHevSocks5TunnelHelper -> buildJsonObject {
-        put("type", "hev-socks5-tunnel")
-        put("executablePath", executablePath)
-        put("socksHost", socksHost)
-        put("socksPort", socksPort)
-        put("tunnelName", tunnelName)
-        put("mtu", mtu)
-        put("ipv4Address", ipv4Address)
-        put("ipv6Address", ipv6Address?.let(::JsonPrimitive) ?: JsonNull)
-        put("multiQueue", multiQueue)
-        put("tcpFastOpen", tcpFastOpen)
-        put("tcpReadWriteTimeoutMilliseconds", tcpReadWriteTimeoutMilliseconds)
-        put("udpReadWriteTimeoutMilliseconds", udpReadWriteTimeoutMilliseconds)
-    }
-    is AsteriskdBpf2SocksHelper -> buildJsonObject {
-        put("type", "bpf2socks")
-        put("executablePath", executablePath)
-        put("bridgeListenAddress", bridgeListenAddress)
-        put("bridgePort", bridgePort)
-        put("socksHost", socksHost)
-        put("socksPort", socksPort)
-        put("workerCount", workerCount)
-        put("tcpBufferSize", tcpBufferSize)
-        put("maxTcpSessions", maxTcpSessions)
-        put("tcpConnectTimeoutMilliseconds", tcpConnectTimeoutMilliseconds)
-        put("tcpIdleTimeoutMilliseconds", tcpIdleTimeoutMilliseconds)
-        put("udpSocketBufferSize", udpSocketBufferSize)
-        put("udpBatchSize", udpBatchSize)
-        put("maxUdpSessions", maxUdpSessions)
-        put("maxUdpBindings", maxUdpBindings)
-        put("udpIdleTimeoutSeconds", udpIdleTimeoutSeconds)
-        put("maxUdpPendingBytes", maxUdpPendingBytes)
-        put("dnsTransactionTimeoutMilliseconds", dnsTransactionTimeoutMilliseconds)
-    }
-}
 
 private fun List<String>.toJsonArray(): JsonArray = JsonArray(map(::JsonPrimitive))
 private fun List<Int>.toJsonIntArray(): JsonArray = JsonArray(map(::JsonPrimitive))

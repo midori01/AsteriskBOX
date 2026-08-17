@@ -10,8 +10,6 @@ import features.resources.ResourceFileDirectCidrIpv6Name
 import features.resources.ResourceFileDirectCidrIpv6Url
 import features.resources.ResourceFileGeoipCnName
 import features.resources.ResourceFileGeoipCnUrl
-import features.resources.ResourceFileGeositeCategoryAdsAllName
-import features.resources.ResourceFileGeositeCategoryAdsAllUrl
 import features.resources.ResourceFileGeositeCnName
 import features.resources.ResourceFileGeositeCnUrl
 import features.resources.ResourceFileGeositeGoogleName
@@ -176,7 +174,6 @@ enum class ResourceFileKind(
     val fileName: String,
 ) {
     SingBoxCore(ResourceFileSingBoxCoreName),
-    GeositeCategoryAdsAll(ResourceFileGeositeCategoryAdsAllName),
     GeositeGoogle(ResourceFileGeositeGoogleName),
     GeositeCn(ResourceFileGeositeCnName),
     GeoipCn(ResourceFileGeoipCnName),
@@ -358,7 +355,6 @@ data class ResourceFilesStatus(
 
 data class ResourceFileUpdateSource(
     val id: Int,
-    val geositeCategoryAdsAllUrl: String,
     val geositeGoogleUrl: String,
     val geositeCnUrl: String,
     val geoipCnUrl: String,
@@ -369,7 +365,6 @@ data class ResourceFileUpdateSource(
 val ResourceFileUpdateSources = listOf(
     ResourceFileUpdateSource(
         id = ResourceFileSourceDefault,
-        geositeCategoryAdsAllUrl = ResourceFileGeositeCategoryAdsAllUrl,
         geositeGoogleUrl = ResourceFileGeositeGoogleUrl,
         geositeCnUrl = ResourceFileGeositeCnUrl,
         geoipCnUrl = ResourceFileGeoipCnUrl,
@@ -537,9 +532,6 @@ fun AppState.resourceFileUpdateSource(): ResourceFileUpdateSource {
     val fallback = ResourceFileUpdateSources.first()
     return ResourceFileUpdateSource(
         id = ResourceFileSourceCustom,
-        geositeCategoryAdsAllUrl = customResourceFileGeositeCategoryAdsAllUrl.trim().ifBlank {
-            fallback.geositeCategoryAdsAllUrl
-        },
         geositeGoogleUrl = customResourceFileGeositeGoogleUrl.trim().ifBlank {
             fallback.geositeGoogleUrl
         },
@@ -561,7 +553,6 @@ fun AppState.resourceFileUpdateSource(): ResourceFileUpdateSource {
 fun ResourceFileUpdateSource.urlFor(kind: ResourceFileKind): String? =
     when (kind) {
         ResourceFileKind.SingBoxCore -> null
-        ResourceFileKind.GeositeCategoryAdsAll -> geositeCategoryAdsAllUrl
         ResourceFileKind.GeositeGoogle -> geositeGoogleUrl
         ResourceFileKind.GeositeCn -> geositeCnUrl
         ResourceFileKind.GeoipCn -> geoipCnUrl

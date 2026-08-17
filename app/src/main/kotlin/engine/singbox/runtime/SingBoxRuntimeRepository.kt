@@ -5,14 +5,9 @@ package engine.singbox.runtime
 
 import android.content.Context
 import app.AppState
-import app.modes.RunModeVpnService
-import engine.proxy.ProxyEngineStartRequest
+import app.ProjectInfo
 import engine.singbox.singBoxControlConfig
-import engine.singbox.singBoxModeName
-import engine.vpn.VpnSingBoxConfigFactory
 import features.logs.AndroidAppLogger
-import io.nekohasekai.libbox.Libbox
-import io.nekohasekai.libbox.StatusMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -106,41 +101,46 @@ internal class SingBoxRuntimeRepository(
         }
     }
 
-    suspend fun refresh(appState: AppState): Result<Unit> = runCatching {
-        requireActiveSession(appState)
+    suspend fun refresh(appState: AppState): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            requireActiveSession(appState)
+            Unit
+        }
     }
 
-    suspend fun refreshProxies(appState: AppState): Result<Unit> = runCatching {
-        requireActiveSession(appState)
-        require(state.value.proxies.updatedAtMillis > 0L) { "sing-box proxy groups are not available" }
+    suspend fun refreshProxies(appState: AppState): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            requireActiveSession(appState)
+            require(state.value.proxies.updatedAtMillis > 0L) { "sing-box proxy groups are not available" }
+        }
     }
 
-    suspend fun getConnections(appState: AppState): Result<SingBoxConnectionsState> = runCatching {
-        requireActiveSession(appState)
-        latestConnections
+    suspend fun getConnections(appState: AppState): Result<SingBoxConnectionsState> = withContext(Dispatchers.IO) {
+        runCatching {
+            requireActiveSession(appState)
+            latestConnections
+        }
     }
 
     suspend fun getConnectionCount(appState: AppState): Result<Int> =
         getConnections(appState).map { it.connections.size }
 
-    suspend fun closeConnection(appState: AppState, connectionId: String): Result<Boolean> = runCatching {
-        val active = requireActiveSession(appState)
-        active.closeConnection(connectionId)
-        true
+    suspend fun closeConnection(appState: AppState, connectionId: String): Result<Boolean> = withContext(Dispatchers.IO) {
+        runCatching {
+            val active = requireActiveSession(appState)
+            active.closeConnection(connectionId)
+            true
+        }
     }
 
-    suspend fun closeAllConnections(appState: AppState): Result<Unit> = runCatching {
-        requireActiveSession(appState).closeConnections()
+    suspend fun closeAllConnections(appState: AppState): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            requireActiveSession(appState).closeConnections()
+        }
     }
 
     suspend fun patchMode(appState: AppState): Result<Unit> = runCatching {
-        if (appState.runMode == RunModeVpnService) {
-            requireActiveSession(appState).setMode(appState.singBoxModeName())
-        } else {
-            // The standard core's stable API service does not register ClashServer; enabling it
-            // through experimental.clash_api is intentionally forbidden by this application.
-            reloadConfiguration(appState)
-        }
+        reloadConfiguration(appState)
     }
 
     suspend fun patchLogLevel(appState: AppState): Result<Unit> = runCatching {
@@ -149,44 +149,25 @@ internal class SingBoxRuntimeRepository(
 
     private suspend fun reloadConfiguration(appState: AppState) {
         if (!appState.proxyRunning) return
-        val active = requireActiveSession(appState)
-        val activeGeneration = synchronized(sessionLock) {
-            check(session === active) { "sing-box API session changed before reload" }
-            generation
-        }
-        withContext(Dispatchers.IO) {
-            if (appState.runMode == RunModeVpnService) {
-                VpnSingBoxConfigFactory.create(appContext, ProxyEngineStartRequest(appState))
-                check(updateServiceStartedAtIfCurrent(activeGeneration, active, 0L)) {
-                    "sing-box API session changed during reload"
-                }
-                try {
-                    active.reloadService()
-                } catch (error: Throwable) {
-                    refreshServiceStartedAt(activeGeneration, active)
-                    throw error
-                }
-                replaceSession(appState, appState.commandTarget())
-            } else {
-                error("ROOT runtime configuration changes require a supervised restart")
-            }
-        }
+        error("ROOT runtime configuration changes require a supervised restart")
     }
 
     suspend fun selectProxy(
         appState: AppState,
         groupName: String,
         proxyName: String,
-    ): Result<Unit> = runCatching {
-        requireActiveSession(appState).selectOutbound(groupName, proxyName)
-        mutableState.update { current ->
-            current.copy(
-                proxies = current.proxies.copy(
-                    groups = current.proxies.groups.map { group ->
-                        if (group.name == groupName) group.copy(now = proxyName) else group
-                    },
-                ),
-            )
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            requireActiveSession(appState).selectOutbound(groupName, proxyName)
+            mutableState.update { current ->
+                current.copy(
+                    proxies = current.proxies.copy(
+                        groups = current.proxies.groups.map { group ->
+                            if (group.name == groupName) group.copy(now = proxyName) else group
+                        },
+                    ),
+                )
+            }
         }
     }
 
@@ -208,8 +189,8 @@ internal class SingBoxRuntimeRepository(
         buildPlan = { proxies -> buildSingBoxProxyDelayTestPlan(proxies, proxyName) },
     )
 
-    suspend fun refreshMemoryNow(appState: AppState): Long? {
-        return runCatching {
+    suspend fun refreshMemoryNow(appState: AppState): Long? = withContext(Dispatchers.IO) {
+        runCatching {
             requireActiveSession(appState)
             state.value.memory.inUseBytes.takeIf { it > 0L }
         }.getOrNull()
@@ -228,7 +209,7 @@ internal class SingBoxRuntimeRepository(
             sessionTarget = target
             next = SingBoxCommandClient(
                 target,
-                commandListener(nextGeneration, appState, target),
+                commandListener(nextGeneration, appState, target) { next },
             )
             mutableState.update { current ->
                 current.copy(
@@ -262,17 +243,6 @@ internal class SingBoxRuntimeRepository(
                             return@launch
                         }
                         refreshServiceStartedAt(nextGeneration, next)
-                        if (appState.runMode == RunModeVpnService) {
-                            runCatching {
-                                next.setMode(appState.singBoxModeName())
-                            }.onFailure { error ->
-                                AndroidAppLogger.warn(
-                                    LogTag,
-                                    "Failed to restore sing-box Clash mode",
-                                    error,
-                                )
-                            }
-                        }
                         return@launch
                     }
                     lastError = result.exceptionOrNull()
@@ -297,13 +267,15 @@ internal class SingBoxRuntimeRepository(
         listenerGeneration: Long,
         appState: AppState,
         target: SingBoxCommandTarget,
+        client: () -> SingBoxCommandClient,
     ): SingBoxCommandListener =
         object : SingBoxCommandListener {
             override fun onConnected() {
+                val currentClient = runCatching { client() }.getOrNull()
                 updateIfCurrent(listenerGeneration) { current ->
                     current.copy(
                         running = true,
-                        version = SingBoxVersionState(Libbox.version()),
+                        version = SingBoxVersionState(currentClient?.version ?: ProjectInfo.SING_BOX_VERSION),
                         // Keep refreshing until this session supplies its proxy snapshot.
                         lastError = "",
                     )
@@ -342,7 +314,7 @@ internal class SingBoxRuntimeRepository(
                 }
             }
 
-            override fun onStatus(status: StatusMessage) {
+            override fun onStatus(status: SingBoxStatusMessage) {
                 val sample = SingBoxTrafficSample(
                     up = status.uplink,
                     down = status.downlink,
@@ -427,93 +399,94 @@ internal class SingBoxRuntimeRepository(
         appState: AppState,
         target: String,
         buildPlan: (SingBoxProxiesState) -> SingBoxDelayTestPlan,
-    ): Result<SingBoxDelayResult> = runDelayTestCatching {
-        val lease = delayTestRunGate.acquire()
-        try {
-            val active = requireActiveSession(appState)
-            val runGeneration = synchronized(sessionLock) {
-                check(session === active) { "sing-box API session changed during delay test" }
-                generation
-            }
-            val before = state.value
-            val plan = buildPlan(before.proxies)
-            val baselineTimes = plan.freshnessBaselines(
-                failureBaselines = before.delayFailureBaselines,
-            )
-            check(
-                updateDelayTestIfGenerationCurrent(runGeneration) { current ->
-                    current.startingDelayTest(
-                        target = target,
-                        baselines = baselineTimes,
-                        targetNames = plan.targetNames,
-                    )
-                },
-            ) {
-                "sing-box API session changed during delay test"
-            }
+    ): Result<SingBoxDelayResult> = withContext(Dispatchers.IO) {
+        runDelayTestCatching {
+            val lease = delayTestRunGate.acquire()
             try {
-                delay(DelayTestTimestampBoundaryWaitMillis.milliseconds)
-                val submissions = submitSingBoxDelayCommands(
-                    commandGroupNames = plan.commandGroupNames,
-                    submit = { groupName ->
-                        synchronized(sessionLock) {
-                            check(generation == runGeneration && session === active) {
-                                "sing-box API session changed during delay test"
-                            }
-                            active.urlTest(groupName)
-                        }
-                    },
-                )
-                if (submissions.successfulGroupNames.isEmpty()) {
-                    val failure = SingBoxDelayResult(failedTargets = plan.targetNames)
-                    updateDelayTestIfGenerationCurrent(runGeneration) { current ->
-                        current.finishingDelayTest(target, failure)
-                    }
-                    error("Failed to submit sing-box delay test commands")
+                val active = requireActiveSession(appState)
+                val runGeneration = synchronized(sessionLock) {
+                    check(session === active) { "sing-box API session changed during delay test" }
+                    generation
                 }
-                val knownFailures = plan.knownSubmissionFailures(submissions)
-                val completed = awaitSingBoxDelayTestSnapshot(
-                    runtimeStates = runtimeStatesForGeneration(runGeneration),
-                    plan = plan,
-                    baselineTimes = baselineTimes,
-                    knownFailures = knownFailures,
-                    idleTimeoutMillis = DelayTestNoProgressTimeoutMillis,
-                    hardTimeoutMillis = plan.deadlineMillis(),
-                )
-                val result = plan.finish(
-                    delays = completed.freshDelays,
+                val before = state.value
+                val plan = buildPlan(before.proxies)
+                val baselineTimes = plan.freshnessBaselines(
+                    failureBaselines = before.delayFailureBaselines,
                 )
                 check(
                     updateDelayTestIfGenerationCurrent(runGeneration) { current ->
-                        check(current.delayTestingTarget == target) {
-                            "sing-box delay test is no longer active"
-                        }
-                        current.finishingDelayTest(target, result)
+                        current.startingDelayTest(
+                            target = target,
+                            baselines = baselineTimes,
+                            targetNames = plan.targetNames,
+                        )
                     },
                 ) {
                     "sing-box API session changed during delay test"
                 }
-                result
-            } finally {
-                updateDelayTestIfGenerationCurrent(runGeneration) { current ->
-                    if (current.delayTestingTarget == target) {
-                        current.copy(
-                            delayTestingTarget = null,
-                            delayTestingBaselines = emptyMap(),
-                        )
-                    } else {
-                        current
+                try {
+                    delay(DelayTestTimestampBoundaryWaitMillis.milliseconds)
+                    val submissions = submitSingBoxDelayCommands(
+                        commandGroupNames = plan.commandGroupNames,
+                        submit = { groupName ->
+                            synchronized(sessionLock) {
+                                check(generation == runGeneration && session === active) {
+                                    "sing-box API session changed during delay test"
+                                }
+                                active.urlTest(groupName)
+                            }
+                        },
+                    )
+                    if (submissions.successfulGroupNames.isEmpty()) {
+                        val failure = SingBoxDelayResult(failedTargets = plan.targetNames)
+                        updateDelayTestIfGenerationCurrent(runGeneration) { current ->
+                            current.finishingDelayTest(target, failure)
+                        }
+                        error("Failed to submit sing-box delay test commands")
+                    }
+                    val knownFailures = plan.knownSubmissionFailures(submissions)
+                    val completed = awaitSingBoxDelayTestSnapshot(
+                        runtimeStates = runtimeStatesForGeneration(runGeneration),
+                        plan = plan,
+                        baselineTimes = baselineTimes,
+                        knownFailures = knownFailures,
+                        idleTimeoutMillis = DelayTestNoProgressTimeoutMillis,
+                        hardTimeoutMillis = plan.deadlineMillis(),
+                    )
+                    val result = plan.finish(
+                        delays = completed.freshDelays,
+                    )
+                    check(
+                        updateDelayTestIfGenerationCurrent(runGeneration) { current ->
+                            check(current.delayTestingTarget == target) {
+                                "sing-box delay test is no longer active"
+                            }
+                            current.finishingDelayTest(target, result)
+                        },
+                    ) {
+                        "sing-box API session changed during delay test"
+                    }
+                    result
+                } finally {
+                    updateDelayTestIfGenerationCurrent(runGeneration) { current ->
+                        if (current.delayTestingTarget == target) {
+                            current.copy(
+                                delayTestingTarget = null,
+                                delayTestingBaselines = emptyMap(),
+                            )
+                        } else {
+                            current
+                        }
                     }
                 }
+            } finally {
+                lease.release()
             }
-        } finally {
-            lease.release()
         }
     }
 
     private fun AppState.commandTarget(): SingBoxCommandTarget {
-        val local = runMode == RunModeVpnService
-        return SingBoxCommandTarget(local = local, control = singBoxControlConfig())
+        return SingBoxCommandTarget(local = false, control = singBoxControlConfig())
     }
 
     private fun refreshDeviceState() {

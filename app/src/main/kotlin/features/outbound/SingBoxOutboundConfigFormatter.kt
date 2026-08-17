@@ -3,12 +3,13 @@
 
 package features.outbound
 
-import io.nekohasekai.libbox.Libbox
+import engine.singbox.config.encodeSingBoxJson
+import engine.singbox.config.parseSingBoxJson
 
 internal fun interface SingBoxOutboundConfigFormatter {
     fun format(content: String): String
 }
 
 internal object LibboxSingBoxOutboundConfigFormatter : SingBoxOutboundConfigFormatter {
-    override fun format(content: String): String = Libbox.formatConfig(content).value
+    override fun format(content: String): String = encodeSingBoxJson(parseSingBoxJson(content))
 }

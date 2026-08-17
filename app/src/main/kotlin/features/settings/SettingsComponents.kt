@@ -41,9 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import app.modes.RunModeBpf2Socks
 import app.modes.RunModeTproxy
-import app.modes.RunModeTun2Socks
 import org.asterisk.zcc.abox.R
 import ui.components.AsteriskDropdownAnchor
 import ui.components.AsteriskDropdownMenuItem
@@ -336,8 +334,6 @@ internal fun localProxySettingsSummary(
     port: String,
     listenAllInterfaces: Boolean,
     transparentProxyPort: String,
-    bpf2SocksBridgePort: String,
-    socks5ProxyPort: String,
 ): String {
     val summary = if (listenAllInterfaces) {
         stringResource(R.string.settings_local_proxy_summary_all_interfaces)
@@ -348,10 +344,6 @@ internal fun localProxySettingsSummary(
     val inboundProxySummary = when (runMode) {
         RunModeTproxy -> stringResource(R.string.settings_local_proxy_summary_tproxy)
             .formatTemplate("port" to transparentProxyPort)
-        RunModeTun2Socks -> stringResource(R.string.settings_local_proxy_summary_tun2socks)
-            .formatTemplate("port" to socks5ProxyPort)
-        RunModeBpf2Socks -> stringResource(R.string.settings_local_proxy_summary_bpf2socks)
-            .formatTemplate("bridgePort" to bpf2SocksBridgePort, "socksPort" to socks5ProxyPort)
         else -> ""
     }
     return listOf(inboundProxySummary, localProxySummary).filter(String::isNotBlank).joinToString("，")

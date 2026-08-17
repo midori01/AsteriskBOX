@@ -92,7 +92,6 @@ fun ResourceManagementPage(
     val editCustomResourceFileNameState = rememberTextFieldState()
     val editCustomResourceFileUrlState = rememberTextFieldState()
     var showCustomSourceEditor by remember { mutableStateOf(false) }
-    val sourceGeositeCategoryAdsAllUrlState = rememberTextFieldState()
     val sourceGeositeGoogleUrlState = rememberTextFieldState()
     val sourceGeositeCnUrlState = rememberTextFieldState()
     val sourceGeoipCnUrlState = rememberTextFieldState()
@@ -326,11 +325,6 @@ fun ResourceManagementPage(
 
     fun openCustomSourceEditor() {
         val source = appState.resourceFileUpdateSource()
-        sourceGeositeCategoryAdsAllUrlState.setTextAndPlaceCursorAtEnd(
-            appState.customResourceFileGeositeCategoryAdsAllUrl.ifBlank {
-                source.geositeCategoryAdsAllUrl
-            },
-        )
         sourceGeositeGoogleUrlState.setTextAndPlaceCursorAtEnd(
             appState.customResourceFileGeositeGoogleUrl.ifBlank { source.geositeGoogleUrl },
         )
@@ -680,7 +674,6 @@ fun ResourceManagementPage(
         )
         CustomResourceSourceEditorSheet(
             show = showCustomSourceEditor,
-            geositeCategoryAdsAllUrlState = sourceGeositeCategoryAdsAllUrlState,
             geositeGoogleUrlState = sourceGeositeGoogleUrlState,
             geositeCnUrlState = sourceGeositeCnUrlState,
             geoipCnUrlState = sourceGeoipCnUrlState,
@@ -691,8 +684,6 @@ fun ResourceManagementPage(
                 updateAppState { state ->
                     state.copy(
                         resourceFileSource = ResourceFileSourceCustom,
-                        customResourceFileGeositeCategoryAdsAllUrl =
-                            sourceGeositeCategoryAdsAllUrlState.text.toString().trim(),
                         customResourceFileGeositeGoogleUrl = sourceGeositeGoogleUrlState.text.toString().trim(),
                         customResourceFileGeositeCnUrl = sourceGeositeCnUrlState.text.toString().trim(),
                         customResourceFileGeoipCnUrl = sourceGeoipCnUrlState.text.toString().trim(),

@@ -100,16 +100,6 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Displays current upload and download speed and accumulated sing-box proxy traffic in an ongoing notification while the user-enabled proxy is running." />
         </service>
-
-        <service
-            android:name="engine.vpn.AsteriskVpnService"
-            android:exported="false"
-            android:permission="android.permission.BIND_VPN_SERVICE"
-            tools:ignore="VpnServicePolicy">
-            <intent-filter>
-                <action android:name="android.net.VpnService" />
-            </intent-filter>
-        </service>
     </application>
 
 </manifest>

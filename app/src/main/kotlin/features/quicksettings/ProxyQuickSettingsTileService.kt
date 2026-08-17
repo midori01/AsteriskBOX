@@ -8,7 +8,6 @@ import android.app.PendingIntent
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.net.VpnService
 import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
@@ -16,7 +15,6 @@ import android.widget.Toast
 import app.AppState
 import app.MainActivity
 import org.asterisk.zcc.abox.R
-import app.modes.RunModeVpnService
 import data.AndroidAppStateStore
 import data.AppSettingsPreferences
 import engine.proxy.AndroidProxyEngine
@@ -47,10 +45,6 @@ class ProxyQuickSettingsTileService : TileService() {
         AndroidProxyEngine(
             context = applicationContext,
             rootAccess = rootAccess,
-            requestVpnPermission = { intent ->
-                launchActivityAndCollapse(intent)
-                false
-            },
         )
     }
     private val proxyServiceUseCase by lazy { ProxyServiceUseCase(proxyEngine) }
@@ -131,12 +125,6 @@ class ProxyQuickSettingsTileService : TileService() {
     private suspend fun toggleProxy(): Boolean {
         val running = syncProxyRunningState()
         val state = stateStore.state.value.copy(proxyRunning = running)
-        if (!running && state.requiresVpnPermission()) {
-            showToast(getString(R.string.quick_settings_tile_vpn_permission_required))
-            launchActivityAndCollapse(VpnService.prepare(this))
-            stateStore.update { currentState -> currentState.copy(proxyRunning = false) }
-            return false
-        }
 
         when (val result = proxyServiceUseCase.toggle(state)) {
             is ProxyServiceResult.Success -> {
@@ -181,10 +169,6 @@ class ProxyQuickSettingsTileService : TileService() {
             stateStore.update { state -> state.copy(proxyRunning = running) }
         }
         return running
-    }
-
-    private fun AppState.requiresVpnPermission(): Boolean {
-        return runMode == RunModeVpnService && VpnService.prepare(this@ProxyQuickSettingsTileService) != null
     }
 
     private fun updateTile(
