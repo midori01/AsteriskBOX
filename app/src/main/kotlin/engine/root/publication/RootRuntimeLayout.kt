@@ -15,8 +15,6 @@ internal data class RootRuntimeLayout(
     val singBoxCorePath: String,
     val asteriskdPath: String,
     val bpfMatcherPath: String,
-    val bpf2socksPath: String,
-    val hevSocks5TunnelPath: String,
     val dataDir: String,
 ) {
     val startupScriptPath: String
@@ -81,8 +79,6 @@ internal fun SingBoxResourceFilePaths.toRootRuntimeLayout(): RootRuntimeLayout {
         singBoxCorePath = singBoxCorePath,
         asteriskdPath = asteriskdPath,
         bpfMatcherPath = bpfMatcherPath,
-        bpf2socksPath = bpf2socksPath,
-        hevSocks5TunnelPath = hevSocks5TunnelPath,
         dataDir = dataDir,
     )
 }

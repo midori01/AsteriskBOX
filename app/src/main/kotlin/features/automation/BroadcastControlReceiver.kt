@@ -62,10 +62,6 @@ private class BroadcastControlHandler(
         AndroidProxyEngine(
             context = appContext,
             rootAccess = rootAccess,
-            requestVpnPermission = {
-                AndroidAppLogger.warn(LogTag, "Broadcast control cannot request VPN permission in the background")
-                false
-            },
         )
     }
     private val proxyServiceUseCase by lazy { ProxyServiceUseCase(proxyEngine) }

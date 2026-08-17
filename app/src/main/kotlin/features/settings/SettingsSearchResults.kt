@@ -42,7 +42,6 @@ internal fun settingsTopLevelSearchItems(
     selectedRunModeIndex: Int,
     snifferSummary: String,
     localProxySummary: String,
-    tunSummary: String,
     ebpfBypassRuleSetsSummary: String,
     externalInterfacesSummary: String,
     ignoredInterfacesSummary: String,
@@ -134,23 +133,6 @@ internal fun settingsTopLevelSearchItems(
             value = optionValue(runModeOptions, selectedRunModeIndex),
             optionText = runModeOptions,
         ),
-        SettingsSearchItem(SettingsSectionId.Vpn, stringResource(R.string.settings_local_proxy), localProxySummary),
-        SettingsSearchItem(
-            SettingsSectionId.Vpn,
-            stringResource(R.string.settings_traffic_stats_notification),
-            stringResource(R.string.settings_traffic_stats_notification_summary),
-        ),
-        SettingsSearchItem(
-            SettingsSectionId.Vpn,
-            stringResource(R.string.settings_vpn_append_http_proxy),
-            stringResource(R.string.settings_vpn_append_http_proxy_summary),
-        ),
-        SettingsSearchItem(
-            SettingsSectionId.Vpn,
-            stringResource(R.string.settings_vpn_hev_tun),
-            stringResource(R.string.settings_vpn_hev_tun_summary),
-        ),
-        SettingsSearchItem(SettingsSectionId.Vpn, stringResource(R.string.settings_tun), tunSummary),
         SettingsSearchItem(
             SettingsSectionId.Tproxy,
             stringResource(R.string.settings_root_boot_script),
@@ -256,7 +238,6 @@ internal fun settingsNestedSearchEntries(
     onOpenDns: () -> Unit,
     onOpenSniffer: () -> Unit,
     onOpenLocalProxy: () -> Unit,
-    onOpenTun: () -> Unit,
     onOpenExternalInterfaces: () -> Unit,
     onOpenServiceControl: () -> Unit,
     onOpenIgnoredInterfaces: () -> Unit,
@@ -265,7 +246,6 @@ internal fun settingsNestedSearchEntries(
     val dns = stringResource(R.string.settings_dns)
     val sniffer = stringResource(R.string.settings_sniffer)
     val localProxy = stringResource(R.string.settings_local_proxy)
-    val tun = stringResource(R.string.settings_tun)
     val externalInterfaces = stringResource(
         if (useEbpfSharedNetwork) {
             R.string.settings_ebpf_shared_network
@@ -300,13 +280,6 @@ internal fun settingsNestedSearchEntries(
         stringResource(R.string.settings_local_proxy_username),
         stringResource(R.string.settings_local_proxy_password),
     )
-    val tunItems = listOf(
-        stringResource(R.string.settings_tun_stack),
-        stringResource(R.string.settings_tun_mtu),
-        stringResource(R.string.settings_tun_vpn_dns),
-        stringResource(R.string.settings_tun_ipv4_cidr),
-        stringResource(R.string.settings_tun_ipv6_cidr),
-    )
     val externalItems = if (useEbpfSharedNetwork) {
         listOf(
             stringResource(R.string.settings_ebpf_shared_network_input),
@@ -325,7 +298,6 @@ internal fun settingsNestedSearchEntries(
         dnsItems.forEach { add(SettingsSearchEntry(it, dns, Icons.Rounded.Dns, onOpenDns)) }
         snifferItems.forEach { add(SettingsSearchEntry(it, sniffer, Icons.Rounded.TravelExplore, onOpenSniffer)) }
         localProxyItems.forEach { add(SettingsSearchEntry(it, localProxy, Icons.Rounded.Router, onOpenLocalProxy)) }
-        tunItems.forEach { add(SettingsSearchEntry(it, tun, Icons.Rounded.SettingsInputComponent, onOpenTun)) }
         externalItems.forEach { add(SettingsSearchEntry(it, externalInterfaces, Icons.Rounded.Cable, onOpenExternalInterfaces)) }
         add(SettingsSearchEntry(serviceControl, serviceControl, Icons.Rounded.PowerSettingsNew, onOpenServiceControl))
         if (!useEbpfSharedNetwork) {

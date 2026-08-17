@@ -140,37 +140,3 @@ internal data class AsteriskdMatcher(
 )
 
 internal sealed interface AsteriskdHelper
-
-internal data class AsteriskdHevSocks5TunnelHelper(
-    val executablePath: String,
-    val socksHost: String,
-    val socksPort: Int,
-    val tunnelName: String,
-    val mtu: Int,
-    val ipv4Address: String,
-    val ipv6Address: String?,
-    val multiQueue: Boolean,
-    val tcpFastOpen: Boolean,
-    val tcpReadWriteTimeoutMilliseconds: Int = 300000,
-    val udpReadWriteTimeoutMilliseconds: Int = 60000,
-) : AsteriskdHelper
-
-internal data class AsteriskdBpf2SocksHelper(
-    val executablePath: String,
-    val bridgeListenAddress: String,
-    val bridgePort: Int,
-    val socksHost: String,
-    val socksPort: Int,
-    val workerCount: Int = 0,
-    val tcpBufferSize: Int = 65536,
-    val maxTcpSessions: Int = 4096,
-    val tcpConnectTimeoutMilliseconds: Int = 10000,
-    val tcpIdleTimeoutMilliseconds: Int = 300000,
-    val udpSocketBufferSize: Int = 524288,
-    val udpBatchSize: Int = 32,
-    val maxUdpSessions: Int = 4096,
-    val maxUdpBindings: Int = 16384,
-    val udpIdleTimeoutSeconds: Int = 60,
-    val maxUdpPendingBytes: Int = 64 * 1024 * 1024,
-    val dnsTransactionTimeoutMilliseconds: Int = 60000,
-) : AsteriskdHelper

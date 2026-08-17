@@ -39,7 +39,7 @@ internal fun RootStartConfig.buildAsteriskdConfig(
     val useDirectCidrs =
         mode != AsteriskdMode.Ebpf &&
         iptablesConfig.enableEbpfDirectCidrBypass &&
-        (matcher != null || mode == AsteriskdMode.Bpf2Socks)
+        matcher != null
     return AsteriskdConfig(
         owner = AsteriskdOwner.AsteriskBox,
         coreType = AsteriskdCoreType.SingBox,

@@ -39,13 +39,8 @@ internal class AppSettingsPreferences(
     }
 
     fun load(): AppState {
-        val defaults = AppState(singBoxControlSecret = UUID.randomUUID().toString())
-        val singBoxControlSecret = preferences
-            .getString(KeySingBoxControlSecret, null)
-            ?.takeIf(String::isNotBlank)
-            ?: defaults.singBoxControlSecret.also { secret ->
-                preferences.edit { putString(KeySingBoxControlSecret, secret) }
-            }
+        val defaults = AppState()
+        val singBoxControlSecret = ""
         return defaults.copy(
             colorMode = preferences.getInt(KeyColorMode, defaults.colorMode),
             languageMode = preferences.getInt(KeyLanguageMode, defaults.languageMode),
@@ -99,7 +94,6 @@ internal class AppSettingsPreferences(
                 KeySingBoxProxySort,
                 defaults.singBoxProxySort,
             ),
-            singBoxTunStack = preferences.getInt(KeySingBoxTunStack, defaults.singBoxTunStack),
             singBoxControlPort = preferences.getString(
                 KeySingBoxControlPort,
                 defaults.singBoxControlPort,
@@ -124,21 +118,6 @@ internal class AppSettingsPreferences(
                 KeyLocalProxyPassword,
                 defaults.localProxyPassword,
             ) ?: defaults.localProxyPassword,
-            enableVpnAppendHttpProxy = preferences.getBoolean(
-                KeyEnableVpnAppendHttpProxy,
-                defaults.enableVpnAppendHttpProxy,
-            ),
-            enableVpnHevTun = preferences.getBoolean(
-                KeyEnableVpnHevTun,
-                defaults.enableVpnHevTun,
-            ),
-            tunMtu = preferences.getString(KeyTunMtu, defaults.tunMtu) ?: defaults.tunMtu,
-            tunVpnDns = preferences.getString(KeyTunVpnDns, defaults.tunVpnDns)
-                ?: defaults.tunVpnDns,
-            tunIpv4Cidr = preferences.getString(KeyTunIpv4Cidr, defaults.tunIpv4Cidr)
-                ?: defaults.tunIpv4Cidr,
-            tunIpv6Cidr = preferences.getString(KeyTunIpv6Cidr, defaults.tunIpv6Cidr)
-                ?: defaults.tunIpv6Cidr,
             coreLogLevel = preferences.getString(KeyCoreLogLevel, defaults.coreLogLevel)
                 ?: defaults.coreLogLevel,
             enableTrafficStatsNotification = preferences.getBoolean(
@@ -238,12 +217,6 @@ internal class AppSettingsPreferences(
                 KeyEnableRootIpv6Disabler,
                 defaults.enableRootIpv6Disabler,
             ),
-            socks5ProxyPort = preferences.getString(KeySocks5ProxyPort, defaults.socks5ProxyPort)
-                ?: defaults.socks5ProxyPort,
-            bpf2SocksBridgePort = preferences.getString(
-                KeyBpf2SocksBridgePort,
-                defaults.bpf2SocksBridgePort,
-            ) ?: defaults.bpf2SocksBridgePort,
             serviceControl = preferences.getServiceControl(defaults.serviceControl),
             externalInterfaces = preferences.getStringList(
                 KeyExternalInterfaces,
@@ -384,7 +357,6 @@ internal const val KeyRunMode = "run_mode"
 internal const val KeySingBoxMode = "sing_box_mode"
 internal const val KeySingBoxProxyLayout = "sing_box_proxy_layout"
 internal const val KeySingBoxProxySort = "sing_box_proxy_sort"
-internal const val KeySingBoxTunStack = "sing_box_tun_stack"
 internal const val KeySingBoxControlPort = "sing_box_control_port"
 internal const val KeySingBoxControlSecret = "sing_box_control_secret"
 internal const val KeyEnableLocalDns = "enable_local_dns"
@@ -393,12 +365,6 @@ internal const val KeyEnableDynamicLocalProxyPort = "enable_dynamic_local_proxy_
 internal const val KeyLocalProxyListenAllInterfaces = "local_proxy_listen_all_interfaces"
 internal const val KeyLocalProxyUsername = "local_proxy_username"
 internal const val KeyLocalProxyPassword = "local_proxy_password"
-internal const val KeyEnableVpnAppendHttpProxy = "enable_vpn_append_http_proxy"
-internal const val KeyEnableVpnHevTun = "enable_vpn_hev_tun"
-internal const val KeyTunMtu = "tun_mtu"
-internal const val KeyTunVpnDns = "tun_vpn_dns"
-internal const val KeyTunIpv4Cidr = "tun_ipv4_cidr"
-internal const val KeyTunIpv6Cidr = "tun_ipv6_cidr"
 internal const val KeyCoreLogLevel = "core_log_level"
 internal const val KeyEnableTrafficStatsNotification = "enable_traffic_stats_notification"
 internal const val KeyEnableBroadcastControl = "enable_broadcast_control"
@@ -433,8 +399,6 @@ internal const val KeyEnableRootEbpfRules = "enable_root_ebpf_rules"
 internal const val KeyEnableRootEbpfDirectCidrBypass = "enable_root_ebpf_direct_cidr_bypass"
 internal const val KeyEbpfBypassRuleSetTags = "ebpf_bypass_rule_set_tags"
 internal const val KeyEnableRootIpv6Disabler = "enable_root_ipv6_disabler"
-internal const val KeySocks5ProxyPort = "socks5_proxy_port"
-internal const val KeyBpf2SocksBridgePort = "bpf2socks_bridge_port"
 internal const val KeyServiceControlEnabled = "service_control_enabled"
 internal const val KeyServiceControlScheduleEnabled = "service_control_schedule_enabled"
 internal const val KeyServiceControlScheduleStartCron = "service_control_schedule_start_cron"

@@ -3,39 +3,25 @@
 
 package app.modes
 
-const val RunModeVpnService = 0
 const val RunModeTproxy = 1
-const val RunModeTun2Socks = 2
-const val RunModeTun = 3
-const val RunModeBpf2Socks = 4
-const val RunModeEbpf = 5
+const val RunModeEbpf = 2
 
 fun Int.isRootRunMode(): Boolean {
     return this == RunModeTproxy ||
-        this == RunModeTun ||
-        this == RunModeTun2Socks ||
-        this == RunModeBpf2Socks ||
         this == RunModeEbpf
 }
 
 fun normalizeRunMode(value: Int): Int = when (value) {
     RunModeTproxy,
-    RunModeTun,
-    RunModeTun2Socks,
-    RunModeBpf2Socks,
     RunModeEbpf,
     -> value
 
-    else -> RunModeVpnService
+    else -> RunModeEbpf
 }
 
 const val SingBoxModeRule = 0
 const val SingBoxModeGlobal = 1
 const val SingBoxModeDirect = 2
-
-const val SingBoxTunStackSystem = 0
-const val SingBoxTunStackGvisor = 1
-const val SingBoxTunStackMixed = 2
 
 const val ProxyAppListModeBlacklist = 0
 const val ProxyAppListModeWhitelist = 1

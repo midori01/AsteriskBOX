@@ -3,7 +3,7 @@
 
 @file:Suppress("UnstableApiUsage")
 
-rootProject.name = "AsteriskBOX"
+rootProject.name = "MidoriBOX"
 
 pluginManagement {
     repositories {
@@ -57,5 +57,3 @@ dependencyResolutionManagement {
 include(":app")
 include(":asteriskd")
 include(":bpfmatcher")
-include(":bpf2socks")
-include(":hevtun")

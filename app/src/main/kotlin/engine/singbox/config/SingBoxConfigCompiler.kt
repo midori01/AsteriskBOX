@@ -10,7 +10,6 @@ import app.ManagedDirectOutboundTag
 import app.ManagedGlobalSelectorTag
 import app.ManagedLocalInboundTag
 import app.ManagedRootInboundTag
-import app.ManagedTunInboundTag
 import app.OutboundState
 import app.SingBoxRouteNetworkStrategies
 import app.SingBoxRouteNetworkTypes
@@ -24,12 +23,8 @@ import app.expandSelectorMemberReferences
 import app.isManagedSingBoxTag
 import app.managedOutboundGroupSelectorTag
 import app.managedRuleSetChoices
-import app.modes.RunModeBpf2Socks
 import app.modes.RunModeEbpf
 import app.modes.RunModeTproxy
-import app.modes.RunModeTun
-import app.modes.RunModeTun2Socks
-import app.modes.RunModeVpnService
 import app.modes.SingBoxModeDirect
 import app.modes.SingBoxModeGlobal
 import app.modes.isRootRunMode
@@ -43,7 +38,6 @@ import engine.proxy.toLocalProxyOptions
 import engine.root.RootModeEngine
 import engine.singbox.isNonNegativeSingBoxDuration
 import engine.singbox.singBoxControlConfig
-import engine.vpn.toTunOptions
 import features.resources.SingBoxRuleSetFileFormat
 import features.resources.runtime.singBoxRuleSetFiles
 import features.resources.singBoxRuleSetFormatOrNull
@@ -61,7 +55,6 @@ import java.io.File
 
 internal const val APP_GLOBAL_SELECTOR = ManagedGlobalSelectorTag
 internal const val APP_LOCAL_INBOUND = ManagedLocalInboundTag
-internal const val APP_TUN_INBOUND = ManagedTunInboundTag
 internal const val APP_DIRECT_OUTBOUND = ManagedDirectOutboundTag
 internal const val APP_ROOT_INBOUND = ManagedRootInboundTag
 
@@ -268,22 +261,12 @@ private fun compileInbounds(
 
     retained += compileLocalInbound(appState)
     when (runMode) {
-        RunModeVpnService -> if (!appState.enableVpnHevTun) {
-            retained += compileTunInbound(appState, rootMode = false)
-        }
         RunModeTproxy -> retained += buildJsonObject {
             put("type", "tproxy")
             put("tag", APP_ROOT_INBOUND)
             put("listen", if (appState.rootIpv6DataPathEnabled) "::" else "0.0.0.0")
             put("listen_port", appState.transparentProxyPort.toPortOrNull() ?: RootModeEngine.DefaultTproxyPort)
         }
-        RunModeTun2Socks, RunModeBpf2Socks -> retained += buildJsonObject {
-            put("type", "socks")
-            put("tag", APP_ROOT_INBOUND)
-            put("listen", LocalProxyLoopbackAddress)
-            put("listen_port", appState.socks5ProxyPort.toPortOrNull() ?: RootModeEngine.DefaultTun2SocksProxyPort)
-        }
-        RunModeTun -> retained += compileTunInbound(appState, rootMode = true)
         RunModeEbpf -> retained += compileEbpfInbound(
             appState = appState,
             uidPolicy = ebpfUidPolicy,
@@ -363,40 +346,6 @@ private fun compileLocalInbound(appState: AppState): JsonObject {
                 )
             }
         }
-    }
-}
-
-private fun compileTunInbound(appState: AppState, rootMode: Boolean): JsonObject {
-    val options = appState.toTunOptions()
-    return buildJsonObject {
-        put("type", "tun")
-        put("tag", APP_TUN_INBOUND)
-        if (rootMode) {
-            put("interface_name", SingBoxTunDevice)
-        } else {
-            put("auto_route", true)
-        }
-        put("mtu", options.mtu)
-        putJsonArray("address") {
-            add("${options.ipv4Address.address}/${options.ipv4Address.prefixLength}")
-            if (appState.enableIpv6 || (rootMode && appState.rootIpv6DataPathEnabled)) {
-                add("${options.ipv6Address.address}/${options.ipv6Address.prefixLength}")
-            }
-        }
-        put("dns_mode", if (appState.enableLocalDns) "hijack" else "disabled")
-        if (appState.enableLocalDns) {
-            putJsonArray("dns_address") {
-                options.dnsServers.forEach(::add)
-            }
-        }
-        put(
-            "stack",
-            when (appState.singBoxTunStack) {
-                app.modes.SingBoxTunStackGvisor -> "gvisor"
-                app.modes.SingBoxTunStackMixed -> "mixed"
-                else -> "system"
-            },
-        )
     }
 }
 
@@ -532,11 +481,11 @@ internal fun compileOutbounds(root: JsonObject, appState: AppState): JsonArray {
         .filter(emittableManagedSelectorTags::contains)
         .distinct()
     val globalSelectorMembers = (
-        listOf(APP_DIRECT_OUTBOUND) +
-            managedGroupTags +
+        managedGroupTags +
             customSelectorTags +
             customUrlTestTags +
-            endpointCandidateTags
+            endpointCandidateTags +
+            APP_DIRECT_OUTBOUND
         ).distinct()
     val availableCustomMembers = (
         managedGroupTags +
@@ -734,14 +683,10 @@ internal fun compileRoute(
     val managedRules = appState.routeRules
         .filter(SingBoxRouteRuleState::enabled)
         .mapNotNull { rule ->
-            if (appState.runMode == RunModeVpnService) {
-                compileManagedRouteRule(rule)
-            } else {
-                when (val resolved = rule.resolveClashMode(appState.singBoxMode)) {
-                    StaticRouteMatch.Never -> null
-                    StaticRouteMatch.Always -> compileManagedRouteAction(rule)
-                    is StaticRouteMatch.Rule -> compileManagedRouteRule(resolved.state)
-                }
+            when (val resolved = rule.resolveClashMode(appState.singBoxMode)) {
+                StaticRouteMatch.Never -> null
+                StaticRouteMatch.Always -> compileManagedRouteAction(rule)
+                is StaticRouteMatch.Rule -> compileManagedRouteRule(resolved.state)
             }
         }
     val injectedRules = buildList {
@@ -754,49 +699,22 @@ internal fun compileRoute(
                 },
             )
         }
-        if (appState.runMode == RunModeVpnService) {
-            add(
+        when (appState.singBoxMode) {
+            SingBoxModeDirect -> add(
                 buildJsonObject {
-                    put("clash_mode", "Global")
-                    put("action", "route")
-                    put("outbound", APP_GLOBAL_SELECTOR)
-                },
-            )
-            add(
-                buildJsonObject {
-                    put("clash_mode", "Direct")
                     put("action", "route")
                     put("outbound", APP_DIRECT_OUTBOUND)
                 },
             )
-        } else {
-            when (appState.singBoxMode) {
-                SingBoxModeDirect -> add(
-                    buildJsonObject {
-                        put("action", "route")
-                        put("outbound", APP_DIRECT_OUTBOUND)
-                    },
-                )
-                SingBoxModeGlobal -> add(
-                    buildJsonObject {
-                        put("action", "route")
-                        put("outbound", APP_GLOBAL_SELECTOR)
-                    },
-                )
-            }
+            SingBoxModeGlobal -> add(
+                buildJsonObject {
+                    put("action", "route")
+                    put("outbound", APP_GLOBAL_SELECTOR)
+                },
+            )
         }
     }
-    val ruleModeFallback = if (appState.runMode == RunModeVpnService) {
-        listOf(
-            buildJsonObject {
-                put("clash_mode", "Rule")
-                put("action", "route")
-                put("outbound", finalOutbound)
-            },
-        )
-    } else {
-        emptyList()
-    }
+    val ruleModeFallback = emptyList<JsonObject>()
     return JsonObject(
         buildMap {
             sourceRoute

@@ -8,7 +8,6 @@ import engine.network.findAvailableTcpPort
 import engine.network.isTcpPortAvailable
 import engine.network.toPortOrNull
 import engine.root.RootModeEngine
-import engine.vpn.VpnDefaults
 
 internal const val SingBoxControlHost = "127.0.0.1"
 internal const val DefaultSingBoxControlPort = 9090
@@ -55,10 +54,8 @@ internal fun AppState.withResolvedSingBoxControlPort(): AppState {
 
 private fun AppState.singBoxControlExcludedPorts(): Set<Int> {
     return buildSet {
-        add(localProxyPort.toPortOrNull() ?: VpnDefaults.LOCAL_PROXY_PORT)
+        add(localProxyPort.toPortOrNull() ?: 10_810)
         add(transparentProxyPort.toPortOrNull() ?: RootModeEngine.DefaultTproxyPort)
-        add(socks5ProxyPort.toPortOrNull() ?: RootModeEngine.DefaultTun2SocksProxyPort)
-        add(bpf2SocksBridgePort.toPortOrNull() ?: RootModeEngine.DefaultBpf2SocksBridgePort)
     }
 }
 

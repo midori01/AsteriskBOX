@@ -4,8 +4,8 @@
 package engine.proxy
 
 import android.content.Context
-import android.content.Intent
-import app.modes.RunModeVpnService
+import app.modes.RunModeEbpf
+import app.modes.RunModeTproxy
 import engine.proxy.mode.AndroidModeProxyEngine
 import engine.root.RootModeEngine
 import engine.root.runtime.model.RootRuntimeMode
@@ -13,7 +13,7 @@ import engine.root.runtime.model.RootRuntimeOwner
 import engine.stats.SingBoxTrafficStatsNotificationService
 import engine.stats.toSingBoxTrafficStatsRuntime
 import engine.singbox.withResolvedSingBoxControlPort
-import engine.vpn.VpnSingBoxEngine
+import engine.singbox.SingBoxConfigFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,10 +30,8 @@ import system.AndroidRootShellGateway
 internal class AndroidProxyEngine(
     context: Context,
     rootAccess: AndroidRootShellGateway,
-    requestVpnPermission: suspend (Intent) -> Boolean,
 ) {
     private val appContext = context.applicationContext
-    private val vpnSingBoxEngine = VpnSingBoxEngine(appContext, requestVpnPermission)
     private val rootEngines = RootModeEngine.createAll(appContext, rootAccess)
     private val rootEnginesByRunMode = rootEngines.associateBy(RootModeEngine::runMode)
     private val operationMutex = Mutex()
@@ -98,6 +96,7 @@ internal class AndroidProxyEngine(
         request: ProxyEngineStartRequest,
         explicitRestart: Boolean = false,
     ): ProxyEngineStatus = withContext(Dispatchers.Default) {
+        SingBoxConfigFactory.buildConfigBytes(appContext, request.appState)
         SingBoxTrafficStatsNotificationService.reconcile(appContext, null)
         val requestedEngine = request.appState.runMode.engine()
         var rootResumeChecked = false
@@ -129,7 +128,6 @@ internal class AndroidProxyEngine(
         try {
             val status = when {
                 explicitRestart && nextEngine is RootModeEngine -> nextEngine.restart(resolvedRequest)
-                explicitRestart && nextEngine is VpnSingBoxEngine -> nextEngine.restart(resolvedRequest)
                 shouldUsePreResolvedRootStart(
                     explicitRestart = explicitRestart,
                     resumeChecked = rootResumeChecked,
@@ -195,7 +193,6 @@ internal class AndroidProxyEngine(
             ?: withRootRuntimeProbe(preferredRunMode) {
                 rootEngines.firstOrNull { engine -> engine.status().running }
             }
-            ?: vpnSingBoxEngine.takeIf { it.status().running }
             ?: withRootRuntimeProbe(preferredRunMode) {
                 rootEngines.firstOrNull { engine -> engine.ownsRuntime() }
             }
@@ -253,11 +250,6 @@ internal class AndroidProxyEngine(
             }
         }
 
-        if (active !== vpnSingBoxEngine && preferredRunMode != RunModeVpnService) {
-            val status = vpnSingBoxEngine.status()
-            if (status.running) return@withContext accept(status, vpnSingBoxEngine)
-        }
-
         activeEngine = null
         (fallbackStatus ?: ProxyEngineStatus(running = false, runMode = preferredRunMode))
             .withTrafficStatsReconciled(appState)
@@ -268,7 +260,7 @@ internal class AndroidProxyEngine(
         ?.runMode
 
     private fun Int.engine(): AndroidModeProxyEngine {
-        return rootEnginesByRunMode[this] ?: vpnSingBoxEngine
+        return rootEnginesByRunMode[this] ?: error("Unsupported run mode: $this")
     }
 
     private suspend fun AndroidModeProxyEngine.ownsRootRuntime(): Boolean {
@@ -280,12 +272,7 @@ internal class AndroidProxyEngine(
             SingBoxTrafficStatsNotificationService.reconcile(appContext, null)
             return this
         }
-        if (appState == null) {
-            return this
-        }
-        val activeRunMode = runMode ?: appState.runMode
-        val runtime = appState.toSingBoxTrafficStatsRuntime(activeRunMode)
-        SingBoxTrafficStatsNotificationService.reconcile(appContext, runtime)
+        SingBoxTrafficStatsNotificationService.reconcile(appContext, null)
         return this
     }
 }
@@ -306,7 +293,7 @@ internal fun normalizeRootRuntimeStatus(
 internal suspend fun <T> withRootRuntimeProbe(
     preferredRunMode: Int?,
     probe: suspend () -> T,
-): T? = if (preferredRunMode == RunModeVpnService) null else probe()
+): T? = probe()
 
 internal fun shouldResumeRootBeforeResolvingPorts(
     explicitRestart: Boolean,

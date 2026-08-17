@@ -8,6 +8,7 @@ import app.ServiceControlSchedule
 import app.ServiceControlSettings
 import app.ServiceControlWifi
 import app.ServiceControlWifiRule
+import app.modes.RunModeEbpf
 import app.CustomResourceFileState
 import app.OutboundGroupState
 import app.OutboundGroupUpdateStatus
@@ -20,7 +21,6 @@ import app.SingBoxSelectorState
 import app.isManagedSingBoxTag
 import app.selectableManagedOutbounds
 import app.withCanonicalManagedTagReferences
-import app.modes.RunModeVpnService
 
 internal fun AppState.toAppBackupFile(
     createdAtMillis: Long,
@@ -78,7 +78,6 @@ private fun AppState.toBackupSettings(): AppBackupSettings =
         singBoxMode = singBoxMode,
         singBoxProxyLayout = singBoxProxyLayout,
         singBoxProxySort = singBoxProxySort,
-        singBoxTunStack = singBoxTunStack,
         singBoxControlPort = singBoxControlPort,
         singBoxControlSecret = singBoxControlSecret,
         enableLocalDns = enableLocalDns,
@@ -87,12 +86,6 @@ private fun AppState.toBackupSettings(): AppBackupSettings =
         localProxyListenAllInterfaces = localProxyListenAllInterfaces,
         localProxyUsername = localProxyUsername,
         localProxyPassword = localProxyPassword,
-        enableVpnAppendHttpProxy = enableVpnAppendHttpProxy,
-        enableVpnHevTun = enableVpnHevTun,
-        tunMtu = tunMtu,
-        tunVpnDns = tunVpnDns,
-        tunIpv4Cidr = tunIpv4Cidr,
-        tunIpv6Cidr = tunIpv6Cidr,
         coreLogLevel = coreLogLevel,
         enableTrafficStatsNotification = enableTrafficStatsNotification,
         enableBroadcastControl = enableBroadcastControl,
@@ -119,8 +112,6 @@ private fun AppState.toBackupSettings(): AppBackupSettings =
         enableRootEbpfDirectCidrBypass = enableRootEbpfDirectCidrBypass,
         ebpfBypassRuleSetTags = ebpfBypassRuleSetTags,
         enableRootIpv6Disabler = enableRootIpv6Disabler,
-        socks5ProxyPort = socks5ProxyPort,
-        bpf2SocksBridgePort = bpf2SocksBridgePort,
         externalInterfaces = externalInterfaces,
         ebpfSharedNetworkInterfaces = ebpfSharedNetworkInterfaces,
         ignoredInterfaces = ignoredInterfaces,
@@ -267,11 +258,10 @@ private fun AppBackupData.toAppState(): AppState {
         routeFinal = settings.routeFinal,
         routeRules = routeRules,
         nextRouteRuleId = nextId(defaults.nextRouteRuleId, routeRules.map(SingBoxRouteRuleState::id)),
-        runMode = RunModeVpnService,
+        runMode = RunModeEbpf,
         singBoxMode = settings.singBoxMode,
         singBoxProxyLayout = settings.singBoxProxyLayout,
         singBoxProxySort = settings.singBoxProxySort,
-        singBoxTunStack = settings.singBoxTunStack,
         singBoxControlPort = settings.singBoxControlPort,
         singBoxControlSecret = settings.singBoxControlSecret,
         enableLocalDns = settings.enableLocalDns,
@@ -280,12 +270,6 @@ private fun AppBackupData.toAppState(): AppState {
         localProxyListenAllInterfaces = settings.localProxyListenAllInterfaces,
         localProxyUsername = settings.localProxyUsername,
         localProxyPassword = settings.localProxyPassword,
-        enableVpnAppendHttpProxy = settings.enableVpnAppendHttpProxy,
-        enableVpnHevTun = settings.enableVpnHevTun,
-        tunMtu = settings.tunMtu,
-        tunVpnDns = settings.tunVpnDns,
-        tunIpv4Cidr = settings.tunIpv4Cidr,
-        tunIpv6Cidr = settings.tunIpv6Cidr,
         proxyRunning = false,
         coreLogLevel = settings.coreLogLevel,
         enableTrafficStatsNotification = settings.enableTrafficStatsNotification,
@@ -324,8 +308,6 @@ private fun AppBackupData.toAppState(): AppState {
         enableRootEbpfDirectCidrBypass = settings.enableRootEbpfDirectCidrBypass,
         ebpfBypassRuleSetTags = settings.ebpfBypassRuleSetTags,
         enableRootIpv6Disabler = settings.enableRootIpv6Disabler,
-        socks5ProxyPort = settings.socks5ProxyPort,
-        bpf2SocksBridgePort = settings.bpf2SocksBridgePort,
         externalInterfaces = settings.externalInterfaces,
         ebpfSharedNetworkInterfaces = settings.ebpfSharedNetworkInterfaces,
         ignoredInterfaces = settings.ignoredInterfaces,

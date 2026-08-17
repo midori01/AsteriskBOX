@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name">AsteriskBOX</string>
+    <string name="app_name">MidoriBOX</string>
     <string name="error_backup_file_open_failed">Failed to open backup file</string>
     <string name="error_backup_file_too_large">Backup file is too large (maximum 32 MB)</string>
     <string name="error_backup_file_creator_missing">Backup file creator is not registered</string>
@@ -8,16 +8,8 @@
     <string name="error_qr_scan_launcher_missing">QR code scanner launcher is not registered</string>
     <string name="error_qr_image_decode_failed">No QR code was found in this image</string>
     <string name="error_vpn_start_config_missing">VPN Service start configuration is missing</string>
-    <string name="error_vpn_tunnel_establish_failed">Unable to establish VPN tunnel</string>
-    <string name="error_vpn_tun_fd_unavailable">VPN TUN file descriptor is unavailable</string>
     <string name="error_tproxy_root_required">ROOT access is required for TPROXY mode</string>
     <string name="error_tproxy_start_failed">Failed to start TPROXY mode: %1$s</string>
-    <string name="error_tun_root_required">ROOT access is required for TUN mode</string>
-    <string name="error_tun_start_failed">Failed to start TUN mode: %1$s</string>
-    <string name="error_tun2socks_root_required">ROOT access is required for TUN2SOCKS mode</string>
-    <string name="error_tun2socks_start_failed">Failed to start TUN2SOCKS mode: %1$s</string>
-    <string name="error_bpf2socks_root_required">ROOT access is required for BPF2SOCKS mode</string>
-    <string name="error_bpf2socks_start_failed">Failed to start BPF2SOCKS mode: %1$s</string>
     <string name="error_ebpf_root_required">ROOT access is required for eBPF mode</string>
     <string name="error_ebpf_start_failed">Failed to start eBPF mode: %1$s</string>
     <string name="error_vpn_permission_launcher_missing">VPN permission launcher is not registered</string>
@@ -33,7 +25,7 @@
     <string name="proxy_traffic_stats_notification_channel">Proxy statistics</string>
     <string name="proxy_traffic_stats_notification_speed">Speed: ↑ %1$s / ↓ %2$s</string>
     <string name="proxy_traffic_stats_notification_traffic">Traffic: ↑ %1$s / ↓ %2$s</string>
-    <string name="quick_settings_tile_label">AsteriskBOX</string>
+    <string name="quick_settings_tile_label">MidoriBOX</string>
     <string name="quick_settings_tile_running">Proxy running</string>
     <string name="quick_settings_tile_stopped">Proxy stopped</string>
     <string name="quick_settings_tile_processing">Processing…</string>
@@ -232,10 +224,6 @@
     <string name="sing_box_proxies_option_sort_name">Name</string>
     <string name="sing_box_proxies_option_sort_delay">Delay</string>
     <string name="settings_general">General</string>
-    <string name="settings_tun_stack">TUN stack</string>
-    <string name="settings_tun_stack_system">System</string>
-    <string name="settings_tun_stack_gvisor">gVisor</string>
-    <string name="settings_tun_stack_mixed">Mixed</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
@@ -251,19 +239,11 @@
     <string name="settings_theme_color">Accent color</string>
     <string name="settings_advanced">Advanced settings</string>
     <string name="settings_run_mode">Run mode</string>
-    <string name="settings_run_mode_vpn_service">VPN Service</string>
-    <string name="settings_run_mode_tproxy">TPROXY (ROOT)</string>
-    <string name="settings_run_mode_tun">TUN (ROOT)</string>
-    <string name="settings_run_mode_tun2socks">TUN2SOCKS (ROOT)</string>
-    <string name="settings_run_mode_bpf2socks">BPF2SOCKS (ROOT)</string>
-    <string name="settings_run_mode_ebpf">eBPF (ROOT)</string>
+    <string name="settings_run_mode_tproxy">TPROXY</string>
+    <string name="settings_run_mode_ebpf">eBPF</string>
     <string name="settings_root_required">No ROOT access detected!</string>
     <string name="settings_proxy_tproxy">Proxy settings (TPROXY)</string>
-    <string name="settings_proxy_tun">Proxy settings (TUN)</string>
-    <string name="settings_proxy_tun2socks">Proxy settings (TUN2SOCKS)</string>
-    <string name="settings_proxy_bpf2socks">Proxy settings (BPF2SOCKS)</string>
     <string name="settings_proxy_ebpf">Proxy settings (eBPF)</string>
-    <string name="settings_proxy_vpn_service">Proxy settings (VPN Service)</string>
     <string name="settings_root_boot_script">Start on boot</string>
     <string name="settings_root_boot_script_summary">Generate service.d startup script</string>
     <string name="settings_root_boot_script_failed">Failed to update start on boot</string>
@@ -295,24 +275,6 @@
     <string name="settings_local_proxy_summary_fixed">127.0.0.1:{port}</string>
     <string name="settings_local_proxy_summary_all_interfaces">0.0.0.0:{port}</string>
     <string name="settings_local_proxy_summary_tproxy">Transparent proxy port {port}</string>
-    <string name="settings_local_proxy_summary_tun2socks">TUN2SOCKS SOCKS5 port {port}</string>
-    <string name="settings_local_proxy_summary_bpf2socks">Bridge port {bridgePort}, SOCKS5 port {socksPort}</string>
-    <string name="settings_vpn_append_http_proxy">Append HTTP proxy</string>
-    <string name="settings_vpn_append_http_proxy_summary">Supported apps use HTTP proxy directly</string>
-    <string name="settings_vpn_hev_tun">Use Hev TUN</string>
-    <string name="settings_vpn_hev_tun_summary">Use hev-socks5-tunnel to create the TUN device</string>
-    <string name="settings_tun">TUN settings</string>
-    <string name="settings_tun_summary">TUN stack {stack}, MTU {mtu}, VPN DNS {vpnDns}, IPv4 {ipv4}, IPv6 {ipv6}</string>
-    <string name="settings_tun_summary_without_dns">TUN stack {stack}, MTU {mtu}, IPv4 {ipv4}, IPv6 {ipv6}</string>
-    <string name="settings_tun_summary_without_stack">MTU {mtu}, IPv4 {ipv4}, IPv6 {ipv6}</string>
-    <string name="settings_tun_mtu">MTU</string>
-    <string name="settings_tun_vpn_dns">VPN DNS</string>
-    <string name="settings_tun_ipv4_cidr">IPv4 CIDR</string>
-    <string name="settings_tun_ipv6_cidr">IPv6 CIDR</string>
-    <string name="settings_tun_mtu_invalid">MTU must be 1280–65535</string>
-    <string name="settings_tun_dns_invalid">VPN DNS must be a numeric IPv4 or IPv6 address</string>
-    <string name="settings_tun_ipv4_cidr_invalid">Invalid IPv4 CIDR</string>
-    <string name="settings_tun_ipv6_cidr_invalid">Invalid IPv6 CIDR</string>
     <string name="settings_external_interfaces">Tethering sharing</string>
     <string name="settings_external_interfaces_summary">Select which tethering types accept external inbound traffic</string>
     <string name="settings_external_interfaces_none">Not enabled</string>
@@ -334,6 +296,10 @@
     <string name="settings_ignored_interfaces_selected">Selected: {interfaces}</string>
     <string name="settings_ignored_interfaces_empty">No ignored interfaces configured</string>
     <string name="settings_ignored_interfaces_invalid">Use 1–15 letters, digits, _, . or -. A single + is allowed only at the end.</string>
+    <string name="settings_ignored_interfaces_loading">Loading network interfaces…</string>
+    <string name="settings_ignored_interfaces_error">Failed to load interfaces: {message}</string>
+    <string name="settings_ignored_interfaces_error_detail">Unable to read network interfaces</string>
+    <string name="settings_ignored_interfaces_custom_input">Custom interfaces</string>
     <string name="settings_private_addresses">Private addresses</string>
     <string name="settings_private_addresses_summary">Private addresses do not enter the proxy core. Add them below if needed</string>
     <string name="settings_private_addresses_none">Not configured</string>
@@ -573,9 +539,6 @@
     <string name="settings_about_project">About project</string>
     <string name="settings_open_source_licenses">Open source licenses</string>
     <string name="settings_transparent_proxy_port">Transparent proxy port</string>
-    <string name="settings_tun2socks_socks5_port">TUN2SOCKS SOCKS5 port</string>
-    <string name="settings_bpf2socks_bridge_port">BPF2SOCKS bridge port</string>
-    <string name="settings_bpf2socks_socks5_port">SOCKS5 port</string>
     <string name="settings_dns_hosts_invalid">Invalid DNS hosts entry</string>
 
     <!-- Options -->
@@ -891,7 +854,7 @@
     <string name="outbound_editor_section_protocol">Protocol</string>
     <string name="outbound_editor_section_protocol_summary">Options specific to the selected proxy protocol</string>
     <string name="outbound_editor_section_tls">TLS</string>
-    <string name="outbound_editor_section_tls_summary">sing-box TLS, uTLS, and Reality client options</string>
+    <string name="outbound_editor_section_tls_summary">sing-box TLS and Reality client options</string>
     <string name="outbound_editor_section_transport">V2Ray transport</string>
     <string name="outbound_editor_section_transport_summary">Optional HTTP, WebSocket, QUIC, gRPC, or HTTPUpgrade transport</string>
     <string name="outbound_editor_section_multiplex">Multiplex</string>
@@ -1041,8 +1004,6 @@
     <string name="outbound_field_user">User</string>
     <string name="outbound_field_user_key">User key</string>
     <string name="outbound_field_username">Username</string>
-    <string name="outbound_field_utls">uTLS</string>
-    <string name="outbound_field_utls_fingerprint">uTLS fingerprint</string>
     <string name="outbound_field_uuid">UUID</string>
 
     <!-- DNS and routing management -->
@@ -1167,7 +1128,6 @@
     <string name="routing_network_icmp">ICMP</string>
     <string name="routing_inbound">Inbounds</string>
     <string name="managed_inbound_local">Local proxy</string>
-    <string name="managed_inbound_tun">TUN</string>
     <string name="managed_inbound_root">ROOT forwarding</string>
     <string name="managed_inbound_empty">No managed inbounds are available in the current run mode</string>
     <string name="managed_preferred_by_empty">No DNS servers provide preferred domains</string>
@@ -1201,7 +1161,7 @@
     <string name="common_unknown">Unknown</string>
     <string name="common_error_details">%1$s: %2$s</string>
     <string name="home_network_speed_summary">↑ %1$s   ↓ %2$s</string>
-    <string name="home_network_summary">IPv4 · %1$s\nIPv6 · %2$s</string>
+    <string name="home_network_summary">Local · %1$s\nPublic · %2$s</string>
     <string name="monitor_speed_per_second">%1$s/s</string>
     <string name="monitor_rate_pair">↓ %1$s/s · ↑ %2$s/s</string>
     <string name="monitor_network_public_ipv4">Public IPv4</string>

@@ -8,28 +8,8 @@ import app.SingBoxDnsServerState
 import engine.singbox.DefaultSingBoxSnifferProtocols
 import engine.singbox.DefaultSingBoxSnifferTimeout
 
-internal data class TunSettingsDraft(
-    val tunStack: Int = 0,
-    val mtu: String = "",
-    val vpnDns: String = "",
-    val ipv4Cidr: String = "",
-    val ipv6Cidr: String = "",
-)
-
-internal fun AppState.toTunSettingsDraft(): TunSettingsDraft {
-    return TunSettingsDraft(
-        tunStack = singBoxTunStack,
-        mtu = tunMtu,
-        vpnDns = tunVpnDns,
-        ipv4Cidr = tunIpv4Cidr,
-        ipv6Cidr = tunIpv6Cidr,
-    )
-}
-
 internal data class LocalProxySettingsDraft(
     val transparentProxyPort: String = "",
-    val bpf2SocksBridgePort: String = "",
-    val socks5ProxyPort: String = "",
     val port: String = "",
     val enableDynamicPort: Boolean = false,
     val listenAllInterfaces: Boolean = false,
@@ -40,8 +20,6 @@ internal data class LocalProxySettingsDraft(
 internal fun AppState.toLocalProxySettingsDraft(): LocalProxySettingsDraft {
     return LocalProxySettingsDraft(
         transparentProxyPort = transparentProxyPort,
-        bpf2SocksBridgePort = bpf2SocksBridgePort,
-        socks5ProxyPort = socks5ProxyPort,
         port = localProxyPort,
         enableDynamicPort = enableDynamicLocalProxyPort,
         listenAllInterfaces = localProxyListenAllInterfaces,

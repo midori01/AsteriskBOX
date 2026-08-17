@@ -8,6 +8,7 @@ plugins {
 
 tasks.register<UpdateResourceFileAssetsTask>("updateResourceFileAssets") {
     singBoxVersion.set(ProjectConfig.SING_BOX_VERSION)
+    singBoxLocalPath.set(project.findProperty("singbox.local") as? String ?: "")
     singBoxCoreJniLibsDir.set(layout.projectDirectory.dir("app/build/generated/singBoxCoreJniLibs"))
     resourceFileAssetsDir.set(layout.projectDirectory.dir("app/build/generated/resourceFileAssets"))
 }

@@ -5,18 +5,12 @@ package engine.root.config
 
 import app.ServiceControlSettings
 import engine.proxy.LocalProxyOptions
-import engine.network.NetworkLimits
 import engine.root.daemon.config.AsteriskdConfig
-
-const val RootBpf2SocksDefaultBridgePort = NetworkLimits.PORT_MAX - 3
-internal const val DefaultRootTun2SocksProxyPort = NetworkLimits.PORT_MAX - 1
 
 internal data class RootConfigRuntimePaths(
     val coreExecutablePath: String,
     val coreConfigPath: String,
     val matcherExecutablePath: String,
-    val bpf2SocksExecutablePath: String,
-    val hevSocks5TunnelExecutablePath: String,
     val workingDirectory: String,
     val statePath: String,
     val logPath: String,

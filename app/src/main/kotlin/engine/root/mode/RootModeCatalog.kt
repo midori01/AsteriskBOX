@@ -3,11 +3,8 @@
 
 package engine.root.mode
 
-import app.modes.RunModeBpf2Socks
 import app.modes.RunModeEbpf
 import app.modes.RunModeTproxy
-import app.modes.RunModeTun
-import app.modes.RunModeTun2Socks
 import engine.root.daemon.config.AsteriskdMode
 import engine.root.config.RootConfigBuildContext
 import org.asterisk.zcc.abox.R
@@ -20,27 +17,6 @@ internal object RootModeCatalog {
             rootRequiredErrorResId = R.string.error_tproxy_root_required,
             startFailedErrorResId = R.string.error_tproxy_start_failed,
             buildConfig = RootConfigBuildContext::buildTproxyStartConfig,
-        ),
-        RootModeDefinition(
-            runMode = RunModeTun,
-            daemonMode = AsteriskdMode.Tun,
-            rootRequiredErrorResId = R.string.error_tun_root_required,
-            startFailedErrorResId = R.string.error_tun_start_failed,
-            buildConfig = RootConfigBuildContext::buildTunStartConfig,
-        ),
-        RootModeDefinition(
-            runMode = RunModeTun2Socks,
-            daemonMode = AsteriskdMode.Tun2Socks,
-            rootRequiredErrorResId = R.string.error_tun2socks_root_required,
-            startFailedErrorResId = R.string.error_tun2socks_start_failed,
-            buildConfig = RootConfigBuildContext::buildTun2SocksStartConfig,
-        ),
-        RootModeDefinition(
-            runMode = RunModeBpf2Socks,
-            daemonMode = AsteriskdMode.Bpf2Socks,
-            rootRequiredErrorResId = R.string.error_bpf2socks_root_required,
-            startFailedErrorResId = R.string.error_bpf2socks_start_failed,
-            buildConfig = RootConfigBuildContext::buildBpf2SocksStartConfig,
         ),
         RootModeDefinition(
             runMode = RunModeEbpf,
