@@ -107,17 +107,20 @@ func (i *Inbound) startInbound() error {
 		}
 	}
 	backendConfig := commonEBPF.TCConfig{
-		ListenerPort:     i.listeners.selectedPort(),
-		EnableLocal:      localTCEnabled,
-		EnableShared:     sharedSocketAssignEnabled,
-		EnableIPv4:       true,
-		EnableLocalIPv6:  i.localIPv6,
-		EnableSharedIPv6: i.sharedIPv6,
-		EnableTCP:        i.enableTCP,
-		EnableUDP:        i.enableUDP,
-		Policy:           i.compiledPolicy,
-		SelfBypassMap:    i.selfBypass.Map(),
-		TrackProcess:     i.processTracker != nil,
+		ListenerPort:        i.listeners.selectedPort(),
+		EnableLocal:         localTCEnabled,
+		EnableShared:        sharedSocketAssignEnabled,
+		EnableIPv4:          true,
+		EnableLocalIPv6:     i.localIPv6,
+		EnableSharedIPv6:    i.sharedIPv6,
+		EnableTCP:           i.enableTCP,
+		EnableUDP:           i.enableUDP,
+		Policy:              i.compiledPolicy,
+		SelfBypassMap:       i.selfBypass.Map(),
+		TrackProcess:        i.processTracker != nil,
+		EndpointEnabled:     i.endpointConnectedBypass.Enabled,
+		EndpointCIDR:        i.endpointConnectedBypass.IPCIDR,
+		EndpointPort:        i.endpointConnectedPorts,
 	}
 	var backend *commonEBPF.TCBackend
 	if localTCEnabled || sharedSocketAssignEnabled {
@@ -418,9 +421,10 @@ func combineStartError(startErr error, cleanupErr error) error {
 }
 
 func (i *Inbound) Close() error {
+	monitorErr := i.stopTCInterfaceMonitor()
 	i.lifecycleAccess.Lock()
 	defer i.lifecycleAccess.Unlock()
-	return i.closeResources()
+	return E.Errors(monitorErr, i.closeResources())
 }
 
 func (i *Inbound) cleanupStartFailure() error {
