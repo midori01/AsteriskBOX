@@ -300,6 +300,21 @@ internal fun compileEbpfInbound(
                     uidPolicy.excludeUids.distinct().sorted().forEach(::add)
                 }
             }
+            if (appState.ebpfEndpointConnectedBypassEnabled) {
+                putJsonObject("endpoint_connected_bypass") {
+                    put("enabled", true)
+                    if (appState.ebpfEndpointConnectedBypassIpCidr.isNotEmpty()) {
+                        putJsonArray("ip_cidr") {
+                            appState.ebpfEndpointConnectedBypassIpCidr.forEach { add(it.trim()) }
+                        }
+                    }
+                    if (appState.ebpfEndpointConnectedBypassPort.isNotEmpty()) {
+                        putJsonArray("port") {
+                            appState.ebpfEndpointConnectedBypassPort.mapNotNull { it.trim().toIntOrNull() }.forEach { add(it) }
+                        }
+                    }
+                }
+            }
         }
         val bypassRuleSets = appState.availableEbpfBypassRuleSetTags(availableRuleSetTags)
         if (bypassRuleSets.isNotEmpty()) {

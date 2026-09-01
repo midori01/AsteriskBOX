@@ -286,6 +286,12 @@
     <string name="settings_ebpf_shared_network_empty">尚未配置下游接口</string>
     <string name="settings_ebpf_shared_network_none">未启用</string>
     <string name="settings_ebpf_shared_network_selected">已配置 {count} 个接口</string>
+    <string name="settings_ebpf_endpoint_connected_bypass">连接端点绕过</string>
+    <string name="settings_ebpf_endpoint_connected_bypass_enable">启用端点绕过</string>
+    <string name="settings_ebpf_endpoint_connected_bypass_ip_cidr">IP/CIDR</string>
+    <string name="settings_ebpf_endpoint_connected_bypass_ip_cidr_empty">未配置 IP/CIDR</string>
+    <string name="settings_ebpf_endpoint_connected_bypass_port">端口</string>
+    <string name="settings_ebpf_endpoint_connected_bypass_port_empty">未配置端口</string>
     <string name="settings_ignored_interfaces">忽略接口设置</string>
     <string name="settings_ignored_interfaces_input">接口选择器</string>
     <string name="settings_ignored_interfaces_summary">每项输入一个接口名称。在末尾添加 + 可匹配前缀，例如 wlan+。</string>
@@ -1140,6 +1146,8 @@
     <string name="routing_save_failed">sing-box 拒绝了这条路由规则，请检查匹配字段后重试</string>
     <string name="routing_rule_enable_failed">无法启用路由规则，请查看错误日志了解详情。</string>
     <string name="common_unknown">未知</string>
+    <string name="common_enabled">已启用</string>
+    <string name="common_disabled">已禁用</string>
     <string name="common_error_details">%1$s：%2$s</string>
     <string name="home_network_speed_summary">↑ %1$s   ↓ %2$s</string>
     <string name="home_network_summary">本地 · %1$s\n公网 · %2$s</string>

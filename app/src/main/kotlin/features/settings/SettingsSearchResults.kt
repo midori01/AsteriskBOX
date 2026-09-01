@@ -43,6 +43,7 @@ internal fun settingsTopLevelSearchItems(
     snifferSummary: String,
     localProxySummary: String,
     ebpfBypassRuleSetsSummary: String,
+    ebpfEndpointConnectedBypassSummary: String,
     externalInterfacesSummary: String,
     ignoredInterfacesSummary: String,
     privateAddressesSummary: String,
@@ -161,6 +162,15 @@ internal fun settingsTopLevelSearchItems(
             stringResource(R.string.settings_root_ipv6_disabler),
             stringResource(R.string.settings_root_ipv6_disabler_summary),
         ),
+        if (useEbpfSharedNetwork) {
+            SettingsSearchItem(
+                SettingsSectionId.Tproxy,
+                stringResource(R.string.settings_ebpf_endpoint_connected_bypass),
+                ebpfEndpointConnectedBypassSummary,
+            )
+        } else {
+            null
+        },
         SettingsSearchItem(
             SettingsSectionId.Tproxy,
             stringResource(

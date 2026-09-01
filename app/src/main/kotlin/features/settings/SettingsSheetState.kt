@@ -42,6 +42,11 @@ internal class SettingsSheetState(
     var showEbpfBypassRuleSets by mutableStateOf(false)
     var ebpfBypassRuleSetTagsDraft by mutableStateOf(emptyList<String>())
 
+    var showEbpfEndpointConnectedBypass by mutableStateOf(false)
+    var ebpfEndpointConnectedBypassEnabledDraft by mutableStateOf(false)
+    var ebpfEndpointConnectedBypassIpCidrDraft by mutableStateOf(emptyList<String>())
+    var ebpfEndpointConnectedBypassPortDraft by mutableStateOf(emptyList<String>())
+
     fun openLocalProxySettings(appState: AppState) {
         localProxySettingsDraft = appState.toLocalProxySettingsDraft()
         showLocalProxySettings = true
@@ -94,6 +99,13 @@ internal class SettingsSheetState(
         ebpfBypassRuleSetTagsDraft =
             sanitizeEbpfBypassRuleSetTags(appState.ebpfBypassRuleSetTags)
         showEbpfBypassRuleSets = true
+    }
+
+    fun openEbpfEndpointConnectedBypass(appState: AppState) {
+        ebpfEndpointConnectedBypassEnabledDraft = appState.ebpfEndpointConnectedBypassEnabled
+        ebpfEndpointConnectedBypassIpCidrDraft = appState.ebpfEndpointConnectedBypassIpCidr
+        ebpfEndpointConnectedBypassPortDraft = appState.ebpfEndpointConnectedBypassPort
+        showEbpfEndpointConnectedBypass = true
     }
 }
 

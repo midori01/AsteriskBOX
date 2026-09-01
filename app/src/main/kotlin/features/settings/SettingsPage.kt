@@ -48,6 +48,7 @@ import engine.proxy.ProxyServiceResult
 import engine.proxy.withResolvedDynamicLocalProxyPort
 import features.settings.sheets.externalInterfacesSummary
 import features.settings.sheets.ebpfBypassRuleSetSummary
+import features.settings.sheets.ebpfEndpointConnectedBypassSummary
 import features.settings.sheets.ebpfSharedNetworkInterfacesSummary
 import features.settings.sheets.ignoredInterfacesSummary
 import features.settings.sheets.privateAddressCidrsSummary
@@ -259,6 +260,7 @@ private fun SettingsContent(
         selectedTags = appState.ebpfBypassRuleSetTags,
         choices = ebpfBypassRuleSetChoices,
     )
+    val ebpfEndpointConnectedBypassSummary = ebpfEndpointConnectedBypassSummary(appState.ebpfEndpointConnectedBypassEnabled)
     val externalInterfacesSummary = if (appState.runMode == RunModeEbpf) {
         ebpfSharedNetworkInterfacesSummary(appState.ebpfSharedNetworkInterfaces)
     } else {
@@ -304,6 +306,7 @@ private fun SettingsContent(
         snifferSummary = snifferSummary,
         localProxySummary = localProxySettingsSummary,
         ebpfBypassRuleSetsSummary = ebpfBypassRuleSetsSummary,
+        ebpfEndpointConnectedBypassSummary = ebpfEndpointConnectedBypassSummary,
         externalInterfacesSummary = externalInterfacesSummary,
         ignoredInterfacesSummary = ignoredInterfacesSummary,
         privateAddressesSummary = privateAddressCidrsSummary,
@@ -473,6 +476,7 @@ private fun SettingsContent(
                     enableRootEbpfRules = appState.enableRootEbpfRules,
                     enableRootEbpfDirectCidrBypass = appState.enableRootEbpfDirectCidrBypass,
                     ebpfBypassRuleSetsSummary = ebpfBypassRuleSetsSummary,
+                    ebpfEndpointConnectedBypassSummary = ebpfEndpointConnectedBypassSummary,
                     enableIpv6 = appState.enableIpv6,
                     enableRootIpv6Disabler = appState.enableRootIpv6Disabler,
                     enableTrafficStatsNotification = appState.enableTrafficStatsNotification,
@@ -565,6 +569,9 @@ private fun SettingsContent(
                     },
                     onOpenEbpfBypassRuleSets = {
                         sheetState.openEbpfBypassRuleSets(appState)
+                    },
+                    onOpenEbpfEndpointConnectedBypass = {
+                        sheetState.openEbpfEndpointConnectedBypass(appState)
                     },
                     onEnableRootIpv6DisablerChange = { enabled ->
                         updateAppState { state -> state.copy(enableRootIpv6Disabler = enabled) }

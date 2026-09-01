@@ -289,6 +289,12 @@
     <string name="settings_ebpf_shared_network_empty">No downstream interfaces configured</string>
     <string name="settings_ebpf_shared_network_none">Not enabled</string>
     <string name="settings_ebpf_shared_network_selected">Configured interfaces: {count}</string>
+    <string name="settings_ebpf_endpoint_connected_bypass">Endpoint connected bypass</string>
+    <string name="settings_ebpf_endpoint_connected_bypass_enable">Enable endpoint connected bypass</string>
+    <string name="settings_ebpf_endpoint_connected_bypass_ip_cidr">IP/CIDR</string>
+    <string name="settings_ebpf_endpoint_connected_bypass_ip_cidr_empty">No IP/CIDR</string>
+    <string name="settings_ebpf_endpoint_connected_bypass_port">Port</string>
+    <string name="settings_ebpf_endpoint_connected_bypass_port_empty">No port</string>
     <string name="settings_ignored_interfaces">Ignored interfaces</string>
     <string name="settings_ignored_interfaces_input">Interface selectors</string>
     <string name="settings_ignored_interfaces_summary">Enter one interface name per item. Add + at the end to match a prefix, for example wlan+.</string>
@@ -1159,6 +1165,8 @@
     <string name="routing_save_failed">sing-box rejected this routing rule. Check its match fields and try again.</string>
     <string name="routing_rule_enable_failed">Unable to enable the route rule. Check the error log for details.</string>
     <string name="common_unknown">Unknown</string>
+    <string name="common_enabled">Enabled</string>
+    <string name="common_disabled">Disabled</string>
     <string name="common_error_details">%1$s: %2$s</string>
     <string name="home_network_speed_summary">↑ %1$s   ↓ %2$s</string>
     <string name="home_network_summary">Local · %1$s\nPublic · %2$s</string>

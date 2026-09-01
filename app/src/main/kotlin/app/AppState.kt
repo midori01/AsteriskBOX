@@ -109,6 +109,9 @@ data class AppState(
     val enableRootEbpfRules: Boolean = false,
     val enableRootEbpfDirectCidrBypass: Boolean = true,
     val ebpfBypassRuleSetTags: List<String> = emptyList(),
+    val ebpfEndpointConnectedBypassEnabled: Boolean = false,
+    val ebpfEndpointConnectedBypassIpCidr: List<String> = emptyList(),
+    val ebpfEndpointConnectedBypassPort: List<String> = emptyList(),
     val enableRootIpv6Disabler: Boolean = false,
 
     val serviceControl: ServiceControlSettings = ServiceControlSettings(),

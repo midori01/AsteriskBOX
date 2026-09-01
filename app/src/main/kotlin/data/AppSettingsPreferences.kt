@@ -213,6 +213,18 @@ internal class AppSettingsPreferences(
                 KeyEbpfBypassRuleSetTags,
                 defaults.ebpfBypassRuleSetTags,
             ),
+            ebpfEndpointConnectedBypassEnabled = preferences.getBoolean(
+                KeyEbpfEndpointConnectedBypassEnabled,
+                defaults.ebpfEndpointConnectedBypassEnabled,
+            ),
+            ebpfEndpointConnectedBypassIpCidr = preferences.getStringList(
+                KeyEbpfEndpointConnectedBypassIpCidr,
+                defaults.ebpfEndpointConnectedBypassIpCidr,
+            ),
+            ebpfEndpointConnectedBypassPort = preferences.getStringList(
+                KeyEbpfEndpointConnectedBypassPort,
+                defaults.ebpfEndpointConnectedBypassPort,
+            ),
             enableRootIpv6Disabler = preferences.getBoolean(
                 KeyEnableRootIpv6Disabler,
                 defaults.enableRootIpv6Disabler,
@@ -398,6 +410,9 @@ internal const val KeyEnableRootBootScript = "enable_root_boot_script"
 internal const val KeyEnableRootEbpfRules = "enable_root_ebpf_rules"
 internal const val KeyEnableRootEbpfDirectCidrBypass = "enable_root_ebpf_direct_cidr_bypass"
 internal const val KeyEbpfBypassRuleSetTags = "ebpf_bypass_rule_set_tags"
+internal const val KeyEbpfEndpointConnectedBypassEnabled = "ebpf_endpoint_connected_bypass_enabled"
+internal const val KeyEbpfEndpointConnectedBypassIpCidr = "ebpf_endpoint_connected_bypass_ip_cidr"
+internal const val KeyEbpfEndpointConnectedBypassPort = "ebpf_endpoint_connected_bypass_port"
 internal const val KeyEnableRootIpv6Disabler = "enable_root_ipv6_disabler"
 internal const val KeyServiceControlEnabled = "service_control_enabled"
 internal const val KeyServiceControlScheduleEnabled = "service_control_schedule_enabled"
