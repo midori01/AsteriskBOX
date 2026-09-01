@@ -111,6 +111,9 @@ internal data class AppBackupSettings(
     @SerialName("ebpfBypassRuleSetTags")
     val legacyEbpfBypassRuleSetTags: List<String> = emptyList(),
     val tunBypassRuleSetTags: List<String>? = null,
+    val ebpfEndpointConnectedBypassEnabled: Boolean = BackupDefaults.ebpfEndpointConnectedBypassEnabled,
+    val ebpfEndpointConnectedBypassIpCidr: List<String> = BackupDefaults.ebpfEndpointConnectedBypassIpCidr,
+    val ebpfEndpointConnectedBypassPort: List<String> = BackupDefaults.ebpfEndpointConnectedBypassPort,
     val enableRootIpv6Disabler: Boolean = BackupDefaults.enableRootIpv6Disabler,
     val socks5ProxyPort: String = BackupDefaults.socks5ProxyPort,
     val bpf2SocksBridgePort: String = BackupDefaults.bpf2SocksBridgePort,

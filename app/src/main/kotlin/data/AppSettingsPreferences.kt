@@ -238,6 +238,18 @@ internal class AppSettingsPreferences(
                 },
                 defaults.tunBypassRuleSetTags,
             ),
+            ebpfEndpointConnectedBypassEnabled = preferences.getBoolean(
+                KeyEbpfEndpointConnectedBypassEnabled,
+                defaults.ebpfEndpointConnectedBypassEnabled,
+            ),
+            ebpfEndpointConnectedBypassIpCidr = preferences.getStringList(
+                KeyEbpfEndpointConnectedBypassIpCidr,
+                defaults.ebpfEndpointConnectedBypassIpCidr,
+            ),
+            ebpfEndpointConnectedBypassPort = preferences.getStringList(
+                KeyEbpfEndpointConnectedBypassPort,
+                defaults.ebpfEndpointConnectedBypassPort,
+            ),
             enableRootIpv6Disabler = preferences.getBoolean(
                 KeyEnableRootIpv6Disabler,
                 defaults.enableRootIpv6Disabler,
@@ -441,6 +453,9 @@ internal const val KeyEnableRootEbpfRules = "enable_root_ebpf_rules"
 internal const val KeyEnableRootEbpfDirectCidrBypass = "enable_root_ebpf_direct_cidr_bypass"
 internal const val KeyTunBypassRuleSetTags = "tun_bypass_rule_set_tags"
 private const val LegacyKeyEbpfBypassRuleSetTags = "ebpf_bypass_rule_set_tags"
+internal const val KeyEbpfEndpointConnectedBypassEnabled = "ebpf_endpoint_connected_bypass_enabled"
+internal const val KeyEbpfEndpointConnectedBypassIpCidr = "ebpf_endpoint_connected_bypass_ip_cidr"
+internal const val KeyEbpfEndpointConnectedBypassPort = "ebpf_endpoint_connected_bypass_port"
 internal const val KeyEnableRootIpv6Disabler = "enable_root_ipv6_disabler"
 internal const val KeySocks5ProxyPort = "socks5_proxy_port"
 internal const val KeyBpf2SocksBridgePort = "bpf2socks_bridge_port"

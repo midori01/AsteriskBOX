@@ -22,6 +22,7 @@ import features.logs.FailureLogContext
 import features.logs.reportFailure
 import features.settings.sheets.TunBypassRuleSetBottomSheet
 import features.settings.sheets.TunSharedNetworkBottomSheet
+import features.settings.sheets.EbpfEndpointConnectedBypassBottomSheet
 import features.settings.sheets.ExternalInterfacesBottomSheet
 import features.settings.sheets.IgnoredInterfacesBottomSheet
 import features.settings.sheets.LocalProxySettingsBottomSheet
@@ -365,6 +366,26 @@ internal fun SettingsBottomSheetsHost(
                 state.copy(tunSharedNetworkInterfaces = interfaces.sanitizeTunSharedNetworkInterfaces())
             }
             sheetState.showTunSharedNetwork = false
+        },
+    )
+    EbpfEndpointConnectedBypassBottomSheet(
+        show = sheetState.showEbpfEndpointConnectedBypass,
+        enabled = sheetState.ebpfEndpointConnectedBypassEnabledDraft,
+        ipCidr = sheetState.ebpfEndpointConnectedBypassIpCidrDraft,
+        port = sheetState.ebpfEndpointConnectedBypassPortDraft,
+        onEnabledChange = { sheetState.ebpfEndpointConnectedBypassEnabledDraft = it },
+        onIpCidrChange = { sheetState.ebpfEndpointConnectedBypassIpCidrDraft = it },
+        onPortChange = { sheetState.ebpfEndpointConnectedBypassPortDraft = it },
+        onDismissRequest = { sheetState.showEbpfEndpointConnectedBypass = false },
+        onSave = {
+            updateAppState { state ->
+                state.copy(
+                    ebpfEndpointConnectedBypassEnabled = sheetState.ebpfEndpointConnectedBypassEnabledDraft,
+                    ebpfEndpointConnectedBypassIpCidr = sheetState.ebpfEndpointConnectedBypassIpCidrDraft,
+                    ebpfEndpointConnectedBypassPort = sheetState.ebpfEndpointConnectedBypassPortDraft,
+                )
+            }
+            sheetState.showEbpfEndpointConnectedBypass = false
         },
     )
 }
