@@ -85,6 +85,9 @@ func normalizeLocalDataPlane(options option.EBPFLocalOptions) (string, string, e
 	if dataPlane != localDataPlaneCgroup && options.CgroupPath != "" {
 		return "", "", E.New("local.cgroup_path requires local.data_plane=cgroup")
 	}
+	if dataPlane != localDataPlaneTC && options.EndpointConnectedBypass.Enabled {
+		return "", "", E.New("local.endpoint_connected_bypass requires local.data_plane=tc")
+	}
 	if options.CgroupPath == "" {
 		return dataPlane, "", nil
 	}
@@ -116,10 +119,46 @@ func validateLocalOptions(enabled bool, options option.EBPFLocalOptions) error {
 	if len(options.IncludeUID) > 0 || len(options.IncludeUIDRange) > 0 ||
 		len(options.ExcludeUID) > 0 || len(options.ExcludeUIDRange) > 0 ||
 		len(options.IncludeAndroidUser) > 0 || len(options.IncludePackage) > 0 ||
-		len(options.ExcludePackage) > 0 || len(options.BypassPort) > 0 || len(options.BypassPortRange) > 0 {
+		len(options.ExcludePackage) > 0 || len(options.BypassPort) > 0 || len(options.BypassPortRange) > 0 ||
+		options.EndpointConnectedBypass.Enabled || len(options.EndpointConnectedBypass.IPCIDR) > 0 ||
+		len(options.EndpointConnectedBypass.Port) > 0 {
 		return E.New("local options require local interception")
 	}
 	return nil
+}
+
+func normalizeEndpointConnectedBypass(options option.EBPFEndpointConnectedBypassOptions) (option.EBPFEndpointConnectedBypassOptions, []commonEBPF.PortRange, error) {
+	if !options.Enabled {
+		return option.EBPFEndpointConnectedBypassOptions{}, nil, nil
+	}
+	if len(options.IPCIDR) == 0 {
+		return options, nil, E.New("local.endpoint_connected_bypass.ip_cidr must not be empty")
+	}
+	if len(options.Port) == 0 {
+		return options, nil, E.New("local.endpoint_connected_bypass.port must not be empty")
+	}
+	prefixes := make(badoption.Listable[netip.Prefix], 0, len(options.IPCIDR))
+	seen := make(map[netip.Prefix]struct{}, len(options.IPCIDR))
+	for _, prefix := range options.IPCIDR {
+		if !prefix.IsValid() {
+			return options, nil, E.New("invalid local.endpoint_connected_bypass.ip_cidr")
+		}
+		prefix = prefix.Masked()
+		if prefix.Addr().Is4In6() && prefix.Bits() >= 96 {
+			prefix = netip.PrefixFrom(prefix.Addr().Unmap(), prefix.Bits()-96).Masked()
+		}
+		if _, loaded := seen[prefix]; loaded {
+			continue
+		}
+		seen[prefix] = struct{}{}
+		prefixes = append(prefixes, prefix)
+	}
+	ports, err := parsePortRanges("local.endpoint_connected_bypass.port", options.Port, nil)
+	if err != nil {
+		return options, nil, err
+	}
+	options.IPCIDR = prefixes
+	return options, ports, nil
 }
 
 func validateAndroidUIDOptions(goos string, options option.EBPFLocalOptions) error {

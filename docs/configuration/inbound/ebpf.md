@@ -39,7 +39,12 @@ The eBPF inbound does not use [Listen Fields](/configuration/shared/listen/).
     "include_package": [],
     "exclude_package": [],
     "bypass_port": [],
-    "bypass_port_range": []
+    "bypass_port_range": [],
+    "endpoint_connected_bypass": {
+      "enabled": false,
+      "ip_cidr": [],
+      "port": []
+    }
   },
   "shared": {
     "enabled": true,
@@ -172,6 +177,33 @@ warning when port 53 is listed.
 
 Destination port ranges to bypass, in `start:end` format. The range is
 inclusive.
+
+#### local.endpoint_connected_bypass
+
+The first version supports one local VPN endpoint policy configuration group.
+This option requires `local.data_plane: tc` (which is the default).
+
+When enabled, `ip_cidr` and `port` are required. A local flow must match both a
+destination CIDR and destination port. While no matching VPN interface is ready,
+matching traffic is forced through this inbound, even if ordinary UID/package,
+bypass-port, host, private, or destination-CIDR policy would bypass it. Routing
+then follows the normal sing-box Router and `route.rules`/default outbound.
+
+An ordinary `tun*` interface becomes ready after it is up and has a
+global-unicast address. Its first packet-counter sample only establishes the
+RX/TX baseline; a later one-second sample must observe RX or TX growth. An
+active `ipsec*` interface becomes ready when it has a non-local-table unicast
+default route. While ready, matching endpoint traffic native-bypasses TC.
+
+READY remains active while at least one matching interface is active, even if a
+sample shows no new packets or counters reset. It is revoked immediately when a
+sample observes zero active matching interfaces. There is no grace or debounce
+period. The endpoint decision is tri-state: an unmatched flow keeps the
+original local policy; a matched flow while NOT READY is forced through the
+inbound; and a matched flow while READY native-bypasses TC. FakeIP and DNS
+mandatory interception precedence is unchanged. If this object is absent or
+`enabled` is `false`, the original local policy applies. This option affects
+only local traffic; shared traffic is completely unchanged.
 
 ### shared
 
