@@ -53,6 +53,21 @@ func TestTCIPv6PathFlags(t *testing.T) {
 	}
 }
 
+func TestTCEndpointFlags(t *testing.T) {
+	flags := tcFlags(TCConfig{EndpointEnabled: true}, CompiledPolicy{})
+	if flags&tcFlagEndpointEnabled == 0 || flags&tcFlagEndpointReady != 0 {
+		t.Fatalf("unexpected endpoint flags: %#x", flags)
+	}
+	ready := endpointReadyFlags(flags, true)
+	if ready&tcFlagEndpointReady == 0 || ready&tcFlagEndpointEnabled == 0 {
+		t.Fatalf("endpoint READY flag was not applied: %#x", ready)
+	}
+	notReady := endpointReadyFlags(ready, false)
+	if notReady != flags {
+		t.Fatalf("endpoint READY flag was not cleared: %#x != %#x", notReady, flags)
+	}
+}
+
 func TestMakeTCAssignKey(t *testing.T) {
 	for _, test := range []struct {
 		source      string

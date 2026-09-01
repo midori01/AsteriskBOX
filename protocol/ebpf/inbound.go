@@ -7,6 +7,7 @@ import (
 	"net/netip"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/sagernet/sing-box/adapter"
@@ -87,6 +88,8 @@ type Inbound struct {
 	sharedIPv6               bool
 	sharedBypassPrivate      bool
 	localBypassPort          []commonEBPF.PortRange
+	endpointConnectedBypass  option.EBPFEndpointConnectedBypassOptions
+	endpointConnectedPorts   []commonEBPF.PortRange
 	sharedBypassPort         []commonEBPF.PortRange
 	tcPriority               uint16
 	fakeIPIPv4Prefix         netip.Prefix
@@ -97,6 +100,8 @@ type Inbound struct {
 	cgroupBackendAccess      sync.RWMutex
 	lifecycleAccess          sync.Mutex
 	interfaceMonitor         tcInterfaceMonitor
+	vpnReady                 atomic.Bool
+	vpnInterfacePackets      map[string]interfacePacketCount
 
 	bypassRuleSetAccess    sync.Mutex
 	bypassRuleSet          []adapter.RuleSet
@@ -174,6 +179,10 @@ func NewInbound(ctx context.Context, router adapter.Router, logger log.ContextLo
 	if err != nil {
 		return nil, err
 	}
+	endpointConnectedBypass, endpointConnectedPorts, err := normalizeEndpointConnectedBypass(options.Local.EndpointConnectedBypass)
+	if err != nil {
+		return nil, err
+	}
 	sharedIncludeMAC, err := parseSharedMACAddresses(
 		"include_mac_address",
 		sharedOptions.IncludeMACAddress,
@@ -231,8 +240,10 @@ func NewInbound(ctx context.Context, router adapter.Router, logger log.ContextLo
 		sharedDataPlane:     sharedDataPlane,
 		sharedIPv6:          sharedEnabled && enabledByDefault(options.Shared.IPv6),
 		sharedBypassPrivate: options.Shared.BypassPrivateAddress == nil || *options.Shared.BypassPrivateAddress,
-		localBypassPort:     localBypassPort,
-		sharedBypassPort:    sharedBypassPort,
+		localBypassPort:         localBypassPort,
+		endpointConnectedBypass: endpointConnectedBypass,
+		endpointConnectedPorts:  endpointConnectedPorts,
+		sharedBypassPort:        sharedBypassPort,
 		tcPriority:          uint16(options.TCPriority),
 		sharedIncludeMAC:    sharedIncludeMAC,
 		sharedExcludeMAC:    sharedExcludeMAC,
