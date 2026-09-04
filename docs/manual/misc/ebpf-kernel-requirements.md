@@ -4,9 +4,9 @@ icon: material/linux
 
 # eBPF kernel requirements
 
-The eBPF inbound defaults to the cgroup v2 socket-address backend for local
-interception and TC `packet_rewrite` for shared interception. Local interception
-may explicitly select TC, while shared interception may explicitly select the
+The eBPF inbound defaults to TC for local interception and TC `packet_rewrite`
+for shared interception. Local interception may explicitly select a cgroup v2
+socket-address backend, while shared interception may explicitly select the
 tuple-preserving `socket_assign` data plane instead.
 Support is determined by runtime map, program-load, helper, and attachment results
 rather than a minimum Linux version. Vendor kernels may backport, disable, or
@@ -32,8 +32,8 @@ The following options, or their vendor equivalents, are required:
 
 `CONFIG_BPF_JIT` is strongly recommended for packet-path performance.
 
-`CONFIG_CGROUP_BPF` and a cgroup v2 mount are required by the default local
-`cgroup` data plane. By default, sing-box attaches to the visible cgroup
+`CONFIG_CGROUP_BPF` and a cgroup v2 mount are required when local
+`data_plane` is `cgroup`. By default, sing-box attaches to the visible cgroup
 v2 root; `cgroup_path` may restrict interception to a specific subtree.
 `CONFIG_VETH`, TC qdiscs, TC socket lookup, and `bpf_sk_assign` are not required
 by a cgroup-only local inbound. They are also not required by shared
@@ -179,9 +179,9 @@ sing-box tools ebpf status --shared-data-plane packet_rewrite --interface br-lan
 sing-box tools ebpf status --local-data-plane tc --shared-data-plane socket_assign --interface wlan1 --json
 ```
 
-The `--mode local|shared|all` form selects the default local `cgroup`, shared
+The `--mode local|shared|all` form selects the default local `tc`, shared
 `packet_rewrite`, or both. Use the explicit data-plane flags for the optional
-TC or `socket_assign` paths.
+`cgroup` or `socket_assign` paths.
 
 The probe uses the selected protocols, address families, data planes, and shared interface.
 For local TC mode it reports the required TC socket-cookie helper and the optional

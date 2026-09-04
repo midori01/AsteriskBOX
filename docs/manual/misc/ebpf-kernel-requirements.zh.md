@@ -4,8 +4,8 @@ icon: material/linux
 
 # eBPF 内核要求
 
-eBPF 入站的 local 接管默认使用 cgroup v2 socket-address 数据面，shared 接管默认
-使用 TC `packet_rewrite`。local 可显式选择 TC，shared 也可显式选择保留 tuple 的
+eBPF 入站的 local 接管默认使用 TC，shared 接管默认使用 TC `packet_rewrite`。local
+可显式选择 cgroup v2 socket-address 数据面，shared 也可显式选择保留 tuple 的
 `socket_assign`。是否支持由实际 map、程序加载、helper 与挂载结果决定，
 不使用最低 Linux 版本号判断。供应商内核可能回移、禁用或限制单项能力。下述 LPM
 trie 安全检查是例外：受影响内核可能在探测动作本身执行时出错，因此需要保守地检查
@@ -28,8 +28,8 @@ trie 安全检查是例外：受影响内核可能在探测动作本身执行时
 
 强烈建议启用 `CONFIG_BPF_JIT`，否则报文路径性能可能明显下降。
 
-默认的 local `cgroup` 数据面需要 `CONFIG_CGROUP_BPF` 和 cgroup v2 挂载。sing-box
-默认挂载到当前可见的 cgroup v2 根层级；可使用 `cgroup_path` 将
+local 的 `data_plane` 设为 `cgroup` 时，需要 `CONFIG_CGROUP_BPF` 和 cgroup v2
+挂载。sing-box 默认挂载到当前可见的 cgroup v2 根层级；可使用 `cgroup_path` 将
 接管范围限制到指定子树。仅使用 cgroup local 的入站不要求 `CONFIG_VETH`、TC
 qdisc、TC socket lookup 或 `bpf_sk_assign`；shared `packet_rewrite` 也不要求这些
 delivery 能力，只使用配置接口和 token local route。
@@ -148,9 +148,8 @@ sing-box tools ebpf status --shared-data-plane packet_rewrite --interface br-lan
 sing-box tools ebpf status --local-data-plane tc --shared-data-plane socket_assign --interface wlan1 --json
 ```
 
-`--mode local|shared|all` 分别选择默认的 local `cgroup`、shared
-`packet_rewrite` 以及两者同时启用；可使用显式 data-plane 参数探测可选的 TC 或
-`socket_assign` 路径。
+`--mode local|shared|all` 分别选择默认的 local TC、shared `packet_rewrite` 以及
+两者同时启用；可使用显式 data-plane 参数探测可选的 `cgroup` 或 `socket_assign` 路径。
 
 探测会针对所选协议、地址族、数据面和 shared 接口。local TC 模式会报告必需的 TC socket-cookie
 helper 以及可选的 cgroup socket-cookie hook，同时报告可选的 socket-address 进程

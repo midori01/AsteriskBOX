@@ -71,7 +71,13 @@ const (
 func normalizeLocalDataPlane(options option.EBPFLocalOptions) (string, string, error) {
 	dataPlane := options.DataPlane
 	if dataPlane == "" {
-		dataPlane = localDataPlaneCgroup
+		// cgroup_path was accepted by the earlier cgroup backend. Preserve that
+		// configuration while keeping all existing TC configurations unchanged.
+		if options.CgroupPath != "" {
+			dataPlane = localDataPlaneCgroup
+		} else {
+			dataPlane = localDataPlaneTC
+		}
 	}
 	if dataPlane != localDataPlaneTC && dataPlane != localDataPlaneCgroup {
 		return "", "", E.New("unknown local.data_plane: ", dataPlane)

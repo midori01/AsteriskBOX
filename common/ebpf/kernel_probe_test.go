@@ -187,8 +187,8 @@ func TestNormalizeProbeDataPlanes(t *testing.T) {
 		local   KernelProbeDataPlane
 		shared  KernelProbeDataPlane
 	}{
-		{name: "default all", options: KernelProbeOptions{Mode: KernelProbeModeAll}, local: KernelProbeDataPlaneCgroup, shared: KernelProbeDataPlanePacketRewrite},
-		{name: "default local", options: KernelProbeOptions{Mode: KernelProbeModeLocal}, local: KernelProbeDataPlaneCgroup},
+		{name: "default all", options: KernelProbeOptions{Mode: KernelProbeModeAll}, local: KernelProbeDataPlaneTC, shared: KernelProbeDataPlanePacketRewrite},
+		{name: "default local", options: KernelProbeOptions{Mode: KernelProbeModeLocal}, local: KernelProbeDataPlaneTC},
 		{name: "default shared", options: KernelProbeOptions{Mode: KernelProbeModeShared}, shared: KernelProbeDataPlanePacketRewrite},
 		{name: "explicit cgroup and rewrite", options: KernelProbeOptions{LocalDataPlane: KernelProbeDataPlaneCgroup, SharedDataPlane: KernelProbeDataPlanePacketRewrite}, local: KernelProbeDataPlaneCgroup, shared: KernelProbeDataPlanePacketRewrite},
 		{name: "local only", options: KernelProbeOptions{LocalDataPlane: KernelProbeDataPlaneTC}, local: KernelProbeDataPlaneTC},

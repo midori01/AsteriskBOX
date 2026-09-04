@@ -20,7 +20,7 @@ Include:
 6. A capability report matching the intended path:
 
 ```sh
-sing-box tools ebpf status --local-data-plane cgroup --network tcp,udp --json
+sing-box tools ebpf status --local-data-plane tc --network tcp,udp --json
 sing-box tools ebpf status --shared-data-plane packet_rewrite --interface br-lan --json
 ```
 
