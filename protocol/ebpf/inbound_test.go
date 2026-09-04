@@ -221,6 +221,7 @@ func TestParsePortRanges(t *testing.T) {
 func TestNormalizeEnablement(t *testing.T) {
 	tests := []struct {
 		name         string
+		mode         string
 		localOption  *bool
 		sharedOption *bool
 		local        bool
@@ -228,15 +229,20 @@ func TestNormalizeEnablement(t *testing.T) {
 		wantErr      bool
 	}{
 		{name: "default", local: true},
+		{name: "legacy local", mode: "local", local: true},
+		{name: "legacy shared", mode: "shared", shared: true},
+		{name: "legacy hybrid", mode: "hybrid", local: true, shared: true},
 		{name: "local", localOption: common.Ptr(true), local: true},
 		{name: "shared", sharedOption: common.Ptr(true), shared: true},
 		{name: "hybrid", localOption: common.Ptr(true), sharedOption: common.Ptr(true), local: true, shared: true},
 		{name: "disabled local", localOption: common.Ptr(false), wantErr: true},
 		{name: "disabled shared", sharedOption: common.Ptr(false), wantErr: true},
+		{name: "mode with local", mode: "local", localOption: common.Ptr(true), wantErr: true},
+		{name: "invalid mode", mode: "invalid", wantErr: true},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			local, shared, err := normalizeEnablement(test.localOption, test.sharedOption)
+			local, shared, err := normalizeEnablement(test.mode, test.localOption, test.sharedOption)
 			if test.wantErr {
 				if err == nil {
 					t.Fatal("expected invalid enablement to be rejected")

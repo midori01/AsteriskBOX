@@ -16,8 +16,11 @@ import (
 	"github.com/sagernet/sing/common/json/badoption"
 )
 
-func normalizeEnablement(localOption, sharedOption *bool) (bool, bool, error) {
+func normalizeEnablement(mode string, localOption, sharedOption *bool) (bool, bool, error) {
 	if localOption != nil || sharedOption != nil {
+		if mode != "" {
+			return false, false, E.New("mode cannot be combined with local.enabled or shared.enabled")
+		}
 		localEnabled := localOption != nil && *localOption
 		sharedEnabled := sharedOption != nil && *sharedOption
 		if !localEnabled && !sharedEnabled {
@@ -25,7 +28,16 @@ func normalizeEnablement(localOption, sharedOption *bool) (bool, bool, error) {
 		}
 		return localEnabled, sharedEnabled, nil
 	}
-	return true, false, nil
+	switch mode {
+	case "", "local":
+		return true, false, nil
+	case "shared":
+		return false, true, nil
+	case "hybrid":
+		return true, true, nil
+	default:
+		return false, false, E.New("unknown eBPF mode: ", mode)
+	}
 }
 
 type normalizedDataPlanes struct {
@@ -37,7 +49,7 @@ type normalizedDataPlanes struct {
 }
 
 func normalizeDataPlanes(options option.EBPFInboundOptions) (normalizedDataPlanes, error) {
-	localEnabled, sharedEnabled, err := normalizeEnablement(options.Local.Enabled, options.Shared.Enabled)
+	localEnabled, sharedEnabled, err := normalizeEnablement(options.Mode, options.Local.Enabled, options.Shared.Enabled)
 	if err != nil {
 		return normalizedDataPlanes{}, err
 	}
