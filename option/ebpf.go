@@ -8,6 +8,7 @@ import (
 )
 
 type EBPFInboundOptions struct {
+	Mode          string                     `json:"mode,omitempty" enum:"local,shared,hybrid"`
 	Network       NetworkList                `json:"network,omitempty"`
 	UDPTimeout    UDPTimeoutCompat           `json:"udp_timeout,omitempty"`
 	TCPriority    EBPFTCPriority             `json:"tc_priority,omitempty"`
@@ -56,7 +57,16 @@ func (o EBPFInboundOptions) EffectiveEnablement() (local, shared bool) {
 	if o.Local.Enabled != nil || o.Shared.Enabled != nil {
 		return o.Local.Enabled != nil && *o.Local.Enabled, o.Shared.Enabled != nil && *o.Shared.Enabled
 	}
-	return true, false
+	switch o.Mode {
+	case "shared":
+		return false, true
+	case "hybrid":
+		return true, true
+	case "", "local":
+		return true, false
+	default:
+		return false, false
+	}
 }
 
 type EBPFTCPriority uint16
