@@ -26,7 +26,7 @@ eBPF 入站不使用[监听字段](/zh/configuration/shared/listen/)。
   "bypass_rule_set": [],
   "local": {
     "enabled": true,
-    "data_plane": "cgroup",
+    "data_plane": "tc",
     "dns_mode": "respect_policy",
     "ipv6": true,
     "bypass_private_address": true,
@@ -85,14 +85,15 @@ filter 协调顺序时修改。
 启用本机产生流量的接管。只要任一路径使用了新的 `enabled` 字段，另一路径省略
 `enabled` 时即视为 `false`。至少需要启用一条路径。
 
-默认的 cgroup 数据面接管当前可见 cgroup v2 层级中的 socket，不依赖网络接口。
-可选的 TC 数据面跟随系统当前默认网络接口；默认网络变化时会自动切换，没有可用默认
-接口时会保留旧 attachment，待新接口准备好后切换。
+默认 TC 数据面的 local 接管跟随系统当前默认网络接口。默认网络变化时会自动切换；
+没有可用默认接口时会保留旧 attachment，待新接口准备好后切换。cgroup 数据面跟随
+当前可见的 cgroup v2 层级，不依赖网络接口。
 
 #### local.data_plane
 
-选择本机接管的数据面。默认值 `cgroup` 接管当前可见 cgroup v2 层级中的 socket；
-如需在当前默认接口接管流量，应显式配置 `tc`。
+选择本机接管的数据面。默认值 `tc` 保持现有行为；`cgroup` 接管当前可见的 cgroup
+v2 层级中的 socket。为兼容旧配置，未设置 `data_plane` 时，填写 `cgroup_path` 会
+自动选择 `cgroup`。
 
 #### local.cgroup_path
 
