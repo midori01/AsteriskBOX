@@ -304,12 +304,13 @@ internal fun compileEbpfInbound(
     availableRuleSetTags: Set<String>,
 ): JsonObject {
     val sharedInterfaces = normalizeTunSharedNetworkInterfaces(appState.tunSharedNetworkInterfaces)
+    val dataPlane = if (appState.ebpfDataPlane == "cgroup") "cgroup" else "tc"
     return buildJsonObject {
         put("type", "ebpf")
         put("tag", APP_ROOT_INBOUND)
         putJsonObject("local") {
             put("enabled", true)
-            put("data_plane", "tc")
+            put("data_plane", dataPlane)
             put("dns_mode", if (appState.enableLocalDns) "hijack" else "off")
             put("ipv6", appState.enableIpv6)
             put("bypass_private_address", false)
@@ -323,7 +324,7 @@ internal fun compileEbpfInbound(
                     uidPolicy.excludeUids.distinct().sorted().forEach(::add)
                 }
             }
-            if (appState.ebpfEndpointConnectedBypassEnabled) {
+            if (dataPlane == "tc" && appState.ebpfEndpointConnectedBypassEnabled) {
                 putJsonObject("endpoint_connected_bypass") {
                     put("enabled", true)
                     if (appState.ebpfEndpointConnectedBypassIpCidr.isNotEmpty()) {
@@ -348,7 +349,7 @@ internal fun compileEbpfInbound(
         if (sharedInterfaces.isNotEmpty()) {
             putJsonObject("shared") {
                 put("enabled", true)
-                put("data_plane", "socket_assign")
+                put("data_plane", if (dataPlane == "cgroup") "packet_rewrite" else "socket_assign")
                 put("dns_mode", if (appState.enableLocalDns) "hijack" else "off")
                 putJsonArray("interface") {
                     sharedInterfaces.forEach(::add)

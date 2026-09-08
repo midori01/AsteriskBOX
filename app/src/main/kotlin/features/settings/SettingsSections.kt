@@ -39,6 +39,8 @@ internal fun settingsTunStackOptions() = listOf(
 internal fun settingsCoreLogLevelLabels(): List<String> =
     SettingsCoreLogLevelOptions
 
+private val ebpfDataPlaneOptions = listOf("TC", "cgroup")
+
 @Composable
 internal fun SettingsThemeSection(
     colorModeOptions: List<String>,
@@ -237,6 +239,7 @@ internal fun SettingsProxyModeSections(
     enableRootEbpfRules: Boolean,
     enableRootEbpfDirectCidrBypass: Boolean,
     tunBypassRuleSetsSummary: String,
+    ebpfDataPlane: String,
     ebpfEndpointConnectedBypassSummary: String,
     enableIpv6: Boolean,
     enableRootIpv6Disabler: Boolean,
@@ -252,6 +255,7 @@ internal fun SettingsProxyModeSections(
     onEnableRootEbpfRulesChange: (Boolean) -> Unit,
     onEnableRootEbpfDirectCidrBypassChange: (Boolean) -> Unit,
     onOpenTunBypassRuleSets: () -> Unit,
+    onEbpfDataPlaneChange: (String) -> Unit,
     onOpenEbpfEndpointConnectedBypass: () -> Unit,
     onEnableRootIpv6DisablerChange: (Boolean) -> Unit,
     onOpenExternalInterfaces: () -> Unit,
@@ -400,11 +404,31 @@ internal fun SettingsProxyModeSections(
                     enter = AsteriskMotion.contentEnter(),
                     exit = AsteriskMotion.contentExit(),
                 ) {
+                    OverlayDropdownPreference(
+                        title = stringResource(R.string.settings_ebpf_data_plane),
+                        icon = Icons.AutoMirrored.Rounded.AltRoute,
+                        items = ebpfDataPlaneOptions,
+                        selectedIndex = if (ebpfDataPlane == "cgroup") 1 else 0,
+                        onSelectedIndexChange = { index ->
+                            onEbpfDataPlaneChange(if (index == 1) "cgroup" else "tc")
+                        },
+                    )
+                }
+                AnimatedVisibility(
+                    visible = runMode == RunModeEbpf,
+                    enter = AsteriskMotion.contentEnter(),
+                    exit = AsteriskMotion.contentExit(),
+                ) {
                     ArrowPreference(
                         title = stringResource(R.string.settings_ebpf_endpoint_connected_bypass),
                         icon = Icons.Rounded.Route,
-                        summary = ebpfEndpointConnectedBypassSummary,
+                        summary = if (ebpfDataPlane == "cgroup") {
+                            stringResource(R.string.settings_ebpf_endpoint_connected_bypass_requires_tc)
+                        } else {
+                            ebpfEndpointConnectedBypassSummary
+                        },
                         onClick = onOpenEbpfEndpointConnectedBypass,
+                        enabled = ebpfDataPlane != "cgroup",
                     )
                 }
                 AnimatedVisibility(

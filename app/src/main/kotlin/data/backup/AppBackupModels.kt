@@ -111,6 +111,7 @@ internal data class AppBackupSettings(
     @SerialName("ebpfBypassRuleSetTags")
     val legacyEbpfBypassRuleSetTags: List<String> = emptyList(),
     val tunBypassRuleSetTags: List<String>? = null,
+    val ebpfDataPlane: String = BackupDefaults.ebpfDataPlane,
     val ebpfEndpointConnectedBypassEnabled: Boolean = BackupDefaults.ebpfEndpointConnectedBypassEnabled,
     val ebpfEndpointConnectedBypassIpCidr: List<String> = BackupDefaults.ebpfEndpointConnectedBypassIpCidr,
     val ebpfEndpointConnectedBypassPort: List<String> = BackupDefaults.ebpfEndpointConnectedBypassPort,

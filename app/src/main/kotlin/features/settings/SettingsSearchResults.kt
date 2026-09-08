@@ -44,6 +44,7 @@ internal fun settingsTopLevelSearchItems(
     localProxySummary: String,
     tunSummary: String,
     tunBypassRuleSetsSummary: String,
+    ebpfDataPlane: String,
     ebpfEndpointConnectedBypassSummary: String,
     externalInterfacesSummary: String,
     ignoredInterfacesSummary: String,
@@ -180,6 +181,15 @@ internal fun settingsTopLevelSearchItems(
             stringResource(R.string.settings_root_ipv6_disabler),
             stringResource(R.string.settings_root_ipv6_disabler_summary),
         ),
+        if (useTunSharedNetwork) {
+            SettingsSearchItem(
+                SettingsSectionId.Tproxy,
+                stringResource(R.string.settings_ebpf_data_plane),
+                ebpfDataPlane,
+            )
+        } else {
+            null
+        },
         if (useTunSharedNetwork) {
             SettingsSearchItem(
                 SettingsSectionId.Tproxy,

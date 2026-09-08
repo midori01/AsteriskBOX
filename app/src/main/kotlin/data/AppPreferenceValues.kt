@@ -97,6 +97,7 @@ internal fun AppState.preferenceValues(): Map<String, AppPreferenceValue> = buil
     boolean(KeyEnableRootEbpfRules, enableRootEbpfRules)
     boolean(KeyEnableRootEbpfDirectCidrBypass, enableRootEbpfDirectCidrBypass)
     stringList(KeyTunBypassRuleSetTags, tunBypassRuleSetTags)
+    string(KeyEbpfDataPlane, ebpfDataPlane)
     boolean(KeyEbpfEndpointConnectedBypassEnabled, ebpfEndpointConnectedBypassEnabled)
     stringList(KeyEbpfEndpointConnectedBypassIpCidr, ebpfEndpointConnectedBypassIpCidr)
     stringList(KeyEbpfEndpointConnectedBypassPort, ebpfEndpointConnectedBypassPort)

@@ -118,6 +118,7 @@ data class AppState(
     val enableRootEbpfRules: Boolean = false,
     val enableRootEbpfDirectCidrBypass: Boolean = false,
     val tunBypassRuleSetTags: List<String> = emptyList(),
+    val ebpfDataPlane: String = "tc",
     val ebpfEndpointConnectedBypassEnabled: Boolean = false,
     val ebpfEndpointConnectedBypassIpCidr: List<String> = emptyList(),
     val ebpfEndpointConnectedBypassPort: List<String> = emptyList(),

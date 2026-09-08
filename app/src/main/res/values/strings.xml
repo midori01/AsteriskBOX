@@ -330,6 +330,8 @@
     <string name="settings_tun_shared_network_empty">No downstream interfaces configured</string>
     <string name="settings_tun_shared_network_none">Not enabled</string>
     <string name="settings_tun_shared_network_selected">Configured interfaces: {count}</string>
+    <string name="settings_ebpf_data_plane">eBPF data plane</string>
+    <string name="settings_ebpf_endpoint_connected_bypass_requires_tc">Requires TC data plane</string>
     <string name="settings_ebpf_endpoint_connected_bypass">Endpoint connected bypass</string>
     <string name="settings_ebpf_endpoint_connected_bypass_enable">Enable endpoint connected bypass</string>
     <string name="settings_ebpf_endpoint_connected_bypass_ip_cidr">IP/CIDR</string>

@@ -118,6 +118,7 @@ private fun AppState.toBackupSettings(): AppBackupSettings =
         transparentProxyPort = transparentProxyPort,
         enableRootEbpfDirectCidrBypass = enableRootEbpfDirectCidrBypass,
         tunBypassRuleSetTags = tunBypassRuleSetTags,
+        ebpfDataPlane = ebpfDataPlane,
         ebpfEndpointConnectedBypassEnabled = ebpfEndpointConnectedBypassEnabled,
         ebpfEndpointConnectedBypassIpCidr = ebpfEndpointConnectedBypassIpCidr,
         ebpfEndpointConnectedBypassPort = ebpfEndpointConnectedBypassPort,
@@ -327,6 +328,7 @@ private fun AppBackupData.toAppState(): AppState {
         enableRootEbpfDirectCidrBypass = settings.enableRootEbpfDirectCidrBypass,
         tunBypassRuleSetTags = settings.tunBypassRuleSetTags
             ?: settings.legacyEbpfBypassRuleSetTags,
+        ebpfDataPlane = settings.ebpfDataPlane,
         ebpfEndpointConnectedBypassEnabled = settings.ebpfEndpointConnectedBypassEnabled,
         ebpfEndpointConnectedBypassIpCidr = settings.ebpfEndpointConnectedBypassIpCidr,
         ebpfEndpointConnectedBypassPort = settings.ebpfEndpointConnectedBypassPort,

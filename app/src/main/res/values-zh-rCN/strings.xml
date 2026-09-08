@@ -327,6 +327,8 @@
     <string name="settings_tun_shared_network_empty">尚未配置下游接口</string>
     <string name="settings_tun_shared_network_none">未启用</string>
     <string name="settings_tun_shared_network_selected">已配置 {count} 个接口</string>
+    <string name="settings_ebpf_data_plane">eBPF 数据面</string>
+    <string name="settings_ebpf_endpoint_connected_bypass_requires_tc">仅支持 TC 数据面</string>
     <string name="settings_ebpf_endpoint_connected_bypass">连接端点绕过</string>
     <string name="settings_ebpf_endpoint_connected_bypass_enable">启用端点绕过</string>
     <string name="settings_ebpf_endpoint_connected_bypass_ip_cidr">IP/CIDR</string>

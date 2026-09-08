@@ -238,6 +238,10 @@ internal class AppSettingsPreferences(
                 },
                 defaults.tunBypassRuleSetTags,
             ),
+            ebpfDataPlane = preferences.getString(
+                KeyEbpfDataPlane,
+                defaults.ebpfDataPlane,
+            )?.takeIf { it == "tc" || it == "cgroup" } ?: defaults.ebpfDataPlane,
             ebpfEndpointConnectedBypassEnabled = preferences.getBoolean(
                 KeyEbpfEndpointConnectedBypassEnabled,
                 defaults.ebpfEndpointConnectedBypassEnabled,
@@ -453,6 +457,7 @@ internal const val KeyEnableRootEbpfRules = "enable_root_ebpf_rules"
 internal const val KeyEnableRootEbpfDirectCidrBypass = "enable_root_ebpf_direct_cidr_bypass"
 internal const val KeyTunBypassRuleSetTags = "tun_bypass_rule_set_tags"
 private const val LegacyKeyEbpfBypassRuleSetTags = "ebpf_bypass_rule_set_tags"
+internal const val KeyEbpfDataPlane = "ebpf_data_plane"
 internal const val KeyEbpfEndpointConnectedBypassEnabled = "ebpf_endpoint_connected_bypass_enabled"
 internal const val KeyEbpfEndpointConnectedBypassIpCidr = "ebpf_endpoint_connected_bypass_ip_cidr"
 internal const val KeyEbpfEndpointConnectedBypassPort = "ebpf_endpoint_connected_bypass_port"

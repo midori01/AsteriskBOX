@@ -324,6 +324,7 @@ private fun SettingsContent(
         localProxySummary = localProxySettingsSummary,
         tunSummary = tunSettingsSummary,
         tunBypassRuleSetsSummary = tunBypassRuleSetsSummary,
+        ebpfDataPlane = appState.ebpfDataPlane,
         ebpfEndpointConnectedBypassSummary = ebpfEndpointConnectedBypassSummary,
         externalInterfacesSummary = externalInterfacesSummary,
         ignoredInterfacesSummary = ignoredInterfacesSummary,
@@ -473,6 +474,7 @@ private fun SettingsContent(
                     enableRootEbpfRules = appState.enableRootEbpfRules,
                     enableRootEbpfDirectCidrBypass = appState.enableRootEbpfDirectCidrBypass,
                     tunBypassRuleSetsSummary = tunBypassRuleSetsSummary,
+                    ebpfDataPlane = appState.ebpfDataPlane,
                     ebpfEndpointConnectedBypassSummary = ebpfEndpointConnectedBypassSummary,
                     enableIpv6 = appState.enableIpv6,
                     enableRootIpv6Disabler = appState.enableRootIpv6Disabler,
@@ -578,6 +580,18 @@ private fun SettingsContent(
                     },
                     onOpenTunBypassRuleSets = {
                         sheetState.openTunBypassRuleSets(appState)
+                    },
+                    onEbpfDataPlaneChange = { plane ->
+                        updateAppState { state ->
+                            if (plane == "cgroup") {
+                                state.copy(
+                                    ebpfDataPlane = "cgroup",
+                                    ebpfEndpointConnectedBypassEnabled = false,
+                                )
+                            } else {
+                                state.copy(ebpfDataPlane = "tc")
+                            }
+                        }
                     },
                     onOpenEbpfEndpointConnectedBypass = {
                         sheetState.openEbpfEndpointConnectedBypass(appState)
