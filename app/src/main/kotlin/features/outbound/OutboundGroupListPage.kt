@@ -117,6 +117,7 @@ import ui.icons.AsteriskIcons as Icons
 @Composable
 internal fun OutboundGroupListPage(
     padding: PaddingValues,
+    createOnOpen: Boolean = false,
 ) {
     val stateStore = LocalAppStateStore.current
     val appState by stateStore.collectAppState()
@@ -126,7 +127,7 @@ internal fun OutboundGroupListPage(
     val isWideScreen = LocalIsWideScreen.current
     val scope = rememberCoroutineScope()
     var editorGroup by remember { mutableStateOf<OutboundGroupState?>(null) }
-    var showGroupEditor by remember { mutableStateOf(false) }
+    var showGroupEditor by remember { mutableStateOf(createOnOpen) }
     var groupEditorSession by remember { mutableIntStateOf(0) }
     var savingGroupEditorSession by remember { mutableStateOf<Int?>(null) }
     var pendingDelete by remember { mutableStateOf<OutboundGroupState?>(null) }
@@ -159,7 +160,10 @@ internal fun OutboundGroupListPage(
             try {
                 when (val result = services.outboundRepository.saveGroup(expected, group)) {
                     is OutboundCommandResult.GroupSaved -> {
-                        if (groupEditorSession == session) showGroupEditor = false
+                        if (groupEditorSession == session) {
+                            showGroupEditor = false
+                            if (createOnOpen) navigator.pop()
+                        }
                     }
                     OutboundCommandResult.Conflict ->
                         services.tipNotifier.show(stateChangedMessage)
@@ -597,7 +601,10 @@ internal fun OutboundGroupListPage(
             editorSession = groupEditorSession,
             busy = savingGroupEditorSession == groupEditorSession,
             onDismissRequest = {
-                if (savingGroupEditorSession != groupEditorSession) showGroupEditor = false
+                if (savingGroupEditorSession != groupEditorSession) {
+                    showGroupEditor = false
+                    if (createOnOpen) navigator.pop()
+                }
             },
             onSave = ::saveGroup,
         )
@@ -866,7 +873,7 @@ private fun OutboundGroupBatchProgressDialog(
 }
 
 @Composable
-private fun OutboundGroupEmptyState(onAdd: () -> Unit) {
+internal fun OutboundGroupEmptyState(onAdd: () -> Unit) {
     AnimatedVisibility(
         visible = true,
         enter = AsteriskMotion.fadeEnter(AsteriskMotion.effects()),

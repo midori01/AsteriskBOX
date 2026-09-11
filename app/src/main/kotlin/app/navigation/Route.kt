@@ -40,6 +40,9 @@ sealed interface Route : NavKey {
     data object OutboundGroupList : Route
 
     @Serializable
+    data object OutboundGroupCreate : Route
+
+    @Serializable
     data object OutboundList : Route
 
     @Serializable

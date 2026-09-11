@@ -44,6 +44,11 @@ import androidx.compose.material3.RadioButton
 import ui.components.AsteriskScaffold
 import androidx.compose.material3.Text
 import ui.components.AsteriskTopAppBar
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.rememberUpdatedState
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -155,6 +160,8 @@ private data class OutboundQrDialogState(
 @Composable
 internal fun OutboundListPage(
     padding: PaddingValues,
+    embeddedInProxyTab: Boolean = false,
+    onInteractionActiveChange: (Boolean) -> Unit = {},
 ) {
     val stateStore = LocalAppStateStore.current
     val appState by stateStore.collectAppState()
@@ -166,6 +173,25 @@ internal fun OutboundListPage(
     val resources = LocalResources.current
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
+    var activeOperations by remember { mutableStateOf(0) }
+    var activeChildInteractions by remember { mutableStateOf(0) }
+    val interactionCallback by rememberUpdatedState(onInteractionActiveChange)
+    val onChildInteractionChange: (Int) -> Unit = remember {
+        { delta ->
+            activeChildInteractions += delta
+            if (delta > 0) interactionCallback(true)
+        }
+    }
+    fun launchOperation(block: suspend CoroutineScope.() -> Unit) =
+        scope.launch(start = CoroutineStart.UNDISPATCHED) {
+            activeOperations += 1
+            interactionCallback(true)
+            try {
+                block()
+            } finally {
+                activeOperations -= 1
+            }
+        }
     val pingState by services.outboundPingRuntime.state.collectAsState()
     val outboundIndex = remember(appState.outbounds) {
         services.outboundListProjectionCache.build(appState.outbounds)
@@ -189,6 +215,16 @@ internal fun OutboundListPage(
     var qrCodeDialogState by remember { mutableStateOf<OutboundQrDialogState?>(null) }
     var importResultPresentation by remember {
         mutableStateOf<ImportResultPresentation?>(null)
+    }
+    val interactionActive = activeOperations > 0 || activeChildInteractions > 0 ||
+        importMenuExpanded || pendingDelete != null || qrCodeDialogState != null ||
+        importResultPresentation != null
+    SideEffect {
+        // Nested effects can acquire interaction during apply, after this composition read.
+        interactionCallback(interactionActive || activeChildInteractions > 0)
+    }
+    DisposableEffect(Unit) {
+        onDispose { interactionCallback(false) }
     }
     val selectedGroup = groups.getOrNull(pagerState.currentPage) ?: groups.firstOrNull()
     val selectedOutbounds = outboundIndex.visible(
@@ -309,7 +345,7 @@ internal fun OutboundListPage(
     }
 
     fun importQrCode() {
-        scope.launch {
+        launchOperation {
             try {
                 services.qrCodeScanner()
                     ?.trim()
@@ -332,7 +368,7 @@ internal fun OutboundListPage(
     }
 
     fun importClipboard() {
-        scope.launch {
+        launchOperation {
             try {
                 val content = clipboard.getPlainText().orEmpty()
                 require(content.isNotBlank()) { emptyClipboardMessage }
@@ -354,9 +390,9 @@ internal fun OutboundListPage(
     }
 
     fun importFile() {
-        scope.launch {
+        launchOperation {
             try {
-                val uri = services.importFilePicker() ?: return@launch
+                val uri = services.importFilePicker() ?: return@launchOperation
                 val content = withContext(Dispatchers.IO) { context.readOutboundImportFile(uri) }
                 importContent(content, ImportSource.FILE)
             } catch (error: CancellationException) {
@@ -382,7 +418,7 @@ internal fun OutboundListPage(
             outboundIndex.item(outbound.id)?.pingHost != null
         }
         if (testable.isEmpty()) {
-            scope.launch { services.tipNotifier.show(noPingTargetsMessage) }
+            launchOperation { services.tipNotifier.show(noPingTargetsMessage) }
             return
         }
         services.outboundPingRuntime.start(testable)
@@ -429,11 +465,13 @@ internal fun OutboundListPage(
                         }
                     },
                     navigationIcon = {
-                        IconButton(onClick = navigator::pop) {
-                            Icon(
-                                Icons.AutoMirrored.Rounded.ArrowBack,
-                                stringResource(R.string.common_back),
-                            )
+                        if (!embeddedInProxyTab) {
+                            IconButton(onClick = navigator::pop) {
+                                Icon(
+                                    Icons.AutoMirrored.Rounded.ArrowBack,
+                                    stringResource(R.string.common_back),
+                                )
+                            }
                         }
                     },
                     actions = {
@@ -512,7 +550,7 @@ internal fun OutboundListPage(
                                                         )
                                                     },
                                                     onClick = {
-                                                        scope.launch {
+                                                        launchOperation {
                                                             manualImportMenuScrollState.scrollTo(0)
                                                             importMenuLevel =
                                                                 OutboundImportMenuLevel.MANUAL
@@ -583,6 +621,7 @@ internal fun OutboundListPage(
                             }
                         }
                         OutboundOptionsMenu(
+                            onInteractionCountChange = onChildInteractionChange,
                             layout = appState.outboundListLayout,
                             sort = appState.outboundListSort,
                             pingRunning = selectedOutbounds.any { outbound ->
@@ -616,7 +655,7 @@ internal fun OutboundListPage(
                                 AsteriskFilterChip(
                                     selected = selected,
                                     onClick = {
-                                        scope.launch { pagerState.animateScrollToPage(index) }
+                                        launchOperation { pagerState.animateScrollToPage(index) }
                                     },
                                     label = buildString {
                                         append(group.displayName())
@@ -636,6 +675,19 @@ internal fun OutboundListPage(
             outerPadding = padding,
             isWideScreen = isWideScreen,
         )
+        if (groups.isEmpty()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(contentPadding),
+            ) {
+                OutboundGroupEmptyState(
+                    onAdd = { navigator.push(Route.OutboundGroupCreate) },
+                )
+            }
+            return@AsteriskScaffold
+        }
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
@@ -659,6 +711,7 @@ internal fun OutboundListPage(
             val dragScrollThresholdBottomPadding =
                 pageListPadding(contentPadding).calculateBottomPadding()
             OutboundPage(
+                onInteractionCountChange = onChildInteractionChange,
                 outbounds = outbounds,
                 contentPadding = pageListPadding(
                     contentPadding = contentPadding,
@@ -685,7 +738,7 @@ internal fun OutboundListPage(
                     if (reorderedIds == currentIds) return@OutboundPage
                     val generation = dragPreviewOwnership.claim(groupId)
                     dragPreviewIds = dragPreviewIds + (groupId to reorderedIds)
-                    scope.launch {
+                    launchOperation {
                         reorderMutex.withLock {
                             val result = services.outboundRepository.reorder(groupId, reorderedIds)
                             handleOutboundCommandResult(
@@ -729,7 +782,7 @@ internal fun OutboundListPage(
 
                         OutboundShareAction.URL -> {
                             outboundShareUrlPayload(action, shareUrlResult)?.let { url ->
-                                scope.launch {
+                                launchOperation {
                                     clipboard.setPlainText(url)
                                     services.tipNotifier.show(copiedMessage)
                                 }
@@ -737,7 +790,7 @@ internal fun OutboundListPage(
                         }
 
                         OutboundShareAction.JSON -> {
-                            scope.launch {
+                            launchOperation {
                                 clipboard.setPlainText(
                                     outboundJsonWithoutManagedIdentity(outbound.json),
                                 )
@@ -765,7 +818,7 @@ internal fun OutboundListPage(
             val id = pendingDelete?.id ?: return@WarningConfirmDialog
             if (deletingOutboundId != null) return@WarningConfirmDialog
             deletingOutboundId = id
-            scope.launch {
+            launchOperation {
                 try {
                     handleOutboundCommandResult(
                         result = services.outboundRepository.delete(id),
@@ -817,6 +870,7 @@ private fun OutboundPage(
     onShare: (OutboundState, OutboundShareAction, OutboundShareUrlResult) -> Unit,
     onPing: (OutboundState) -> Unit,
     onDelete: (OutboundState) -> Unit,
+    onInteractionCountChange: (Int) -> Unit = {},
 ) {
     val gridState = rememberLazyGridState()
     val reorderableState = rememberAsteriskReorderableLazyGridState(
@@ -889,6 +943,7 @@ private fun OutboundPage(
                     animateItemModifier = Modifier.animateItem(),
                 ) { isDragging ->
                     OutboundCard(
+                        onInteractionCountChange = onInteractionCountChange,
                         item = item,
                         compact = columns > 1,
                         pingState = pingState,
@@ -922,7 +977,9 @@ private fun OutboundCard(
     onPing: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    onInteractionCountChange: (Int) -> Unit = {},
 ) {
+    TrackOutboundInteraction(isDragging, onInteractionCountChange)
     val outbound = item.outbound
     val pinging = outbound.id in pingState.runningIds
     val shareUrlResult = remember(outbound.json, outbound.remarks) {
@@ -1001,6 +1058,7 @@ private fun OutboundCard(
                     }
                 }
                 OutboundCardMenu(
+                    onInteractionCountChange = onInteractionCountChange,
                     pingEnabled = item.pingHost != null && !pinging,
                     shareUrlResult = shareUrlResult,
                     onEdit = onEdit,
@@ -1040,8 +1098,10 @@ private fun OutboundCardMenu(
     onShare: (OutboundShareAction, OutboundShareUrlResult) -> Unit,
     onPing: () -> Unit,
     onDelete: () -> Unit,
+    onInteractionCountChange: (Int) -> Unit = {},
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
+    TrackOutboundInteraction(menuExpanded, onInteractionCountChange)
     var level by remember { mutableStateOf(OutboundCardMenuLevel.MAIN) }
     val dismissMenu = {
         menuExpanded = false
@@ -1206,8 +1266,10 @@ private fun OutboundOptionsMenu(
     onPing: () -> Unit,
     onLayoutChange: (Int) -> Unit,
     onSortChange: (Int) -> Unit,
+    onInteractionCountChange: (Int) -> Unit = {},
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
+    TrackOutboundInteraction(expanded, onInteractionCountChange)
     var level by rememberSaveable { mutableStateOf(OutboundOptionsMenuLevel.MAIN) }
     val dismissMenu = {
         expanded = false
@@ -1462,4 +1524,14 @@ private fun Context.readOutboundImportFile(uri: Uri): String {
     } ?: error("Unable to open outbound file")
     require(content.isNotBlank()) { "Outbound file is empty" }
     return content
+}
+
+/** Keep the embedded manager present while a nested menu or drag owns interaction. */
+@Composable
+private fun TrackOutboundInteraction(active: Boolean, onCountChange: (Int) -> Unit) {
+    val callback by rememberUpdatedState(onCountChange)
+    DisposableEffect(active) {
+        if (active) callback(1)
+        onDispose { if (active) callback(-1) }
+    }
 }

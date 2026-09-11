@@ -73,7 +73,7 @@ import features.dns.DnsRuleEditorPage
 import features.selector.SelectorManagementPage
 import features.selector.SelectorEditorPage
 import features.singbox.SingBoxDashboardPage
-import features.singbox.SingBoxProxyPage
+import features.singbox.SingBoxProxyDestination
 import features.proxy.app.ProxyAppListPage
 import features.resources.ResourceManagementPage
 import features.resources.ResourceJsonEditorPage
@@ -174,6 +174,9 @@ fun AppContent(
                 }
                 entry<Route.OutboundGroupList> {
                     OutboundGroupListPage(padding = padding)
+                }
+                entry<Route.OutboundGroupCreate> {
+                    OutboundGroupListPage(padding = padding, createOnOpen = true)
                 }
                 entry<Route.OutboundList> {
                     OutboundListPage(padding = padding)
@@ -401,7 +404,7 @@ private fun MainDestinationContent(
             key(destination) {
                 when (destination) {
                     MainDestination.Home -> SingBoxDashboardPage(padding = padding)
-                    MainDestination.Proxies -> SingBoxProxyPage(padding = padding)
+                    MainDestination.Proxies -> SingBoxProxyDestination(padding = padding)
                     MainDestination.Apps -> ProxyAppListPage(padding = padding)
                     MainDestination.Settings -> SettingsPage(padding = padding)
                 }

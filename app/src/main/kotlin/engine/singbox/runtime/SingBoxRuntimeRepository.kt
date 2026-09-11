@@ -304,7 +304,7 @@ internal class SingBoxRuntimeRepository(
                     current.copy(
                         running = true,
                         version = SingBoxVersionState(Libbox.version()),
-                        proxiesRefreshing = false,
+                        // Keep refreshing until this session supplies its proxy snapshot.
                         lastError = "",
                     )
                 }
