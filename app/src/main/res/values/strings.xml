@@ -126,7 +126,7 @@
     <string name="monitor_sort_target">Target</string>
 
     <string name="monitor_connections_title">Connections</string>
-    <string name="monitor_connections_active">Active connections</string>
+    <string name="monitor_connections_active">Active</string>
     <string name="monitor_connections_focus_routes">Proxy %1$d · Direct %2$d</string>
     <string name="monitor_connections_status_summary">%1$s · %2$s</string>
     <string name="monitor_connections_live">Live</string>
@@ -1303,4 +1303,8 @@
     <string name="settings_service_control_doze_note">Timers do not wake the device. If Android suspends the process, the latest missed action is reconciled after resume; stop wins when both are due.</string>
     <string name="settings_service_control_saving">Restarting…</string>
     <string name="settings_service_control_save_failed">Could not apply service control. Your edits were kept.</string>
+    <string name="monitor_connections_closed">Disconnected</string>
+    <string name="monitor_connections_total">Total connections</string>
+    <string name="monitor_connections_closed_time">Disconnection time</string>
+    <string name="monitor_connections_closed_empty">No disconnected connections recorded</string>
 </resources>

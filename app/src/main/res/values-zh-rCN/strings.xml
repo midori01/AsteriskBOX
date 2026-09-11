@@ -1284,4 +1284,8 @@
     <string name="settings_service_control_doze_note">定时器不会唤醒设备。Android 挂起进程时，将在恢复后补偿最近一次错过的动作；同时到期时停止优先。</string>
     <string name="settings_service_control_saving">正在重启…</string>
     <string name="settings_service_control_save_failed">服务控制应用失败，编辑内容已保留。</string>
+    <string name="monitor_connections_closed">已断开</string>
+    <string name="monitor_connections_total">连接总数</string>
+    <string name="monitor_connections_closed_time">断开时间</string>
+    <string name="monitor_connections_closed_empty">暂无已断开连接记录</string>
 </resources>
