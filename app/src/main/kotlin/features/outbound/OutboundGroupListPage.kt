@@ -36,11 +36,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
+import ui.components.AsteriskScaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import ui.components.AsteriskTopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -368,9 +368,9 @@ internal fun OutboundGroupListPage(
         syncJob.start()
     }
 
-    Scaffold(
+    AsteriskScaffold(
         topBar = {
-            TopAppBar(
+            AsteriskTopAppBar(
                 title = {
                     Column {
                         Text(stringResource(R.string.outbound_group_management))
@@ -591,18 +591,17 @@ internal fun OutboundGroupListPage(
                 }
             }
         }
+        OutboundGroupEditorSheet(
+            show = showGroupEditor,
+            group = editorGroup,
+            editorSession = groupEditorSession,
+            busy = savingGroupEditorSession == groupEditorSession,
+            onDismissRequest = {
+                if (savingGroupEditorSession != groupEditorSession) showGroupEditor = false
+            },
+            onSave = ::saveGroup,
+        )
     }
-
-    OutboundGroupEditorSheet(
-        show = showGroupEditor,
-        group = editorGroup,
-        editorSession = groupEditorSession,
-        busy = savingGroupEditorSession == groupEditorSession,
-        onDismissRequest = {
-            if (savingGroupEditorSession != groupEditorSession) showGroupEditor = false
-        },
-        onSave = ::saveGroup,
-    )
 
     batchSyncProgress?.let { progress ->
         OutboundGroupBatchProgressDialog(

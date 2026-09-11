@@ -32,10 +32,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import ui.components.AsteriskScaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import ui.components.AsteriskTopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -204,9 +204,9 @@ internal fun DnsManagementPage(
         }
     }
 
-    Scaffold(
+    AsteriskScaffold(
         topBar = {
-            TopAppBar(
+            AsteriskTopAppBar(
                 title = {
                     Column {
                         Text(stringResource(R.string.dns_management_title))
@@ -284,65 +284,65 @@ internal fun DnsManagementPage(
             },
             onDelete = { pendingDelete = it },
         )
-    }
 
-    DnsSettingsBottomSheet(
-        show = showDnsSettings,
-        saving = savingDnsSettings,
-        draft = dnsSettingsDraft,
-        outboundProxyChoices = selectableDetourOutbounds(
-            state = appState,
-            excludedTag = "",
-            includeGlobalSelector = true,
-        ),
-        endpointChoicesByServerType = mapOf(
-            "tailscale" to selectableDnsEndpoints(appState, "tailscale"),
-            "openconnect" to selectableDnsEndpoints(appState, "openconnect"),
-            "openvpn" to selectableDnsEndpoints(appState, "openvpn"),
-        ),
-        onDraftChange = { dnsSettingsDraft = it },
-        onDismissRequest = { showDnsSettings = false },
-        onSave = { savedDraft ->
-            if (!savingDnsSettings) {
-                val baseState = appState
-                val candidateState = baseState.withDnsSettings(savedDraft)
-                savingDnsSettings = true
-                scope.launch {
-                    try {
-                        withContext(Dispatchers.IO) {
-                            validateSingBoxRuntimeConfiguration(context, candidateState)
-                        }
-                        var committed = false
-                        updateAppState { current ->
-                            if (current === baseState) {
-                                committed = true
-                                candidateState
-                            } else {
-                                current
+        DnsSettingsBottomSheet(
+            show = showDnsSettings,
+            saving = savingDnsSettings,
+            draft = dnsSettingsDraft,
+            outboundProxyChoices = selectableDetourOutbounds(
+                state = appState,
+                excludedTag = "",
+                includeGlobalSelector = true,
+            ),
+            endpointChoicesByServerType = mapOf(
+                "tailscale" to selectableDnsEndpoints(appState, "tailscale"),
+                "openconnect" to selectableDnsEndpoints(appState, "openconnect"),
+                "openvpn" to selectableDnsEndpoints(appState, "openvpn"),
+            ),
+            onDraftChange = { dnsSettingsDraft = it },
+            onDismissRequest = { showDnsSettings = false },
+            onSave = { savedDraft ->
+                if (!savingDnsSettings) {
+                    val baseState = appState
+                    val candidateState = baseState.withDnsSettings(savedDraft)
+                    savingDnsSettings = true
+                    scope.launch {
+                        try {
+                            withContext(Dispatchers.IO) {
+                                validateSingBoxRuntimeConfiguration(context, candidateState)
                             }
-                        }
-                        if (committed) {
-                            showDnsSettings = false
-                        } else {
+                            var committed = false
+                            updateAppState { current ->
+                                if (current === baseState) {
+                                    committed = true
+                                    candidateState
+                                } else {
+                                    current
+                                }
+                            }
+                            if (committed) {
+                                showDnsSettings = false
+                            } else {
+                                tipNotifier.show(validationFailedMessage)
+                            }
+                        } catch (error: Throwable) {
+                            if (error is CancellationException) throw error
+                            reportFailure(
+                                context = FailureLogContext(
+                                    operation = "save_dns_settings",
+                                    stage = "validate",
+                                ),
+                                error = error,
+                            )
                             tipNotifier.show(validationFailedMessage)
+                        } finally {
+                            savingDnsSettings = false
                         }
-                    } catch (error: Throwable) {
-                        if (error is CancellationException) throw error
-                        reportFailure(
-                            context = FailureLogContext(
-                                operation = "save_dns_settings",
-                                stage = "validate",
-                            ),
-                            error = error,
-                        )
-                        tipNotifier.show(validationFailedMessage)
-                    } finally {
-                        savingDnsSettings = false
                     }
                 }
-            }
-        },
-    )
+            },
+        )
+    }
 
     WarningConfirmDialog(
         show = pendingDelete != null,

@@ -45,9 +45,9 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
+import ui.components.AsteriskScaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import ui.components.AsteriskTopAppBar
 import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -235,10 +235,10 @@ internal fun SelectorManagementPage(padding: PaddingValues) {
         }
     }
 
-    Scaffold(
+    AsteriskScaffold(
         topBar = {
             Column {
-                TopAppBar(
+                AsteriskTopAppBar(
                     title = {
                         Column {
                             Text(stringResource(R.string.selector_management))

@@ -37,10 +37,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import ui.components.AsteriskScaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import ui.components.AsteriskTopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -188,9 +188,9 @@ internal fun RoutingManagementPage(
         }
     }
 
-    Scaffold(
+    AsteriskScaffold(
         topBar = {
-            TopAppBar(
+            AsteriskTopAppBar(
                 title = {
                     Column {
                         Text(stringResource(R.string.routing_title))
@@ -269,54 +269,54 @@ internal fun RoutingManagementPage(
             },
             onDelete = { pendingDelete = it },
         )
-    }
 
-    RoutingSettingsSheet(
-        show = editingRouteSettings,
-        initialDraft = appState.toRoutingSettingsDraft(),
-        saving = savingRouteSettings,
-        onDismiss = { editingRouteSettings = false },
-        onSave = { saved ->
-            if (!savingRouteSettings) {
-                val baseState = appState
-                val candidateState = baseState.withRoutingSettings(saved)
-                savingRouteSettings = true
-                scope.launch {
-                    try {
-                        withContext(Dispatchers.IO) {
-                            validateSingBoxRuntimeConfiguration(context, candidateState)
-                        }
-                        var committed = false
-                        updateAppState { current ->
-                            if (current === baseState) {
-                                committed = true
-                                candidateState
-                            } else {
-                                current
+        RoutingSettingsSheet(
+            show = editingRouteSettings,
+            initialDraft = appState.toRoutingSettingsDraft(),
+            saving = savingRouteSettings,
+            onDismiss = { editingRouteSettings = false },
+            onSave = { saved ->
+                if (!savingRouteSettings) {
+                    val baseState = appState
+                    val candidateState = baseState.withRoutingSettings(saved)
+                    savingRouteSettings = true
+                    scope.launch {
+                        try {
+                            withContext(Dispatchers.IO) {
+                                validateSingBoxRuntimeConfiguration(context, candidateState)
                             }
-                        }
-                        if (committed) {
-                            editingRouteSettings = false
-                        } else {
+                            var committed = false
+                            updateAppState { current ->
+                                if (current === baseState) {
+                                    committed = true
+                                    candidateState
+                                } else {
+                                    current
+                                }
+                            }
+                            if (committed) {
+                                editingRouteSettings = false
+                            } else {
+                                tipNotifier.show(settingsSaveFailedMessage)
+                            }
+                        } catch (error: Throwable) {
+                            if (error is CancellationException) throw error
+                            reportFailure(
+                                context = FailureLogContext(
+                                    operation = "save_route_settings",
+                                    stage = "validate",
+                                ),
+                                error = error,
+                            )
                             tipNotifier.show(settingsSaveFailedMessage)
+                        } finally {
+                            savingRouteSettings = false
                         }
-                    } catch (error: Throwable) {
-                        if (error is CancellationException) throw error
-                        reportFailure(
-                            context = FailureLogContext(
-                                operation = "save_route_settings",
-                                stage = "validate",
-                            ),
-                            error = error,
-                        )
-                        tipNotifier.show(settingsSaveFailedMessage)
-                    } finally {
-                        savingRouteSettings = false
                     }
                 }
-            }
-        },
-    )
+            },
+        )
+    }
 
     WarningConfirmDialog(
         show = pendingDelete != null,
