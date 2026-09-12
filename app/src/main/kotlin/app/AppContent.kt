@@ -46,7 +46,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
-import androidx.navigation3.ui.NavDisplay
+import ui.navigation.AsteriskNavDisplay
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
@@ -273,7 +273,7 @@ fun AppContent(
                 entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
                 entryProvider = entryProvider,
             )
-            NavDisplay(
+            AsteriskNavDisplay(
                 entries = entries,
                 onBack = { navigator.pop() },
                 transitionSpec = AsteriskMotion.navigationForward(),
