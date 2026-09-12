@@ -5,9 +5,10 @@
 
 package features.resources
 
+import ui.components.AsteriskDropdownAnchor
+import ui.components.AsteriskDropdownMenuItem
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,7 +43,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -90,11 +90,6 @@ internal fun ResourceOverviewCard(
 ) {
     var sourceMenuExpanded by remember { mutableStateOf(false) }
     val safeSource = selectedSource.coerceIn(sourceOptions.indices)
-    val sourceIndicatorRotation by animateFloatAsState(
-        targetValue = if (sourceMenuExpanded) 180f else 0f,
-        animationSpec = AsteriskMotion.fastEffects(),
-        label = "resource-source-indicator",
-    )
     val statusEffectsMotion = AsteriskMotion.fastEffects<Float>()
     val sourceText = stringResource(R.string.settings_resource_files_source_value, sourceOptions[safeSource])
     val lastCheckText = stringResource(R.string.settings_resource_files_last_check)
@@ -166,45 +161,20 @@ internal fun ResourceOverviewCard(
             ) {
                 Text(stringResource(R.string.settings_resource_files_source))
                 Spacer(Modifier.width(4.dp))
-                Icon(
-                    Icons.Rounded.ExpandMore,
-                    contentDescription = null,
-                    modifier = Modifier.rotate(sourceIndicatorRotation),
-                )
-            }
-            DropdownMenu(
-                expanded = sourceMenuExpanded,
-                onDismissRequest = { sourceMenuExpanded = false },
-            ) {
-                sourceOptions.forEachIndexed { index, option ->
-                    val selected = index == safeSource
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = option,
-                                color = if (selected) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurface
-                                },
-                            )
-                        },
-                        leadingIcon = {
-                            if (selected) {
-                                Icon(
-                                    Icons.Rounded.Check,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            } else {
-                                Spacer(Modifier.size(24.dp))
-                            }
-                        },
-                        onClick = {
-                            sourceMenuExpanded = false
-                            onSourceChange(index)
-                        },
-                    )
+                AsteriskDropdownAnchor(
+                    expanded = sourceMenuExpanded,
+                    onDismissRequest = { sourceMenuExpanded = false },
+                ) {
+                    sourceOptions.forEachIndexed { index, option ->
+                        AsteriskDropdownMenuItem(
+                            text = option,
+                            selected = index == safeSource,
+                            onClick = {
+                                sourceMenuExpanded = false
+                                onSourceChange(index)
+                            },
+                        )
+                    }
                 }
             }
         }

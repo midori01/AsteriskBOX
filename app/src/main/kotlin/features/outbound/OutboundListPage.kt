@@ -5,6 +5,7 @@
 
 package features.outbound
 
+import ui.components.AsteriskDropdownMenuItem
 import android.content.Context
 import android.net.Uri
 import androidx.compose.animation.AnimatedContent
@@ -40,7 +41,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import ui.components.AsteriskScaffold
 import androidx.compose.material3.Text
 import ui.components.AsteriskTopAppBar
@@ -1408,13 +1408,10 @@ private fun OutboundOptionsMenu(
                                     R.string.outbound_option_layout_multiple,
                                     Icons.Rounded.GridView,
                                 ),
-                            ).forEach { (value, label, icon) ->
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(label)) },
-                                    leadingIcon = { Icon(icon, contentDescription = null) },
-                                    trailingIcon = {
-                                        RadioButton(selected = layout == value, onClick = null)
-                                    },
+                            ).forEach { (value, label, _) ->
+                                AsteriskDropdownMenuItem(
+                                    text = stringResource(label),
+                                    selected = layout == value,
                                     onClick = {
                                         dismissMenu()
                                         onLayoutChange(value)
@@ -1453,13 +1450,10 @@ private fun OutboundOptionsMenu(
                                     R.string.outbound_sort_type,
                                     Icons.Rounded.Tune,
                                 ),
-                            ).forEach { (value, label, icon) ->
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(label)) },
-                                    leadingIcon = { Icon(icon, contentDescription = null) },
-                                    trailingIcon = {
-                                        RadioButton(selected = sort == value, onClick = null)
-                                    },
+                            ).forEach { (value, label, _) ->
+                                AsteriskDropdownMenuItem(
+                                    text = stringResource(label),
+                                    selected = sort == value,
                                     onClick = {
                                         dismissMenu()
                                         onSortChange(value)

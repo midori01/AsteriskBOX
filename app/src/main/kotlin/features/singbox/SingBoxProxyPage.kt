@@ -5,6 +5,7 @@
 
 package features.singbox
 
+import ui.components.AsteriskDropdownMenuItem
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -38,7 +39,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import ui.components.AsteriskScaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -764,15 +764,14 @@ private fun SingBoxProxyOptionsMenu(
                             R.string.sing_box_proxies_option_layout_multiple,
                             Icons.Rounded.GridView,
                         ),
-                    ).forEach { (value, label, icon) ->
-                        DropdownMenuItem(
-                            text = { Text(stringResource(label)) },
+                    ).forEach { (value, label, _) ->
+                        AsteriskDropdownMenuItem(
+                            text = stringResource(label),
+                            selected = layout == value,
                             onClick = {
                                 dismissMenu()
                                 onLayoutChange(value)
                             },
-                            leadingIcon = { Icon(icon, contentDescription = null) },
-                            trailingIcon = { RadioButton(selected = layout == value, onClick = null) },
                         )
                     }
                 }
@@ -800,15 +799,14 @@ private fun SingBoxProxyOptionsMenu(
                             R.string.sing_box_proxies_option_sort_delay,
                             Icons.Rounded.Speed,
                         ),
-                    ).forEach { (value, label, icon) ->
-                        DropdownMenuItem(
-                            text = { Text(stringResource(label)) },
+                    ).forEach { (value, label, _) ->
+                        AsteriskDropdownMenuItem(
+                            text = stringResource(label),
+                            selected = sort == value,
                             onClick = {
                                 dismissMenu()
                                 onSortChange(value)
                             },
-                            leadingIcon = { Icon(icon, contentDescription = null) },
-                            trailingIcon = { RadioButton(selected = sort == value, onClick = null) },
                         )
                     }
                 }

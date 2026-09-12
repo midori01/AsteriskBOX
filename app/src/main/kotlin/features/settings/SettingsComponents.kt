@@ -20,37 +20,36 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import org.asterisk.zcc.abox.R
 import app.modes.RunModeBpf2Socks
-import app.modes.RunModeTun2Socks
 import app.modes.RunModeTproxy
-import androidx.compose.ui.res.stringResource
-import ui.icons.AsteriskIcons as Icons
+import app.modes.RunModeTun2Socks
+import org.asterisk.zcc.abox.R
+import ui.components.AsteriskDropdownAnchor
+import ui.components.AsteriskDropdownMenuItem
 import ui.text.formatTemplate
 import ui.theme.AsteriskMotion
+import ui.icons.AsteriskIcons as Icons
 
 private val SettingsTrailingValueMaxWidth = 160.dp
 internal val LocalSettingsSearchQuery = compositionLocalOf { "" }
@@ -216,11 +215,6 @@ internal fun SettingsDropdownRow(
     val value = items[safeIndex]
     if (!settingsRowMatchesQuery(title, summary, value, items)) return
     var expanded by remember { mutableStateOf(false) }
-    val expansionRotation by animateFloatAsState(
-        targetValue = if (expanded) 180f else 0f,
-        animationSpec = AsteriskMotion.fastEffects(),
-        label = "settings-dropdown-indicator",
-    )
     Box(modifier = modifier.fillMaxWidth()) {
         SettingsRow(
             title = title,
@@ -231,57 +225,24 @@ internal fun SettingsDropdownRow(
                 expanded = !expanded
             },
             trailing = {
-                Icon(
-                    imageVector = Icons.Rounded.ExpandMore,
-                    contentDescription = null,
-                    modifier = Modifier.rotate(expansionRotation),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                AsteriskDropdownAnchor(
+                    expanded = expanded && enabled,
+                    onDismissRequest = { expanded = false },
+                    menuModifier = Modifier.widthIn(min = 180.dp, max = 280.dp),
+                ) {
+                    items.forEachIndexed { index, item ->
+                        AsteriskDropdownMenuItem(
+                            text = item,
+                            selected = index == safeIndex,
+                            onClick = {
+                                expanded = false
+                                onSelectedIndexChange(index)
+                            },
+                        )
+                    }
+                }
             },
         )
-        Box(
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = 16.dp)
-                .size(1.dp),
-        ) {
-            DropdownMenu(
-                expanded = expanded && enabled,
-                onDismissRequest = { expanded = false },
-                modifier = Modifier.widthIn(min = 180.dp, max = 280.dp),
-            ) {
-                items.forEachIndexed { index, item ->
-                    val selected = index == safeIndex
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = item,
-                                color = if (selected) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurface
-                                },
-                            )
-                        },
-                        leadingIcon = {
-                            if (selected) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Check,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            } else {
-                                Spacer(Modifier.size(24.dp))
-                            }
-                        },
-                        onClick = {
-                            expanded = false
-                            onSelectedIndexChange(index)
-                        },
-                    )
-                }
-            }
-        }
     }
 }
 

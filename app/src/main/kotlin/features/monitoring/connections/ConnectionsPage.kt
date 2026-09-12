@@ -11,15 +11,14 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -35,8 +34,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,7 +55,6 @@ import app.LocalAppStateStore
 import app.collectAppState
 import app.managedReferenceRemarks
 import app.visibleManagedReference
-import org.asterisk.zcc.abox.R
 import engine.singbox.runtime.SingBoxConnection
 import features.monitoring.ConnectionMonitorStatus
 import features.monitoring.ConnectionRouteFilter
@@ -73,7 +71,10 @@ import features.monitoring.discardDisplayedConnection
 import features.monitoring.reduceConnections
 import features.monitoring.resolveDisplayedConnections
 import kotlinx.coroutines.launch
+import org.asterisk.zcc.abox.R
 import ui.components.AsteriskActionButton
+import ui.components.AsteriskDropdownAnchor
+import ui.components.AsteriskDropdownMenuItem
 import ui.components.AsteriskFilterChip
 import ui.components.AsteriskPinnedSearchArea
 import ui.layout.rememberPageGutter
@@ -98,7 +99,7 @@ internal fun ConnectionsMonitorPage(padding: PaddingValues) {
     var operationInProgress by rememberSaveable { mutableStateOf(false) }
     var paused by remember { mutableStateOf(false) }
     var frozenConnections by remember { mutableStateOf(connections) }
-    val history = remember { ConnectionPageHistory<SingBoxConnection>(SingBoxConnection::id) }
+    val history = remember { ConnectionPageHistory(SingBoxConnection::id) }
     var pageSnapshot by remember { mutableStateOf(ConnectionPageSnapshot<SingBoxConnection>()) }
     var frozenPageSnapshot by remember { mutableStateOf(pageSnapshot) }
     var showClosed by remember { mutableStateOf(false) }
@@ -391,39 +392,19 @@ private fun ConnectionsMonitorStatus(
             ) {
                 Text(text = if (showClosed) closedLabel else activeLabel, maxLines = 1)
                 Spacer(Modifier.width(4.dp))
-                // Anchor the popup to the arrow, independently of the label width.
-                Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.ExpandMore, contentDescription = null)
-                    DropdownMenu(
-                        expanded = showStateMenu,
-                        onDismissRequest = { showStateMenu = false },
-                    ) {
-                        listOf(false, true).forEach { closed ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = if (closed) closedLabel else activeLabel,
-                                        color = if (closed == showClosed) MaterialTheme.colorScheme.primary
-                                        else MaterialTheme.colorScheme.onSurface,
-                                    )
-                                },
-                                leadingIcon = {
-                                    if (closed == showClosed) {
-                                        Icon(
-                                            Icons.Rounded.Check,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                        )
-                                    } else {
-                                        Spacer(Modifier.size(24.dp))
-                                    }
-                                },
-                                onClick = {
-                                    showStateMenu = false
-                                    onShowClosedChange(closed)
-                                },
-                            )
-                        }
+                AsteriskDropdownAnchor(
+                    expanded = showStateMenu,
+                    onDismissRequest = { showStateMenu = false },
+                ) {
+                    listOf(false, true).forEach { closed ->
+                        AsteriskDropdownMenuItem(
+                            text = if (closed) closedLabel else activeLabel,
+                            selected = closed == showClosed,
+                            onClick = {
+                                showStateMenu = false
+                                onShowClosedChange(closed)
+                            },
+                        )
                     }
                 }
             }
@@ -457,18 +438,24 @@ private fun ConnectionControls(
                 onClick = { showSortMenu = true },
                 label = connectionSortLabel(sort),
                 leadingIcon = { Icon(Icons.AutoMirrored.Rounded.Sort, contentDescription = null) },
+                trailingIcon = {
+                    AsteriskDropdownAnchor(
+                        expanded = showSortMenu,
+                        onDismissRequest = { showSortMenu = false },
+                    ) {
+                        ConnectionSort.entries.forEach { option ->
+                            AsteriskDropdownMenuItem(
+                                text = connectionSortLabel(option),
+                                selected = sort == option,
+                                onClick = {
+                                    onSortChange(option)
+                                    showSortMenu = false
+                                },
+                            )
+                        }
+                    }
+                },
             )
-            DropdownMenu(expanded = showSortMenu, onDismissRequest = { showSortMenu = false }) {
-                ConnectionSort.entries.forEach { option ->
-                    DropdownMenuItem(
-                        text = { Text(connectionSortLabel(option)) },
-                        onClick = {
-                            onSortChange(option)
-                            showSortMenu = false
-                        },
-                    )
-                }
-            }
         }
     }
 }
