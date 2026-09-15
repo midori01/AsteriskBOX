@@ -143,7 +143,7 @@ internal fun buildHomeMonitoringOverviewState(
     todayTrafficBytes = monitoringState.traffic.today.total,
     networkRows = listOf(
         HomeNetworkRow(HomeNetworkRowKind.Ipv4, monitoringState.network.local.ipv4Addresses.firstOrNull()),
-        HomeNetworkRow(HomeNetworkRowKind.Ipv6, monitoringState.network.local.ipv6Addresses.firstOrNull()),
+        HomeNetworkRow(HomeNetworkRowKind.Ipv6, monitoringState.network.publicProbe.ipv4.address.ifBlank { null }),
     ),
 )
 

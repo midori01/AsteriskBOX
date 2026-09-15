@@ -23,9 +23,6 @@ internal class SettingsSheetState(
     var showLocalProxySettings by mutableStateOf(false)
     var localProxySettingsDraft by mutableStateOf(LocalProxySettingsDraft())
 
-    var showTunSettings by mutableStateOf(false)
-    var tunSettingsDraft by mutableStateOf(TunSettingsDraft())
-
     var showSnifferSettings by mutableStateOf(false)
     var snifferSettingsDraft by mutableStateOf(SnifferSettingsDraft())
 
@@ -57,11 +54,6 @@ internal class SettingsSheetState(
     fun openLocalProxySettings(appState: AppState) {
         localProxySettingsDraft = appState.toLocalProxySettingsDraft()
         showLocalProxySettings = true
-    }
-
-    fun openTunSettings(appState: AppState) {
-        tunSettingsDraft = appState.toTunSettingsDraft()
-        showTunSettings = true
     }
 
     fun openSnifferSettings(appState: AppState) {

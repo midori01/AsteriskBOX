@@ -13,11 +13,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import app.AppState
 import app.LocalAppServices
-import app.modes.RunModeBpf2Socks
+
 import app.modes.RunModeEbpf
 import app.modes.RunModeTproxy
-import app.modes.RunModeTun2Socks
-import app.modes.RunModeVpnService
 import engine.singbox.config.validateSingBoxRuntimeConfiguration
 import features.logs.FailureLogContext
 import features.logs.reportFailure
@@ -30,7 +28,6 @@ import features.settings.sheets.LocalProxySettingsBottomSheet
 import features.settings.sheets.PrivateAddressBottomSheet
 import features.settings.sheets.SnifferSettingsBottomSheet
 import features.settings.sheets.ServiceControlBottomSheet
-import features.settings.sheets.TunSettingsBottomSheet
 import features.settings.sheets.sanitizeTunBypassRuleSetTags
 import features.settings.sheets.sanitizeTunSharedNetworkInterfaces
 import features.settings.sheets.sanitizeExternalInterfaces
@@ -106,40 +103,16 @@ internal fun SettingsBottomSheetsHost(
     LocalProxySettingsBottomSheet(
         show = sheetState.showLocalProxySettings,
         saving = validating,
-        showBpf2SocksBridgePort = appState.runMode == RunModeBpf2Socks,
-        showInboundProxyPort = appState.runMode == RunModeTproxy ||
-            appState.runMode == RunModeTun2Socks ||
-            appState.runMode == RunModeBpf2Socks,
-        useTun2SocksProxyPort = appState.runMode == RunModeTun2Socks,
-        useBpf2SocksProxyPort = appState.runMode == RunModeBpf2Socks,
-        lockInboundProxyPort = (appState.runMode == RunModeTproxy ||
-            appState.runMode == RunModeTun2Socks ||
-            appState.runMode == RunModeBpf2Socks) &&
-            appState.proxyRunning,
-        inboundProxyPort = if (appState.runMode == RunModeTun2Socks) {
-            sheetState.localProxySettingsDraft.socks5ProxyPort
-        } else if (appState.runMode == RunModeBpf2Socks) {
-            sheetState.localProxySettingsDraft.socks5ProxyPort
-        } else {
-            sheetState.localProxySettingsDraft.transparentProxyPort
-        },
-        bpf2SocksBridgePort = sheetState.localProxySettingsDraft.bpf2SocksBridgePort,
+        showInboundProxyPort = appState.runMode == RunModeTproxy,
+        lockInboundProxyPort = appState.runMode == RunModeTproxy && appState.proxyRunning,
+        inboundProxyPort = sheetState.localProxySettingsDraft.transparentProxyPort,
         port = sheetState.localProxySettingsDraft.port,
         enableDynamicPort = sheetState.localProxySettingsDraft.enableDynamicPort,
         listenAllInterfaces = sheetState.localProxySettingsDraft.listenAllInterfaces,
         username = sheetState.localProxySettingsDraft.username,
         password = sheetState.localProxySettingsDraft.password,
         onInboundProxyPortChange = {
-            sheetState.localProxySettingsDraft = if (appState.runMode == RunModeTun2Socks) {
-                sheetState.localProxySettingsDraft.copy(socks5ProxyPort = it)
-            } else if (appState.runMode == RunModeBpf2Socks) {
-                sheetState.localProxySettingsDraft.copy(socks5ProxyPort = it)
-            } else {
-                sheetState.localProxySettingsDraft.copy(transparentProxyPort = it)
-            }
-        },
-        onBpf2SocksBridgePortChange = {
-            sheetState.localProxySettingsDraft = sheetState.localProxySettingsDraft.copy(bpf2SocksBridgePort = it)
+            sheetState.localProxySettingsDraft = sheetState.localProxySettingsDraft.copy(transparentProxyPort = it)
         },
         onPortChange = {
             sheetState.localProxySettingsDraft = sheetState.localProxySettingsDraft.copy(
@@ -159,30 +132,16 @@ internal fun SettingsBottomSheetsHost(
             sheetState.localProxySettingsDraft = sheetState.localProxySettingsDraft.copy(password = it)
         },
         onDismissRequest = { sheetState.showLocalProxySettings = false },
-        onSave = { inboundProxyPort, bpf2SocksBridgePort, port, enableDynamicPort, listenAllInterfaces, username, password ->
+        onSave = { inboundProxyPort, port, enableDynamicPort, listenAllInterfaces, username, password ->
             validateAndCommit(
                 operation = "save_local_proxy_settings",
                 transform = { state ->
-                    val lockInboundProxyPort = (state.runMode == RunModeTproxy ||
-                        state.runMode == RunModeTun2Socks ||
-                        state.runMode == RunModeBpf2Socks) &&
-                        state.proxyRunning
+                    val lockInboundProxyPort = state.runMode == RunModeTproxy && state.proxyRunning
                     state.copy(
                         transparentProxyPort = when {
                             lockInboundProxyPort -> state.transparentProxyPort
                             state.runMode == RunModeTproxy -> inboundProxyPort
                             else -> state.transparentProxyPort
-                        },
-                        socks5ProxyPort = when {
-                            lockInboundProxyPort -> state.socks5ProxyPort
-                            state.runMode == RunModeTun2Socks ||
-                                state.runMode == RunModeBpf2Socks -> inboundProxyPort
-                            else -> state.socks5ProxyPort
-                        },
-                        bpf2SocksBridgePort = when {
-                            lockInboundProxyPort -> state.bpf2SocksBridgePort
-                            state.runMode == RunModeBpf2Socks -> bpf2SocksBridgePort
-                            else -> state.bpf2SocksBridgePort
                         },
                         localProxyPort = port,
                         enableDynamicLocalProxyPort = enableDynamicPort,
@@ -195,36 +154,7 @@ internal fun SettingsBottomSheetsHost(
             )
         },
     )
-    TunSettingsBottomSheet(
-        show = sheetState.showTunSettings,
-        saving = validating,
-        mtu = sheetState.tunSettingsDraft.mtu,
-        vpnDns = sheetState.tunSettingsDraft.vpnDns,
-        ipv4Cidr = sheetState.tunSettingsDraft.ipv4Cidr,
-        ipv6Cidr = sheetState.tunSettingsDraft.ipv6Cidr,
-        showVpnDns = appState.runMode == RunModeVpnService,
-        onMtuChange = {
-            sheetState.tunSettingsDraft = sheetState.tunSettingsDraft.copy(mtu = it)
-        },
-        onVpnDnsChange = { sheetState.tunSettingsDraft = sheetState.tunSettingsDraft.copy(vpnDns = it) },
-        onIpv4CidrChange = { sheetState.tunSettingsDraft = sheetState.tunSettingsDraft.copy(ipv4Cidr = it) },
-        onIpv6CidrChange = { sheetState.tunSettingsDraft = sheetState.tunSettingsDraft.copy(ipv6Cidr = it) },
-        onDismissRequest = { sheetState.showTunSettings = false },
-        onSave = { mtu, vpnDns, ipv4Cidr, ipv6Cidr ->
-            validateAndCommit(
-                operation = "save_tun_settings",
-                transform = { state ->
-                    state.copy(
-                        tunMtu = mtu,
-                        tunVpnDns = if (state.runMode == RunModeVpnService) vpnDns else state.tunVpnDns,
-                        tunIpv4Cidr = ipv4Cidr,
-                        tunIpv6Cidr = ipv6Cidr,
-                    )
-                },
-                close = { sheetState.showTunSettings = false },
-            )
-        },
-    )
+
     SnifferSettingsBottomSheet(
         show = sheetState.showSnifferSettings,
         saving = validating,

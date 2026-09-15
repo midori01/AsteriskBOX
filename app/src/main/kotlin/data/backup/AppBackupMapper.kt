@@ -8,6 +8,7 @@ import app.ServiceControlSchedule
 import app.ServiceControlSettings
 import app.ServiceControlWifi
 import app.ServiceControlWifiRule
+import app.modes.RunModeEbpf
 import app.CustomResourceFileState
 import app.OutboundGroupState
 import app.OutboundGroupUpdateStatus
@@ -20,7 +21,6 @@ import app.SingBoxSelectorState
 import app.isManagedSingBoxTag
 import app.selectableManagedOutbounds
 import app.withCanonicalManagedTagReferences
-import app.modes.RunModeVpnService
 
 internal fun AppState.toAppBackupFile(
     createdAtMillis: Long,
@@ -86,17 +86,10 @@ private fun AppState.toBackupSettings(): AppBackupSettings =
         localProxyListenAllInterfaces = localProxyListenAllInterfaces,
         localProxyUsername = localProxyUsername,
         localProxyPassword = localProxyPassword,
-        enableVpnAppendHttpProxy = enableVpnAppendHttpProxy,
-        enableVpnHevTun = enableVpnHevTun,
-        tunMtu = tunMtu,
-        tunVpnDns = tunVpnDns,
-        tunIpv4Cidr = tunIpv4Cidr,
-        tunIpv6Cidr = tunIpv6Cidr,
         coreLogLevel = coreLogLevel,
         enableTrafficStatsNotification = enableTrafficStatsNotification,
         enableBroadcastControl = enableBroadcastControl,
         resourceFileSource = resourceFileSource,
-        customResourceFileGeositeCategoryAdsAllUrl = customResourceFileGeositeCategoryAdsAllUrl,
         customResourceFileGeositeGoogleUrl = customResourceFileGeositeGoogleUrl,
         customResourceFileGeositeCnUrl = customResourceFileGeositeCnUrl,
         customResourceFileGeoipCnUrl = customResourceFileGeoipCnUrl,
@@ -125,8 +118,6 @@ private fun AppState.toBackupSettings(): AppBackupSettings =
         ebpfEndpointConnectedBypassIpCidr = ebpfEndpointConnectedBypassIpCidr,
         ebpfEndpointConnectedBypassPort = ebpfEndpointConnectedBypassPort,
         enableRootIpv6Disabler = enableRootIpv6Disabler,
-        socks5ProxyPort = socks5ProxyPort,
-        bpf2SocksBridgePort = bpf2SocksBridgePort,
         externalInterfaces = externalInterfaces,
         tunSharedNetworkInterfaces = tunSharedNetworkInterfaces,
         ignoredInterfaces = ignoredInterfaces,
@@ -273,7 +264,7 @@ private fun AppBackupData.toAppState(): AppState {
         routeFinal = settings.routeFinal,
         routeRules = routeRules,
         nextRouteRuleId = nextId(defaults.nextRouteRuleId, routeRules.map(SingBoxRouteRuleState::id)),
-        runMode = RunModeVpnService,
+        runMode = RunModeEbpf,
         singBoxMode = settings.singBoxMode,
         singBoxProxyLayout = settings.singBoxProxyLayout,
         singBoxProxySort = settings.singBoxProxySort,
@@ -285,18 +276,11 @@ private fun AppBackupData.toAppState(): AppState {
         localProxyListenAllInterfaces = settings.localProxyListenAllInterfaces,
         localProxyUsername = settings.localProxyUsername,
         localProxyPassword = settings.localProxyPassword,
-        enableVpnAppendHttpProxy = settings.enableVpnAppendHttpProxy,
-        enableVpnHevTun = settings.enableVpnHevTun,
-        tunMtu = settings.tunMtu,
-        tunVpnDns = settings.tunVpnDns,
-        tunIpv4Cidr = settings.tunIpv4Cidr,
-        tunIpv6Cidr = settings.tunIpv6Cidr,
         proxyRunning = false,
         coreLogLevel = settings.coreLogLevel,
         enableTrafficStatsNotification = settings.enableTrafficStatsNotification,
         enableBroadcastControl = settings.enableBroadcastControl,
         resourceFileSource = settings.resourceFileSource,
-        customResourceFileGeositeCategoryAdsAllUrl = settings.customResourceFileGeositeCategoryAdsAllUrl,
         customResourceFileGeositeGoogleUrl = settings.customResourceFileGeositeGoogleUrl,
         customResourceFileGeositeCnUrl = settings.customResourceFileGeositeCnUrl,
         customResourceFileGeoipCnUrl = settings.customResourceFileGeoipCnUrl,
@@ -337,8 +321,6 @@ private fun AppBackupData.toAppState(): AppState {
         ebpfEndpointConnectedBypassIpCidr = settings.ebpfEndpointConnectedBypassIpCidr,
         ebpfEndpointConnectedBypassPort = settings.ebpfEndpointConnectedBypassPort,
         enableRootIpv6Disabler = settings.enableRootIpv6Disabler,
-        socks5ProxyPort = settings.socks5ProxyPort,
-        bpf2SocksBridgePort = settings.bpf2SocksBridgePort,
         externalInterfaces = settings.externalInterfaces,
         tunSharedNetworkInterfaces = settings.tunSharedNetworkInterfaces
             ?: settings.legacyEbpfSharedNetworkInterfaces,

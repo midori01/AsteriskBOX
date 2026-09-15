@@ -34,7 +34,7 @@ import ui.components.AsteriskListRow
 import ui.components.AsteriskSection
 import ui.theme.AsteriskShapeTokens
 
-private const val ProjectSourceUri = "https://github.com/Asterisk4Magisk/AsteriskBOX"
+private const val ProjectSourceUri = "https://github.com/midori01/AsteriskBOX"
 private const val TelegramChannelUri = "https://t.me/Asterisk4Magisk"
 private const val AboutIconForegroundScale = 1.25f
 
@@ -47,7 +47,6 @@ internal fun AboutIdentityHeader(
         versionName = ProjectInfo.VERSION_NAME,
         versionCode = ProjectInfo.VERSION_CODE,
         singBoxVersion = ProjectInfo.SING_BOX_VERSION,
-        androidLibBoxLiteVersion = ProjectInfo.ANDROID_LIB_BOX_LITE_VERSION,
     )
     Column(
         modifier = modifier
@@ -118,13 +117,7 @@ internal fun AboutRuntimeSection(
         modifier = modifier.fillMaxWidth(),
         title = stringResource(R.string.about_runtime),
     ) {
-        AboutRuntimeRow(
-            "AndroidLibBoxLite",
-            ProjectInfo.ANDROID_LIB_BOX_LITE_VERSION,
-            Icons.Rounded.Extension,
-        )
         AboutRuntimeRow("sing-box", ProjectInfo.SING_BOX_VERSION, Icons.Rounded.Router)
-        AboutRuntimeRow("hev-socks5-tunnel", ProjectInfo.HEV_SOCKS5_TUNNEL_VERSION, Icons.Rounded.VpnLock)
     }
 }
 

@@ -274,11 +274,9 @@ internal class AndroidResourceFileStore(
             dataDir = dataDir.absolutePath,
             asteriskdPath = File(appContext.applicationInfo.nativeLibraryDir, AsteriskdLibraryName).absolutePath,
             bpfMatcherPath = File(appContext.applicationInfo.nativeLibraryDir, BpfMatcherLibraryName).absolutePath,
-            bpf2socksPath = File(appContext.applicationInfo.nativeLibraryDir, Bpf2SocksLibraryName).absolutePath,
             singBoxCorePath = file(ResourceFileKind.SingBoxCore).absolutePath,
             directCidrIpv4Path = file(ResourceFileKind.DirectCidrIpv4).absolutePath,
             directCidrIpv6Path = file(ResourceFileKind.DirectCidrIpv6).absolutePath,
-            hevSocks5TunnelPath = File(appContext.applicationInfo.nativeLibraryDir, HevSocks5TunnelLibraryName).absolutePath,
         )
     }
 }
@@ -331,11 +329,9 @@ internal data class SingBoxResourceFilePaths(
     val dataDir: String,
     val asteriskdPath: String,
     val bpfMatcherPath: String,
-    val bpf2socksPath: String,
     val singBoxCorePath: String,
     val directCidrIpv4Path: String,
     val directCidrIpv6Path: String,
-    val hevSocks5TunnelPath: String,
 )
 
 internal fun Context.singBoxResourceFilesDir(): File {
@@ -374,9 +370,7 @@ private fun Context.packageUpdatedAtMillis(): Long {
 
 private const val AsteriskdLibraryName = "libasteriskd.so"
 private const val BpfMatcherLibraryName = "libbpf-matcher.so"
-private const val Bpf2SocksLibraryName = "libbpf2socks.so"
 private const val SingBoxCoreLibraryName = "libsing-box.so"
-private const val HevSocks5TunnelLibraryName = "libhev-socks5-tunnel-cli.so"
 private const val SingBoxHomeDirName = "sing-box"
 
 private val SupportedAndroidAbis = setOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")

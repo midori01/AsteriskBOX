@@ -49,7 +49,14 @@ android {
         abi {
             isEnable = !isBuildingAppBundle
             reset()
-            include(*ProjectConfig.SUPPORTED_ANDROID_ABIS.toTypedArray())
+            include(
+                *(project.findProperty("android.splits.abi.include") as? String)
+                    ?.split(",")
+                    ?.map { it.trim() }
+                    ?.filter { it in ProjectConfig.SUPPORTED_ANDROID_ABIS }
+                    ?.toTypedArray()
+                    ?: ProjectConfig.SUPPORTED_ANDROID_ABIS.toTypedArray()
+            )
             isUniversalApk = !isBuildingAppBundle
         }
     }
@@ -75,13 +82,14 @@ android {
     packaging {
         jniLibs {
             useLegacyPackaging = true
-            keepDebugSymbols += "**/libsing-box.so"
         }
         resources {
             excludes += setOf(
                 "DebugProbesKt.bin",
                 "META-INF/*.kotlin_module",
+                "META-INF/*.version",
                 "META-INF/AL2.0",
+                "META-INF/DEPENDENCIES",
                 "META-INF/LGPL2.1",
                 "META-INF/LICENSE",
                 "META-INF/LICENSE.md",
@@ -90,6 +98,8 @@ android {
                 "META-INF/NOTICE.md",
                 "META-INF/NOTICE.txt",
                 "META-INF/versions/**",
+                "**/*.proto",
+                "kotlin-tooling-metadata.json",
             )
         }
     }
@@ -124,10 +134,6 @@ dependencies {
     implementation(libs.dexlib2)
     implementation(dependencies.project(":asteriskd"))
     implementation(dependencies.project(":bpfmatcher"))
-    implementation(dependencies.project(":bpf2socks"))
-    implementation(dependencies.project(":hevtun"))
-    //noinspection UseTomlInstead
-    implementation("com.github.asterisk4magisk:libbox:${ProjectConfig.ANDROID_LIB_BOX_LITE_VERSION}@aar")
     implementation(libs.ktor.http)
     implementation(libs.kage)
     implementation(libs.kotlinx.serialization.json)
@@ -153,8 +159,6 @@ val generateProjectInfo = tasks.register<GenerateProjectInfoTask>("generateProje
     versionName.set(ProjectConfig.VERSION_NAME)
     versionCode.set(getGitVersionCode())
     singBoxVersion.set(ProjectConfig.SING_BOX_VERSION)
-    androidLibBoxLiteVersion.set(ProjectConfig.ANDROID_LIB_BOX_LITE_VERSION)
-    hevSocks5TunnelVersion.set(ProjectConfig.HEV_SOCKS5_TUNNEL_VERSION)
     outputDirectory.set(generatedSrcDir.map { it.dir("kotlin") })
 }
 
