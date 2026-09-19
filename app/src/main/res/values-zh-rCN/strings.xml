@@ -3,7 +3,7 @@
          Keep section and resource order aligned across translations and sibling apps. -->
 
     <!-- Common -->
-    <string name="app_name">AsteriskBOX</string>
+    <string name="app_name">MidoriBOX</string>
     <string name="code_editor_format_content_changed">内容已修改，请重新格式化</string>
     <string name="code_editor_format_failed">格式化失败，请检查语法</string>
     <string name="code_editor_format_javascript">格式化 JavaScript</string>
@@ -75,7 +75,7 @@
     <string name="home_more_actions">更多操作</string>
     <string name="home_network_activity">网络活动</string>
     <string name="home_network_speed_summary">↑ %1$s   ↓ %2$s</string>
-    <string name="home_network_summary">IPv4 · %1$s\nIPv6 · %2$s</string>
+    <string name="home_network_summary">本地 · %1$s\n公网 · %2$s</string>
     <string name="home_no_network_activity">暂无活动</string>
     <string name="home_resource_summary">CPU %1$s · %2$s</string>
     <string name="home_service_disabled">服务未启用</string>
@@ -132,6 +132,7 @@
     <string name="monitor_connections_download">下载</string>
     <string name="monitor_connections_empty">暂无活动连接</string>
     <string name="monitor_connections_focus_routes">代理 %1$d · 直连 %2$d</string>
+    <string name="monitor_connections_inbound">入站</string>
     <string name="monitor_connections_live">实时</string>
     <string name="monitor_connections_network">网络协议</string>
     <string name="monitor_connections_no_match">没有匹配的连接</string>
@@ -450,7 +451,7 @@
     <string name="outbound_editor_section_server">服务器</string>
     <string name="outbound_editor_section_server_summary">该出站连接的远程端点</string>
     <string name="outbound_editor_section_tls">TLS</string>
-    <string name="outbound_editor_section_tls_summary">sing-box TLS、uTLS 与 Reality 客户端选项</string>
+    <string name="outbound_editor_section_tls_summary">sing-box TLS 与 Reality 客户端选项</string>
     <string name="outbound_editor_section_transport">V2Ray 传输层</string>
     <string name="outbound_editor_section_transport_summary">可选的 HTTP、WebSocket、QUIC、gRPC 或 HTTPUpgrade 传输</string>
     <string name="outbound_editor_tls_required">此协议必须启用</string>
@@ -591,8 +592,6 @@
     <string name="outbound_field_user">用户</string>
     <string name="outbound_field_user_key">用户密钥</string>
     <string name="outbound_field_username">用户名</string>
-    <string name="outbound_field_utls">uTLS</string>
-    <string name="outbound_field_utls_fingerprint">uTLS 指纹</string>
     <string name="outbound_field_uuid">UUID</string>
     <string name="outbound_field_zero_rtt_handshake">0-RTT 握手</string>
     <string name="outbound_group">分组</string>
@@ -931,6 +930,9 @@
     <string name="settings_dns_tls_server_name">TLS 服务器名称（可选）</string>
     <string name="settings_dns_ttl_invalid">TTL 必须是 0 到 4294967295 之间的整数</string>
 
+    <string name="settings_vpn_local_dns">启用 DNS 劫持</string>
+    <string name="settings_vpn_local_dns_summary">使用核心处理 DNS 请求</string>
+
     <!-- Routing -->
     <string name="routing_action">动作</string>
     <string name="routing_action_reject">拒绝连接</string>
@@ -1038,7 +1040,6 @@
     <string name="managed_inbound_empty">当前运行模式没有可用的托管入站</string>
     <string name="managed_inbound_local">本地代理</string>
     <string name="managed_inbound_root">ROOT 转发</string>
-    <string name="managed_inbound_tun">TUN</string>
     <string name="managed_preferred_by_empty">没有可提供首选域名的 DNS 服务器</string>
 
     <!-- Run mode and proxy service -->
@@ -1058,44 +1059,17 @@
     <string name="proxy_error_ebpf_tc_unsupported_switch">临时方案：进入 设置 → 高级设置，在 运行模式 中确认已选择 eBPF（ROOT）；再在 代理设置（eBPF） 中把 数据面 从 tc 改为 cgroup，然后重试。</string>
     <string name="proxy_service_started">代理服务已启动</string>
     <string name="proxy_service_stopped">代理服务已停止</string>
-    <string name="settings_proxy_bpf2socks">代理设置（BPF2SOCKS）</string>
     <string name="settings_proxy_ebpf">代理设置（eBPF）</string>
     <string name="settings_proxy_tproxy">代理设置（TPROXY）</string>
-    <string name="settings_proxy_tun">代理设置（TUN）</string>
-    <string name="settings_proxy_tun2socks">代理设置（TUN2SOCKS）</string>
-    <string name="settings_proxy_vpn_service">代理设置（VPN Service）</string>
     <string name="settings_run_mode">运行模式</string>
-    <string name="settings_run_mode_bpf2socks">BPF2SOCKS（ROOT）</string>
-    <string name="settings_run_mode_ebpf">eBPF（ROOT）</string>
-    <string name="settings_run_mode_tproxy">TPROXY（ROOT）</string>
-    <string name="settings_run_mode_tun">TUN（ROOT）</string>
-    <string name="settings_run_mode_tun2socks">TUN2SOCKS（ROOT）</string>
-    <string name="settings_run_mode_vpn_service">VPN Service</string>
-
-    <!-- VPN -->
-    <string name="error_vpn_permission_denied">VPN 权限未授予，无法启动 VPN Service</string>
-    <string name="error_vpn_permission_launcher_missing">VPN 权限请求器未注册</string>
-    <string name="error_vpn_start_config_missing">VPN Service 启动配置缺失</string>
-    <string name="error_vpn_tun_fd_unavailable">VPN TUN 文件描述符不可用</string>
-    <string name="error_vpn_tunnel_establish_failed">无法建立 VPN 隧道</string>
-    <string name="settings_vpn_append_http_proxy">追加 HTTP 代理</string>
-    <string name="settings_vpn_append_http_proxy_summary">让受支持的应用直接使用 HTTP 代理</string>
-    <string name="settings_vpn_hev_tun">使用 Hev TUN</string>
-    <string name="settings_vpn_hev_tun_summary">使用 hev-socks5-tunnel 创建 TUN 设备</string>
-    <string name="settings_vpn_local_dns">启用 DNS 劫持</string>
-    <string name="settings_vpn_local_dns_summary">使用核心处理 DNS 请求</string>
+    <string name="settings_run_mode_ebpf">eBPF</string>
+    <string name="settings_run_mode_tproxy">TPROXY</string>
 
     <!-- ROOT -->
-    <string name="error_bpf2socks_root_required">ROOT 权限不可用，无法启动 BPF2SOCKS 模式</string>
-    <string name="error_bpf2socks_start_failed">BPF2SOCKS 模式启动失败：%1$s</string>
     <string name="error_ebpf_root_required">ROOT 权限不可用，无法启动 eBPF 模式</string>
     <string name="error_ebpf_start_failed">eBPF 模式启动失败：%1$s</string>
     <string name="error_tproxy_root_required">ROOT 权限不可用，无法启动 TPROXY 模式</string>
     <string name="error_tproxy_start_failed">TPROXY 模式启动失败：%1$s</string>
-    <string name="error_tun2socks_root_required">ROOT 权限不可用，无法启动 TUN2SOCKS 模式</string>
-    <string name="error_tun2socks_start_failed">TUN2SOCKS 模式启动失败：%1$s</string>
-    <string name="error_tun_root_required">ROOT 权限不可用，无法启动 TUN 模式</string>
-    <string name="error_tun_start_failed">TUN 模式启动失败：%1$s</string>
     <string name="root_foreign_owner_conflict">ROOT 代理服务正被 %1$s 占用，请先在 %1$s 中停止服务后重试。</string>
     <string name="settings_ebpf_data_plane">数据面</string>
     <string name="settings_ebpf_dns_disabled">本地 DNS 已关闭，当前使用 off。</string>
@@ -1136,25 +1110,12 @@
     <string name="settings_root_required">获取ROOT权限失败！</string>
 
     <!-- TUN -->
-    <string name="settings_tun">TUN 设置</string>
     <string name="settings_tun_bypass_rule_sets_description">此处仅所选规则集中的 IP CIDR 会绕过流量接管，域名规则不生效</string>
     <string name="settings_tun_bypass_rule_sets_picker_title">规则集</string>
     <string name="settings_tun_bypass_rule_sets_summary_none">未选择规则集</string>
     <string name="settings_tun_bypass_rule_sets_summary_selected">已选择：{ruleSets}</string>
-    <string name="settings_tun_dns_invalid">VPN DNS 必须为数值形式的 IPv4 或 IPv6 地址</string>
-    <string name="settings_tun_ipv4_cidr">IPv4 CIDR</string>
-    <string name="settings_tun_ipv4_cidr_invalid">无效 IPv4 CIDR</string>
-    <string name="settings_tun_ipv6_cidr">IPv6 CIDR</string>
-    <string name="settings_tun_ipv6_cidr_invalid">无效 IPv6 CIDR</string>
-    <string name="settings_tun_mtu">MTU</string>
-    <string name="settings_tun_mtu_invalid">MTU 范围应为 1280–65535</string>
-    <string name="settings_tun_summary">MTU {mtu}，VPN DNS {vpnDns}，IPv4 {ipv4}，IPv6 {ipv6}</string>
-    <string name="settings_tun_summary_without_dns">MTU {mtu}，IPv4 {ipv4}，IPv6 {ipv6}</string>
-    <string name="settings_tun_vpn_dns">VPN DNS</string>
 
     <!-- Local proxy -->
-    <string name="settings_bpf2socks_bridge_port">BPF2SOCKS bridge 端口</string>
-    <string name="settings_bpf2socks_socks5_port">SOCKS5 端口</string>
     <string name="settings_local_proxy">本地代理设置</string>
     <string name="settings_local_proxy_dynamic_port">动态本地代理端口</string>
     <string name="settings_local_proxy_dynamic_port_summary">启动服务时自动选择可用端口</string>
@@ -1164,13 +1125,10 @@
     <string name="settings_local_proxy_port">本地代理端口</string>
     <string name="settings_local_proxy_port_invalid">端口范围应为 1–65535</string>
     <string name="settings_local_proxy_summary_all_interfaces">0.0.0.0:{port}</string>
-    <string name="settings_local_proxy_summary_bpf2socks">Bridge 端口 {bridgePort}，SOCKS5 端口 {socksPort}</string>
     <string name="settings_local_proxy_summary_fixed">127.0.0.1:{port}</string>
     <string name="settings_local_proxy_summary_tproxy">透明代理端口 {port}</string>
-    <string name="settings_local_proxy_summary_tun2socks">TUN2SOCKS SOCKS5 端口 {port}</string>
     <string name="settings_local_proxy_username">本地代理用户名</string>
     <string name="settings_transparent_proxy_port">透明代理端口</string>
-    <string name="settings_tun2socks_socks5_port">TUN2SOCKS SOCKS5 端口</string>
 
     <!-- Tethering -->
     <string name="settings_external_interfaces">热点共享设置</string>
@@ -1191,9 +1149,13 @@
 
     <!-- Interface exclusions -->
     <string name="settings_ignored_interfaces">忽略接口设置</string>
+    <string name="settings_ignored_interfaces_custom_input">自定义接口</string>
     <string name="settings_ignored_interfaces_empty">尚未配置忽略接口</string>
+    <string name="settings_ignored_interfaces_error">接口加载失败：{message}</string>
+    <string name="settings_ignored_interfaces_error_detail">无法读取网络接口</string>
     <string name="settings_ignored_interfaces_input">接口选择器</string>
     <string name="settings_ignored_interfaces_invalid">请使用 1–15 个字母、数字、_、. 或 -。+ 仅可出现一次且必须位于末尾。</string>
+    <string name="settings_ignored_interfaces_loading">正在加载网络接口…</string>
     <string name="settings_ignored_interfaces_none">未选择</string>
     <string name="settings_ignored_interfaces_selected">已选择：{interfaces}</string>
     <string name="settings_ignored_interfaces_summary">每项输入一个接口名称。在末尾添加 + 可匹配前缀，例如 wlan+。</string>
@@ -1288,12 +1250,11 @@
     <string name="settings_traffic_stats_notification_summary">在通知中显示当前速度和累计流量</string>
 
     <!-- Quick settings tile -->
-    <string name="quick_settings_tile_label">AsteriskBOX</string>
+    <string name="quick_settings_tile_label">MidoriBOX</string>
     <string name="quick_settings_tile_processing">正在处理…</string>
     <string name="quick_settings_tile_running">代理运行中</string>
     <string name="quick_settings_tile_stopped">代理已停止</string>
     <string name="quick_settings_tile_toggle_failed">代理切换失败</string>
-    <string name="quick_settings_tile_vpn_permission_required">授予 VPN 权限后，再次点击即可启动</string>
 
     <!-- Proxy apps -->
     <string name="proxy_app_list_clear_done">已清空</string>
@@ -1444,7 +1405,7 @@
     <string name="settings_restore_backup_created_at">创建时间：{time}</string>
     <string name="settings_restore_backup_version">备份版本 {version}，应用版本 {appVersion}</string>
     <string name="settings_restore_completed">用户数据已还原</string>
-    <string name="settings_restore_confirm_summary">当前设置、出站分组、出站、端点、选择器、路由、DNS 和应用代理数据将被覆盖。当前代理将停止，ROOT 开机脚本将卸载，运行模式将切换为 VPN Service。</string>
+    <string name="settings_restore_confirm_summary">当前设置、出站分组、出站、端点、选择器、路由、DNS 和应用代理数据将被覆盖。当前代理将停止，ROOT 开机脚本将卸载，运行模式将重置为 eBPF。</string>
     <string name="settings_restore_confirm_title">还原用户数据？</string>
     <string name="settings_restore_failed">还原用户数据失败</string>
     <string name="settings_restore_read_failed">读取备份文件失败</string>
@@ -1455,13 +1416,6 @@
     <string name="settings_restore_warning_missing_dns_references">警告：{count} 个 DNS 服务器引用不可用，将按原样保留。</string>
     <string name="settings_restore_warning_missing_endpoint_references">警告：{count} 个端点引用不可用，将按原样保留。</string>
     <string name="settings_restore_warning_missing_outbound_references">警告：{count} 个托管出站引用不可用，将按原样保留。</string>
-
-    <!-- Core migration -->
-    <string name="shared_core_migration_keep">保留</string>
-    <string name="shared_core_migration_message">VPN 和 ROOT 现已共用内置 Core。是否移除自定义 Core 以节省空间？之后仍可上传自定义 Core。</string>
-    <string name="shared_core_migration_remove">移除</string>
-    <string name="shared_core_migration_stop_root">移除前将停止 ROOT 服务。</string>
-    <string name="shared_core_migration_title">软件已更新</string>
 
     <!-- QR scanner -->
     <string name="error_qr_camera_permission_denied">相机权限未授予，无法扫描二维码</string>
@@ -1544,5 +1498,26 @@
     <string name="license_title">第三方开源许可</string>
     <string name="settings_about">关于</string>
     <string name="settings_about_project">关于项目</string>
+    <string name="settings_check_update">检查更新</string>
+    <string name="settings_auto_check_update_title">开启时自动检查更新</string>
+    <string name="settings_auto_check_update_summary">应用启动时自动在后台静默检查新构建</string>
     <string name="settings_open_source_licenses">开源许可</string>
+    <string name="update_already_latest">当前已是最新版本 (%1$s)</string>
+    <string name="update_btn_now">立即更新</string>
+    <string name="update_btn_view_action">在 GitHub 查看</string>
+    <string name="update_check_failed">检查更新失败：%1$s</string>
+    <string name="update_checking">正在检查更新…</string>
+    <string name="update_current_version">当前版本：%1$s</string>
+    <string name="update_dialog_title">发现新版本</string>
+    <string name="update_download_failed">下载失败：%1$s</string>
+    <string name="update_downloading">正在下载 (%1$d%%)</string>
+    <string name="update_downloading_indeterminate">正在下载…</string>
+    <string name="update_install">安装更新</string>
+    <string name="update_new_version">最新构建：%1$s</string>
+    <string name="update_permission_install_unknown">请授予安装未知应用权限以继续更新</string>
+    <string name="update_error_rate_limited">GitHub API 请求过于频繁，请在 %1$d 分钟后再试</string>
+    <string name="update_error_request_failed">GitHub 请求受限 (HTTP %1$d)，请稍后再试</string>
+    <string name="update_error_corrupt_apk">下载的安装包损坏或解析失败</string>
+    <string name="update_error_package_mismatch">安装包包名不匹配 (%1$s)</string>
+    <string name="update_error_cannot_install">无法启动安装程序：%1$s</string>
 </resources>

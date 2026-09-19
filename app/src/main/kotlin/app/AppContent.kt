@@ -318,6 +318,9 @@ fun AppContent(
             // diagnostic immediately on the home page after a failed proxy start, regardless of
             // which tab they are on.
             features.singbox.ProxyErrorHost()
+
+            // Global update sheet host — visible across all screens when an update is available or downloading
+            features.updater.AppUpdateHost()
         }
     }
 }

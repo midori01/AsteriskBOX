@@ -7,12 +7,8 @@ import engine.singbox.config.DnsConfigurationMatchFields
 import engine.singbox.config.DnsConfigurationServerTypes
 import engine.singbox.config.mapDnsConfigurationTags
 
-import app.modes.RunModeBpf2Socks
 import app.modes.RunModeEbpf
 import app.modes.RunModeTproxy
-import app.modes.RunModeTun
-import app.modes.RunModeTun2Socks
-import app.modes.RunModeVpnService
 import engine.network.isIpAddress
 import engine.singbox.config.SingBoxJson
 import engine.singbox.config.inheritedGroupDetour
@@ -20,7 +16,6 @@ import engine.singbox.config.APP_DIRECT_OUTBOUND
 import engine.singbox.config.APP_GLOBAL_SELECTOR
 import engine.singbox.config.APP_LOCAL_INBOUND
 import engine.singbox.config.APP_ROOT_INBOUND
-import engine.singbox.config.APP_TUN_INBOUND
 import features.resources.hasSingBoxRuleSetExtension
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -249,7 +244,6 @@ internal fun AppState.currentManagedTagsByIdentity(): Map<ManagedTagIdentity, St
     add(APP_DIRECT_OUTBOUND)
     add(APP_GLOBAL_SELECTOR)
     add(APP_LOCAL_INBOUND)
-    add(APP_TUN_INBOUND)
     add(APP_ROOT_INBOUND)
     add(ManagedApiServiceTag)
     outboundGroups.forEach { group ->
@@ -378,11 +372,7 @@ internal fun selectableDnsEndpoints(
 
 internal fun managedInboundTags(state: AppState): List<String> = buildList {
     add(APP_LOCAL_INBOUND)
-    when (state.runMode) {
-        RunModeVpnService -> if (!state.enableVpnHevTun) add(APP_TUN_INBOUND)
-        RunModeTun -> add(APP_TUN_INBOUND)
-        RunModeTproxy, RunModeTun2Socks, RunModeBpf2Socks, RunModeEbpf -> add(APP_ROOT_INBOUND)
-    }
+    add(APP_ROOT_INBOUND)
 }
 
 internal fun selectablePreferredByDnsServerTags(state: AppState): List<String> =

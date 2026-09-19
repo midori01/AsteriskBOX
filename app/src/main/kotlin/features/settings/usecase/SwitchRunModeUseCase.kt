@@ -5,13 +5,10 @@ package features.settings.usecase
 
 import android.content.Context
 import app.AppState
-import app.modes.RunModeTun2Socks
 import app.modes.isRootRunMode
 import app.modes.normalizeRunMode
-import engine.hevtun.deleteHevSocks5TunnelLogFile
 import engine.root.runtime.RootFailureWatcher
 import engine.proxy.AndroidProxyEngine
-import features.logs.AndroidAppLogger
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -85,24 +82,14 @@ internal class SwitchRunModeUseCase(
             }
         }
 
-        if (normalizedTargetMode != RunModeTun2Socks) {
-            deleteHevSocks5TunnelLog()
-        }
-
         // Stop diagnostics before leaving ROOT, including failed/inactive cycles.
         if (currentState.runMode.isRootRunMode()) {
             RootFailureWatcher.stop()
         }
-
         return SwitchRunModeResult.Success(
             runMode = normalizedTargetMode,
             proxyRunning = stoppedRunning,
         )
-    }
-
-    private fun deleteHevSocks5TunnelLog() {
-        runCatching { appContext.deleteHevSocks5TunnelLogFile() }
-            .onFailure { error -> AndroidAppLogger.warn(LogTag, "Failed to delete tun2socks log", error) }
     }
 
 }
@@ -121,5 +108,3 @@ internal sealed interface SwitchRunModeResult {
         val error: Throwable,
     ) : SwitchRunModeResult
 }
-
-private const val LogTag = "SwitchRunMode"

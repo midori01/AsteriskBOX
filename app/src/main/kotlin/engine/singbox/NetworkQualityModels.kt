@@ -4,13 +4,11 @@
 package engine.singbox
 
 /**
- * Mirrors the `libbox.NetworkQualityPhase*` int constants exposed by
- * `io.nekohasekai.libbox.Libbox`:
+ * Mirrors the sing-box NetworkQualityPhase wire int constants:
  *   Idle = 0, Download = 1, Upload = 2, Done = 3
  *
- * Values map to the wire constants used by both `NetworkQualityProgress.phase`
- * and the aar `NetworkQualityPhase*` ints, so callers can convert in both
- * directions without hard-coding magic numbers.
+ * Values map to the wire constants used by `NetworkQualityProgress.phase`,
+ * so callers can convert without hard-coding magic numbers.
  */
 internal enum class NetworkQualityPhase(val wire: Int) {
     Idle(0),
@@ -26,11 +24,10 @@ internal enum class NetworkQualityPhase(val wire: Int) {
 }
 
 /**
- * One snapshot delivered to the UI from either a service-mode or standalone
- * run. Mirrors [io.nekohasekai.libbox.NetworkQualityProgress] but flattened
- * for Compose consumption. `finished` is set on the terminal snapshot (phase
- * == [NetworkQualityPhase.Done] for success, or any phase paired with an
- * [error]).
+ * One snapshot delivered to the UI from a networkQuality measurement run.
+ * Flattened for Compose consumption. `finished` is set on the terminal
+ * snapshot (phase == [NetworkQualityPhase.Done] for success, or any phase
+ * paired with an [error]).
  */
 internal data class NetworkQualityProgress(
     val phase: NetworkQualityPhase = NetworkQualityPhase.Idle,
@@ -47,3 +44,12 @@ internal data class NetworkQualityProgress(
     val error: String? = null,
     val finished: Boolean = false,
 )
+
+internal interface NetworkQualityTestHandler {
+    fun onProgress(progress: NetworkQualityProgress)
+    fun onError(message: String)
+    fun onResult(result: NetworkQualityProgress)
+}
+
+internal interface NetworkQualityTestSession : AutoCloseable
+

@@ -23,28 +23,19 @@ internal object AsteriskdConfigValidator {
                 require(modeOptions.transparentPort != null && modeOptions.tunnelName == null)
                 require(helper == null)
             }
-            AsteriskdMode.Tun2Socks -> {
-                require(modeOptions.transparentPort == null && modeOptions.tunnelName == null)
-                require(helper is AsteriskdHevSocks5TunnelHelper)
-            }
-            AsteriskdMode.Bpf2Socks -> {
-                require(modeOptions.transparentPort == null && modeOptions.tunnelName == null)
-                require(helper is AsteriskdBpf2SocksHelper && matcher == null)
-            }
-            AsteriskdMode.Tun -> {
-                require(modeOptions.transparentPort == null && !modeOptions.tunnelName.isNullOrBlank())
-                require(helper == null && matcher == null)
+            AsteriskdMode.Tun2Socks, AsteriskdMode.Bpf2Socks, AsteriskdMode.Tun -> {
+                error("Unsupported mode: $mode")
             }
             AsteriskdMode.Ebpf -> {
                 require(modeOptions.transparentPort == null && modeOptions.tunnelName == null)
                 require(helper == null && matcher == null)
             }
         }
-        if (mode == AsteriskdMode.Tun || mode == AsteriskdMode.Ebpf) {
+        if (mode == AsteriskdMode.Ebpf) {
             require(!network.enableLocalDns && !network.enableFakeDns && network.fakeDnsIpv4Pool == null)
             require(network.ignoredInterfaces.isEmpty())
             require(network.virtualInterfaces.isEmpty())
-            if (mode == AsteriskdMode.Ebpf) require(network.hotspotInterfacePrefixes.isEmpty())
+            require(network.hotspotInterfacePrefixes.isEmpty())
             require(network.proxyPrivateCidrs.isEmpty() && network.bypassPrivateCidrs.isEmpty())
             require(network.appPolicy == AsteriskdAppPolicy(
                 mode = AsteriskdAppPolicyMode.Global,

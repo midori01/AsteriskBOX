@@ -2,7 +2,7 @@ English | [简体中文](README_zh_CN.md)
 
 # AsteriskBOX
 
-An Android sing-box GUI client.
+An Android sing-box GUI client. ROOT modes execute the [reF1nd sing-box](https://github.com/reF1nd/sing-box-releases) build for Android.
 
 ## Telegram Channel
 
@@ -10,36 +10,15 @@ An Android sing-box GUI client.
 
 ## Run Modes
 
-### VPN Service
-
-- Works without root permission.
-- Uses Android `VpnService`.
-
 ### TPROXY(ROOT)
 
 - Runs the local sing-box executable directly with libsu.
 - Uses iptables and policy routing for transparent proxy traffic.
 
-### TUN(ROOT)
-
-- Runs the local sing-box executable directly with libsu.
-- Uses `auto_route` and `auto_redirect` in the sing-box TUN inbound to manage routing.
-
 ### eBPF(ROOT)
 
 - Runs the local sing-box executable directly with libsu.
 - Uses the sing-box eBPF inbound to capture traffic.
-- Availability depends on eBPF support in the device kernel.
-
-### TUN2SOCKS(ROOT)
-
-- Runs the local sing-box executable directly with libsu.
-- Uses `hev-socks5-tunnel` to create a TUN device and send traffic to the sing-box SOCKS5 inbound.
-
-### BPF2SOCKS(ROOT)
-
-- Runs the local sing-box executable directly with libsu.
-- Uses `bpf2socks` to capture traffic and send it to the sing-box SOCKS5 inbound.
 - Availability depends on eBPF support in the device kernel.
 
 ### asteriskd
@@ -94,7 +73,7 @@ On macOS or Linux:
 ./gradlew assembleDebug
 ```
 
-The build downloads the pinned AndroidLibBoxLite AAR, builds the native submodules, and produces ABI split APKs plus a universal APK.
+The build resolves the configured reF1nd sing-box versions, builds the native helper submodules, and produces ABI split APKs plus a universal APK.
 
 If Gradle cannot find the Android NDK, configure it through Android Studio, `ndk.dir` in `local.properties`, or `ANDROID_NDK_HOME`.
 
@@ -106,8 +85,6 @@ If Gradle cannot find the Android NDK, configure it through Android Studio, `ndk
 
 - [@SagerNet/sing-box](https://github.com/SagerNet/sing-box)
 - [@reF1nd/sing-box-releases](https://github.com/reF1nd/sing-box-releases)
-- [@Asterisk4Magisk/AndroidLibBoxLite](https://github.com/Asterisk4Magisk/AndroidLibBoxLite)
-- [@heiher/hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel)
 - [@topjohnwu/libsu](https://github.com/topjohnwu/libsu)
 - [@android/material3](https://developer.android.com/develop/ui/compose/designsystems/material3)
 - [@mayaxcn/china-ip-list](https://github.com/mayaxcn/china-ip-list)
