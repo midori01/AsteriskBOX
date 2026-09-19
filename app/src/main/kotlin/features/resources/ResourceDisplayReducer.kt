@@ -30,7 +30,6 @@ internal enum class SingBoxRuleSetFileFormat(
 
 internal enum class ResourceVisualKind {
     Core,
-    AdRuleSet,
     DomainRuleSet,
     IpRuleSet,
     RuleSet,
@@ -90,7 +89,6 @@ internal fun customResourceDisplayActions(file: CustomResourceFileState): List<R
 internal fun resourceVisualKind(fileName: String): ResourceVisualKind {
     return when {
         fileName == ResourceFileSingBoxCoreName -> ResourceVisualKind.Core
-        fileName == ResourceFileGeositeCategoryAdsAllName -> ResourceVisualKind.AdRuleSet
         fileName == ResourceFileGeositeGoogleName ||
             fileName == ResourceFileGeositeCnName -> ResourceVisualKind.DomainRuleSet
         fileName == ResourceFileGeoipCnName -> ResourceVisualKind.IpRuleSet

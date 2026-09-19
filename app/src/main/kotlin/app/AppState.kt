@@ -8,7 +8,7 @@ import app.modes.LanguageModeSystem
 import app.modes.OutboundListLayoutAuto
 import app.modes.OutboundListSortDefault
 import app.modes.ProxyAppListModeGlobal
-import app.modes.RunModeVpnService
+import app.modes.RunModeEbpf
 import app.modes.SingBoxModeRule
 import app.modes.SingBoxProxyLayoutAuto
 import app.modes.SingBoxProxySortDefault
@@ -27,7 +27,6 @@ import engine.singbox.DefaultSingBoxRouteRules
 import engine.singbox.DefaultSingBoxSnifferProtocols
 import engine.singbox.DefaultSingBoxSnifferTimeout
 import engine.root.RootModeEngine
-import engine.vpn.VpnDefaults
 import features.resources.ResourceFileSourceDefault
 
 data class AppState(
@@ -46,18 +45,18 @@ data class AppState(
     val selectors: List<SingBoxSelectorState> = emptyList(),
     val nextSelectorId: Int = 1,
     val selectorSelections: Map<String, String> = emptyMap(),
-    val routeAutoDetectInterface: Boolean = false,
+    val routeAutoDetectInterface: Boolean = true,
     val routeOverrideAndroidVpn: Boolean = false,
     val routeDefaultNetworkStrategy: String = "",
     val routeDefaultNetworkTypes: List<String> = emptyList(),
     val routeDefaultFallbackNetworkTypes: List<String> = emptyList(),
     val routeDefaultFallbackDelay: String = "",
-    val routeFindProcess: Boolean = false,
+    val routeFindProcess: Boolean = true,
     val routeFinal: String = "",
     val routeRules: List<SingBoxRouteRuleState> = DefaultSingBoxRouteRules,
     val nextRouteRuleId: Int =
         (DefaultSingBoxRouteRules.maxOfOrNull(SingBoxRouteRuleState::id) ?: 0) + 1,
-    val runMode: Int = RunModeVpnService,
+    val runMode: Int = RunModeEbpf,
     val singBoxMode: Int = SingBoxModeRule,
     val singBoxProxyLayout: Int = SingBoxProxyLayoutAuto,
     val singBoxProxySort: Int = SingBoxProxySortDefault,
@@ -65,17 +64,11 @@ data class AppState(
     val singBoxControlSecret: String = "",
     val enableLocalDns: Boolean = true,
 
-    val localProxyPort: String = VpnDefaults.LOCAL_PROXY_PORT.toString(),
+    val localProxyPort: String = "10810",
     val enableDynamicLocalProxyPort: Boolean = false,
     val localProxyListenAllInterfaces: Boolean = false,
     val localProxyUsername: String = "",
     val localProxyPassword: String = "",
-    val enableVpnAppendHttpProxy: Boolean = false,
-    val enableVpnHevTun: Boolean = false,
-    val tunMtu: String = VpnDefaults.MTU.toString(),
-    val tunVpnDns: String = VpnDefaults.IPV4_DNS,
-    val tunIpv4Cidr: String = VpnDefaults.IPV4_CIDR,
-    val tunIpv6Cidr: String = VpnDefaults.IPV6_CIDR,
 
     val proxyRunning: Boolean = false,
 
@@ -85,7 +78,6 @@ data class AppState(
     val enableResourceAutoUpdate: Boolean = false,
     val resourceAutoUpdateInterval: String = "24",
     val resourceFileSource: Int = ResourceFileSourceDefault,
-    val customResourceFileGeositeCategoryAdsAllUrl: String = "",
     val customResourceFileGeositeGoogleUrl: String = "",
     val customResourceFileGeositeCnUrl: String = "",
     val customResourceFileGeoipCnUrl: String = "",
@@ -97,7 +89,7 @@ data class AppState(
     val snifferProtocols: List<String> = DefaultSingBoxSnifferProtocols,
     val snifferTimeout: String = DefaultSingBoxSnifferTimeout,
 
-    val enableIpv6: Boolean = false,
+    val enableIpv6: Boolean = true,
     val enableIpv6Prefer: Boolean = false,
 
     val dnsFinal: String = DefaultSingBoxDnsFinal,
@@ -119,7 +111,7 @@ data class AppState(
     val transparentProxyPort: String = RootModeEngine.DefaultTproxyPort.toString(),
     val enableRootBootScript: Boolean = false,
     val enableRootEbpfRules: Boolean = false,
-    val enableRootEbpfDirectCidrBypass: Boolean = false,
+    val enableRootEbpfDirectCidrBypass: Boolean = true,
     val ebpfLocalDataPlane: String = DefaultEbpfLocalDataPlane,
     val ebpfSharedDataPlane: String = DefaultEbpfSharedDataPlane,
     val ebpfLocalDnsMode: String = DefaultEbpfDnsMode,
@@ -129,8 +121,6 @@ data class AppState(
     val ebpfEndpointConnectedBypassIpCidr: List<String> = emptyList(),
     val ebpfEndpointConnectedBypassPort: List<String> = emptyList(),
     val enableRootIpv6Disabler: Boolean = false,
-    val socks5ProxyPort: String = RootModeEngine.DefaultTun2SocksProxyPort.toString(),
-    val bpf2SocksBridgePort: String = RootModeEngine.DefaultBpf2SocksBridgePort.toString(),
 
     val serviceControl: ServiceControlSettings = ServiceControlSettings(),
 

@@ -194,7 +194,6 @@ internal fun ResourceOverviewCard(
 @Composable
 internal fun CustomResourceSourceEditorSheet(
     show: Boolean,
-    geositeCategoryAdsAllUrlState: TextFieldState,
     geositeGoogleUrlState: TextFieldState,
     geositeCnUrlState: TextFieldState,
     geoipCnUrlState: TextFieldState,
@@ -204,7 +203,6 @@ internal fun CustomResourceSourceEditorSheet(
     onSave: () -> Unit,
 ) {
     val sourceUrlStates = listOf(
-        geositeCategoryAdsAllUrlState,
         geositeGoogleUrlState,
         geositeCnUrlState,
         geoipCnUrlState,
@@ -252,11 +250,6 @@ internal fun CustomResourceSourceEditorSheet(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                ResourceUrlField(
-                    geositeCategoryAdsAllUrlState,
-                    ResourceFileGeositeCategoryAdsAllName,
-                    invalidSourceUrlMessage,
-                )
                 ResourceUrlField(
                     geositeGoogleUrlState,
                     ResourceFileGeositeGoogleName,
@@ -526,7 +519,6 @@ private fun ResourceFileCardSurface(
 private fun ResourceVisualKind.icon(): ImageVector {
     return when (this) {
         ResourceVisualKind.Core -> Icons.Rounded.Memory
-        ResourceVisualKind.AdRuleSet -> Icons.Rounded.Block
         ResourceVisualKind.DomainRuleSet -> Icons.Rounded.Language
         ResourceVisualKind.IpRuleSet -> Icons.Rounded.Public
         ResourceVisualKind.RuleSet -> Icons.Rounded.Policy

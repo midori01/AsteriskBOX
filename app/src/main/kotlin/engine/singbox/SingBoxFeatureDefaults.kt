@@ -37,21 +37,6 @@ val DefaultSingBoxDnsServers = listOf(
 val DefaultSingBoxDnsRules = listOf(
     SingBoxDnsRuleState(
         id = 1,
-        remarks = "ad_blocker",
-        enabled = false,
-        matches = listOf(
-            SingBoxDnsRuleMatchState(
-                field = "rule_set",
-                values = listOf(
-                    managedBundledRuleSetTag(ResourceFileKind.GeositeCategoryAdsAll),
-                ),
-            ),
-        ),
-        action = SingBoxRouteRuleActionReject,
-        server = managedDnsServerTag(2, "proxy"),
-    ),
-    SingBoxDnsRuleState(
-        id = 2,
         remarks = "google",
         matches = listOf(
             SingBoxDnsRuleMatchState(
@@ -62,7 +47,7 @@ val DefaultSingBoxDnsRules = listOf(
         server = managedDnsServerTag(2, "proxy"),
     ),
     SingBoxDnsRuleState(
-        id = 3,
+        id = 2,
         remarks = "china_site",
         matches = listOf(
             SingBoxDnsRuleMatchState(
@@ -116,5 +101,5 @@ val SingBoxSnifferProtocols = listOf(
     "rdp",
     "ntp",
 )
-val DefaultSingBoxSnifferProtocols = listOf("http", "tls", "quic")
+val DefaultSingBoxSnifferProtocols = listOf("http", "tls", "quic", "stun", "dns", "bittorrent", "dtls", "ssh", "rdp", "ntp")
 const val DefaultSingBoxSnifferTimeout = "300ms"

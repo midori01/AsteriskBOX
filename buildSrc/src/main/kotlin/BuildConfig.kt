@@ -10,17 +10,15 @@ import org.gradle.api.tasks.TaskAction
 
 object ProjectConfig {
     const val JVM_VERSION = 26
-    const val PROJECT_NAME = "AsteriskBOX"
+    const val PROJECT_NAME = "MidoriBOX"
     const val VERSION_NAME = "1.1.10-dev"
     const val PACKAGE_NAME = "org.asterisk.zcc.abox"
     const val ASTERISKD_VERSION = "v2.0.33"
-    const val BPF2SOCKS_VERSION = "v1.0.15"
     const val BPF_MATCHER_VERSION = "v1.0.1"
-    const val ANDROID_LIB_BOX_LITE_VERSION = "v1.15.0-alpha.6-reF1nd-android.1"
-    const val HEV_SOCKS5_TUNNEL_VERSION = "2.17.1"
+    const val SING_BOX_VERSION = "android-arm64-with-ebpf"
     const val TARGET_SDK = 37
     const val MIN_SDK = 26
-    val SUPPORTED_ANDROID_ABIS = listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+    val SUPPORTED_ANDROID_ABIS = listOf("arm64-v8a")
 }
 
 fun org.gradle.api.Project.getGitVersionCode(): Int {
@@ -43,10 +41,7 @@ abstract class GenerateProjectInfoTask : DefaultTask() {
     abstract val versionCode: Property<Int>
 
     @get:Input
-    abstract val androidLibBoxLiteVersion: Property<String>
-
-    @get:Input
-    abstract val hevSocks5TunnelVersion: Property<String>
+    abstract val singBoxVersion: Property<String>
 
     @get:OutputDirectory
     abstract val outputDirectory: DirectoryProperty
@@ -64,8 +59,7 @@ abstract class GenerateProjectInfoTask : DefaultTask() {
                 const val PROJECT_NAME = "${projectName.get()}"
                 const val VERSION_NAME = "${versionName.get()}"
                 const val VERSION_CODE = ${versionCode.get()}
-                const val ANDROID_LIB_BOX_LITE_VERSION = "${androidLibBoxLiteVersion.get()}"
-                const val HEV_SOCKS5_TUNNEL_VERSION = "${hevSocks5TunnelVersion.get()}"
+                const val SING_BOX_VERSION = "${singBoxVersion.get()}"
             }
             """.trimIndent(),
         )

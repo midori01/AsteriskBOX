@@ -4,15 +4,12 @@
 package engine.proxy
 
 import app.AppState
-import app.modes.RunModeBpf2Socks
-import app.modes.RunModeTun2Socks
 import app.modes.RunModeTproxy
 import engine.network.findAvailableTcpPort
 import engine.network.isTcpPortAvailable
 import engine.network.NetworkDefaults
 import engine.network.toPortOrNull
 import engine.root.RootModeEngine
-import engine.vpn.VpnDefaults
 import java.util.concurrent.atomic.AtomicReference
 
 internal const val LocalProxyLoopbackAddress = NetworkDefaults.IPV4_LOOPBACK_ADDRESS
@@ -56,7 +53,7 @@ internal fun AppState.withResolvedDynamicLocalProxyPort(): AppState {
             )
     val resolvedPort = when {
         canKeepConfiguredPort -> configuredPort
-        else -> availablePort(listenAddress, excludedPorts) ?: configuredPort ?: VpnDefaults.LOCAL_PROXY_PORT
+        else -> availablePort(listenAddress, excludedPorts) ?: configuredPort ?: 10_810
     }
     val resolvedPortText = resolvedPort.toString()
     return if (localProxyPort == resolvedPortText) this else copy(localProxyPort = resolvedPortText)
@@ -65,7 +62,7 @@ internal fun AppState.withResolvedDynamicLocalProxyPort(): AppState {
 internal fun AppState.toLocalProxyOptions(): LocalProxyOptions {
     return LocalProxyOptions(
         listenAddress = localProxyListenAddress(),
-        port = localProxyPort.toPortOrNull() ?: VpnDefaults.LOCAL_PROXY_PORT,
+        port = localProxyPort.toPortOrNull() ?: 10_810,
         username = localProxyUsername.trim(),
         password = localProxyPassword,
     )
@@ -83,15 +80,6 @@ internal fun AppState.localProxyExcludedPorts(): Set<Int> {
     return buildSet {
         if (runMode == RunModeTproxy) {
             add(transparentProxyPort.toPortOrNull() ?: RootModeEngine.DefaultTproxyPort)
-        }
-        if (runMode == RunModeTun2Socks) {
-            add(socks5ProxyPort.toPortOrNull() ?: RootModeEngine.DefaultTun2SocksProxyPort)
-        }
-        if (runMode == RunModeBpf2Socks) {
-            add(socks5ProxyPort.toPortOrNull() ?: RootModeEngine.DefaultTun2SocksProxyPort)
-        }
-        if (runMode == RunModeBpf2Socks) {
-            add(bpf2SocksBridgePort.toPortOrNull() ?: RootModeEngine.DefaultBpf2SocksBridgePort)
         }
     }
 }
