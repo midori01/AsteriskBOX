@@ -211,13 +211,8 @@ func (d *sharedRewriteDataPlane) reconcile(interfaceNames []string, hostAddresse
 		}
 	}
 
-	current := make(map[string]*sharedRewriteAttachment, len(d.attachments))
-	for name, attachment := range d.attachments {
-		current[name] = attachment
-	}
 	candidate := make(map[string]*sharedRewriteAttachment, len(desired))
 	created := make([]*sharedRewriteAttachment, 0, len(desired))
-	retired := make([]*sharedRewriteAttachment, 0, len(d.attachments))
 	changed = hostChanged
 	names := make([]string, 0, len(desired))
 	for name := range desired {
@@ -238,10 +233,8 @@ func (d *sharedRewriteDataPlane) reconcile(interfaceNames []string, hostAddresse
 				cause = E.Errors(cause, E.Cause(rollbackErr, "rollback shared packet-rewrite host addresses"))
 			}
 		}
-		if newBackend && len(d.retiredAttachments) == 0 {
-			cause = E.Errors(cause, backend.Close())
-		} else if newBackend {
-			// A filter or TCX link still references this backend's programs. Keep
+		if d.backend != nil && backend != d.backend {
+			// Leave a failed swap target open in retiredAttachments and keep
 			// the backend reachable until a later cleanup retry detaches it.
 			d.backend = backend
 		}
@@ -250,7 +243,7 @@ func (d *sharedRewriteDataPlane) reconcile(interfaceNames []string, hostAddresse
 
 	for _, name := range names {
 		device := desired[name]
-		previous := current[name]
+		previous := d.attachments[name]
 		if previous != nil && device.Attrs().Index == previous.interfaceIndex {
 			localnetChanged, err := ensureSharedRewriteLocalnet(name)
 			if err != nil {
@@ -265,12 +258,8 @@ func (d *sharedRewriteDataPlane) reconcile(interfaceNames []string, hostAddresse
 			}
 			if healthy {
 				candidate[name] = previous
-				delete(current, name)
 				continue
 			}
-		}
-		if previous != nil {
-			retired = append(retired, previous)
 		}
 		options := sharedRewriteAttachmentOptions{}
 		if previous != nil && device.Attrs().Index == previous.interfaceIndex {
@@ -287,8 +276,8 @@ func (d *sharedRewriteDataPlane) reconcile(interfaceNames []string, hostAddresse
 		created = append(created, attachment)
 		changed = true
 	}
-	for _, previous := range current {
-		retired = append(retired, previous)
+	retired := retiredSharedRewriteAttachments(d.attachments, candidate)
+	if len(retired) > 0 {
 		changed = true
 	}
 
@@ -353,6 +342,81 @@ func (d *sharedRewriteDataPlane) reconcile(interfaceNames []string, hostAddresse
 	}
 
 	return closeErr
+}
+
+// healthCheck is the read-only first stage of the periodic watchdog. It avoids
+// backend creation, map updates, flow purges, sysctl writes and attachment
+// transactions while the already-owned topology is healthy.
+func (d *sharedRewriteDataPlane) healthCheck(interfaceNames []string, hostAddresses []netip.Addr) (bool, error) {
+	if d == nil {
+		return true, nil
+	}
+	d.access.Lock()
+	defer d.access.Unlock()
+	if d.closed || len(d.retiredAttachments) != 0 {
+		return false, nil
+	}
+	desired := make(map[string]netlink.Link, len(interfaceNames))
+	for _, interfaceName := range interfaceNames {
+		device, err := netlink.LinkByName(interfaceName)
+		if tcLinkNotFound(err) {
+			continue
+		}
+		if err != nil {
+			return false, err
+		}
+		framing, err := tcLinkFraming(device)
+		if err != nil {
+			return false, err
+		}
+		if framing != commonEBPF.TCLinkFramingEthernet {
+			return false, nil
+		}
+		desired[interfaceName] = device
+	}
+	wantEnabled := len(desired) > 0
+	if d.enabled != wantEnabled || len(d.attachments) != len(desired) {
+		return false, nil
+	}
+	if wantEnabled {
+		if d.backend == nil || d.backend.IsClosed() || d.backend.RequiresRebuild() ||
+			!slices.Equal(d.hostAddresses, hostAddresses) {
+			return false, nil
+		}
+	}
+	for name, device := range desired {
+		attachment := d.attachments[name]
+		if attachment == nil || attachment.interfaceIndex != device.Attrs().Index {
+			return false, nil
+		}
+		localnet, err := os.ReadFile(sharedRewriteLocalnetPath(name))
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				return false, nil
+			}
+			return false, err
+		}
+		if strings.TrimSpace(string(localnet)) != "1" {
+			return false, nil
+		}
+		healthy, err := attachment.healthy(device, d.priority, d.backend.ICMPEchoReplyEnabled())
+		if err != nil || !healthy {
+			return false, err
+		}
+	}
+	return true, nil
+}
+
+// Select retired attachments once, after staging succeeds. Replacements must
+// not be closed twice: cleanup transfers lock and sysctl ownership to them.
+func retiredSharedRewriteAttachments(current, candidate map[string]*sharedRewriteAttachment) []*sharedRewriteAttachment {
+	var retired []*sharedRewriteAttachment
+	for name, previous := range current {
+		if candidate[name] != previous {
+			retired = append(retired, previous)
+		}
+	}
+	return retired
 }
 
 func (d *sharedRewriteDataPlane) detachLocked(attachment *sharedRewriteAttachment, callbackEvents *sharedRewriteCallbackEvents) error {
