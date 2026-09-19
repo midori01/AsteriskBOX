@@ -64,6 +64,11 @@ func (i *Inbound) startInbound() error {
 		ExcludeSourceMAC:    i.sharedExcludeMAC,
 		LocalBypassPort:     i.localBypassPort,
 		SharedBypassPort:    i.sharedBypassPort,
+		EndpointEnabled:     i.endpointConnectedBypass.Enabled,
+		EndpointEnableTCP:   i.endpointEnableTCP,
+		EndpointEnableUDP:   i.endpointEnableUDP,
+		EndpointCIDR:        i.endpointConnectedBypass.IPCIDR,
+		EndpointPort:        i.endpointConnectedPorts,
 	})
 	if err != nil {
 		return E.Cause(err, "compile eBPF policy")
@@ -476,6 +481,9 @@ func (i *Inbound) checkKernelCapabilities() error {
 }
 
 func (i *Inbound) needsLPMPolicy() bool {
+	if i.endpointConnectedBypass.Enabled {
+		return true
+	}
 	if (i.localTCEnabled() || i.localCgroupEnabled()) &&
 		(len(i.localPolicy.IncludeUID) > 0 || len(i.localPolicy.ExcludeUID) > 0) {
 		return true
