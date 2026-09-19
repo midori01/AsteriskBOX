@@ -1,17 +1,7 @@
 name: Publish Docker Images
 
 on:
-  #push:
-  #  branches:
-  #    - stable
-  #    - testing
-  release:
-    types:
-      - published
   workflow_dispatch:
-    inputs:
-      tag:
-        description: "The tag version you want to build"
 
 env:
   REGISTRY_IMAGE: ghcr.io/sagernet/sing-box
