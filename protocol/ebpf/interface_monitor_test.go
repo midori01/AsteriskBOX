@@ -4,16 +4,20 @@ package ebpf
 
 import (
 	"context"
+	"net"
+	"runtime"
 	"slices"
 	"testing"
 	"time"
 
+	"github.com/sagernet/netlink"
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-tun"
 	"github.com/sagernet/sing/common/control"
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
 	"github.com/sagernet/sing/common/x/list"
+	"golang.org/x/sys/unix"
 )
 
 func TestActiveSharedInterfaces(t *testing.T) {
@@ -30,6 +34,13 @@ func TestActiveSharedInterfaces(t *testing.T) {
 }
 
 func TestTCInterfaceMonitorLifecycle(t *testing.T) {
+	if runtime.GOOS == "android" {
+		previousFinder := androidDefaultInterfaceFinder
+		androidDefaultInterfaceFinder = func() string { return "" }
+		t.Cleanup(func() {
+			androidDefaultInterfaceFinder = previousFinder
+		})
+	}
 	networkMonitor := &testNetworkUpdateMonitor{}
 	defaultMonitor := &testDefaultInterfaceMonitor{current: &control.Interface{Name: "wlan0", Index: 8}}
 	inbound := &Inbound{
@@ -124,20 +135,73 @@ func TestInterfaceDriftCheckOnlyTracksTCState(t *testing.T) {
 		t.Fatalf("pure cgroup drift interval = %s, want disabled", interval)
 	}
 
+	expectedInterval := tcDriftCheckInterval
+	if runtime.GOOS == "android" {
+		expectedInterval = androidTCDriftCheckInterval
+	}
+
 	inbound.setTCDataPlane(&retryTestTCRuntime{})
-	if interval := inbound.interfaceDriftCheckInterval(); interval != tcDriftCheckInterval {
-		t.Fatalf("TC drift interval = %s, want %s", interval, tcDriftCheckInterval)
+	if interval := inbound.interfaceDriftCheckInterval(); interval != expectedInterval {
+		t.Fatalf("TC drift interval = %s, want %s", interval, expectedInterval)
 	}
 	inbound.takeTCDataPlane()
 
 	inbound.setSharedRewrite(&sharedRewrite{})
-	if interval := inbound.interfaceDriftCheckInterval(); interval != tcDriftCheckInterval {
-		t.Fatalf("shared rewrite drift interval = %s, want %s", interval, tcDriftCheckInterval)
+	if interval := inbound.interfaceDriftCheckInterval(); interval != expectedInterval {
+		t.Fatalf("shared rewrite drift interval = %s, want %s", interval, expectedInterval)
 	}
 	inbound.takeSharedRewrite()
 
 	if interval := inbound.interfaceDriftCheckInterval(); interval != time.Duration(0) {
 		t.Fatalf("cleared data-plane drift interval = %s, want disabled", interval)
+	}
+}
+
+func TestIsCandidateDefaultRoute(t *testing.T) {
+	if !isCandidateDefaultRoute(netlink.Route{Type: unix.RTN_UNICAST, LinkIndex: 1}) {
+		t.Fatal("expected route with nil Dst to be candidate default route")
+	}
+	_, v4Default, _ := net.ParseCIDR("0.0.0.0/0")
+	if !isCandidateDefaultRoute(netlink.Route{Type: unix.RTN_UNICAST, LinkIndex: 1, Dst: v4Default}) {
+		t.Fatal("expected 0.0.0.0/0 to be candidate default route")
+	}
+	_, v6Default, _ := net.ParseCIDR("::/0")
+	if !isCandidateDefaultRoute(netlink.Route{Type: unix.RTN_UNICAST, LinkIndex: 1, Dst: v6Default}) {
+		t.Fatal("expected ::/0 to be candidate default route")
+	}
+	_, subnet, _ := net.ParseCIDR("192.168.1.0/24")
+	if isCandidateDefaultRoute(netlink.Route{Type: unix.RTN_UNICAST, LinkIndex: 1, Dst: subnet}) {
+		t.Fatal("expected subnet route to not be candidate default route")
+	}
+	if isCandidateDefaultRoute(netlink.Route{Type: unix.RTN_UNICAST, LinkIndex: 1, Table: unix.RT_TABLE_LOCAL}) {
+		t.Fatal("expected local table route to not be candidate default route")
+	}
+	if isCandidateDefaultRoute(netlink.Route{Type: unix.RTN_UNICAST, LinkIndex: 0}) {
+		t.Fatal("expected non-positive LinkIndex route to not be candidate default route")
+	}
+}
+
+func TestAndroidDefaultInterfaceFallback(t *testing.T) {
+	previousFinder := androidDefaultInterfaceFinder
+	androidDefaultInterfaceFinder = func() string { return "wlan0" }
+	t.Cleanup(func() {
+		androidDefaultInterfaceFinder = previousFinder
+	})
+
+	inbound := &Inbound{
+		networkManager: &testInterfaceNetworkManager{
+			defaultMonitor: &testDefaultInterfaceMonitor{current: nil},
+		},
+	}
+	name := inbound.currentDefaultInterfaceName()
+	if runtime.GOOS == "android" {
+		if name != "wlan0" {
+			t.Fatalf("expected fallback to wlan0 on android, got %q", name)
+		}
+	} else {
+		if name != "" {
+			t.Fatalf("expected empty name on non-android, got %q", name)
+		}
 	}
 }
 
