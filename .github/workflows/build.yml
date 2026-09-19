@@ -2,39 +2,6 @@ name: Build
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: "Version name"
-        required: true
-        type: string
-      build:
-        description: "Build type"
-        required: true
-        type: choice
-        default: "All"
-        options:
-          - All
-          - Binary
-          - Android
-          - Windows
-          - Linux
-          - Apple
-          - Apple-release
-          - iOS
-          - macOS
-          - tvOS
-          - macOS-standalone
-          - iOS-jailbreak
-          - publish-android
-      test_message:
-        description: "TestFlight test message"
-        required: false
-        type: string
-  push:
-    branches:
-      - stable
-      - testing
-      - unstable
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}-${{ inputs.build }}
