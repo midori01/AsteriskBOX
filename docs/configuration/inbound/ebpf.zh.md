@@ -100,6 +100,10 @@ shared；一旦任一字段显式出现，未显式启用的路径即为禁用�
 可选 `cgroup`（默认）或 `tc`。TC 路径跟随当前默认接口，cgroup 路径跟随选中的
 cgroup v2 子树。
 
+当 `local.endpoint_connected_bypass.enabled` 为 `true` 时，省略
+`local.data_plane` 会自动选择 `tc`。该 TC-only 策略不能与显式 `cgroup` 或
+`local.cgroup_path` 同时使用。
+
 ### local.cgroup_path
 
 `cgroup` 数据面使用的绝对 cgroup v2 子树。省略时接管当前可见的 cgroup v2 根层级
@@ -168,6 +172,69 @@ Android 厂商的 netd hook 可能造成挂载冲突。sing-box 优先尝试多�
 ### local.bypass_port_range
 
 需要绕过的目标端口范围，格式为包含两端的 `start:end`。
+
+### local.endpoint_connected_bypass
+
+仅支持一个 `endpoint_connected_bypass` 配置组。
+
+该策略只由 local TC 数据面实现。启用后，如果省略 `local.data_plane`，会自动选择
+`tc`；不能与显式 local `cgroup` 数据面或 `local.cgroup_path` 同时使用。
+
+例如：
+
+```json
+{
+  "local": {
+    "endpoint_connected_bypass": {
+      "enabled": true,
+      "network": ["tcp", "udp"],
+      "ip_cidr": [
+        "162.120.128.0/17",
+        "162.159.193.0/24",
+        "2606:4700:100::/48"
+      ],
+      "port": [
+        500,
+        2408,
+        4500
+      ]
+    }
+  }
+}
+```
+
+启用后必须同时配置非空的 `ip_cidr` 和 `port`。`network` 可选择 `tcp` 和/或 `udp`，
+省略时默认使用该入站已启用的两种协议。只有网络协议、目标 IP `ip_cidr` 与目标端口
+`port` 同时匹配的本机流量才会匹配 endpoint。配置缺失或 `enabled` 为 `false` 时，
+保持原有的 local 策略；endpoint 未匹配时也保持原有的 local 策略。此功能只作用于
+local 路径，shared 路径完全不受影响。
+
+匹配 endpoint 且 VPN 尚未 READY 时，流量会被明确强制接管（FORCE INTERCEPT），继续
+进入 unified TC/eBPF-in。强制接管只负责让流量进入 eBPF-in，不指定任何 outbound；进入
+sing-box 后由正常的 Router、`route.rules`、`clash_mode` 和默认 outbound 决定路由。
+
+匹配 endpoint 且 VPN 已 READY 时，流量执行 native bypass，不再进入 eBPF-in 或 Router。
+VPN 断开并回到 READY=false 后，匹配流量会自动恢复 FORCE INTERCEPT，再次进入正常的
+sing-box 路由流程。FakeIP 和 DNS 的强制接管优先级保持不变。
+
+候选 `tun*` 和 `ipsec*` 接口必须处于 UP 状态并拥有 global-unicast 地址，并排除
+`MyInterfaces()` 中已登记的 sing-box 自有接口。该机制仅排除已登记的自有接口，无法
+识别所有无关的第三方 TUN。
+
+普通 TUN 第一次成功的 RX/TX 采样只建立计数基线；读取或解析失败不更新该基线。
+后续采样观察到 RX 或 TX 严格增长后，
+仅对同一个符合候选条件的 `(ifindex, name)` 锁存 READY。流量静默或计数回退不清除该锁存；
+接口消失、身份变化或成为自有接口时清除基线和锁存，重建接口必须重新建立基线。
+IPsec 不锁存 READY：当前采样存在符合条件的非 local table、`RTN_UNICAST` 默认路由时
+才 READY，路由消失即不再 READY。全局期望 READY 是当前各合格接口 READY 的逻辑或，
+不会仅因另一个未就绪接口仍 active 就继承旧全局值。
+
+每轮采样所有候选接口。READY 布尔值变化仅在 TC control 写入成功后提交；失败时保留此前
+已提交的状态并在后续采样重试。只有 READY 来源变化时不重复写入 TC control。
+
+启用此功能时，现有接口 worker 每秒进行一次 readiness sampling，接口或网络事件也可
+立即触发采样。READY 状态变化只更新 dynamic TC control flag，不会重建 backend、TC
+attachment 或静态 endpoint maps。
 
 ## shared
 

@@ -125,6 +125,11 @@ func (i *Inbound) compileActionPolicy() (commonEBPF.CompiledPolicy, error) {
 		Shared: commonEBPF.ActionScope{
 			Default: commonEBPF.DecisionIntercept,
 		},
+		EndpointEnabled:   i.endpointConnectedBypass.Enabled,
+		EndpointEnableTCP: i.endpointEnableTCP,
+		EndpointEnableUDP: i.endpointEnableUDP,
+		EndpointCIDR:      i.endpointConnectedBypass.IPCIDR,
+		EndpointPort:      i.endpointConnectedPorts,
 	}
 	if i.localPolicy.IncludeUIDConfigured {
 		policy.Local.Default = commonEBPF.DecisionPass

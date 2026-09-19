@@ -7,6 +7,7 @@ import (
 	"net/netip"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	commonEBPF "github.com/CHIZI-0618/sing-ebpf"
@@ -96,6 +97,10 @@ type Inbound struct {
 	sharedIPv6                bool
 	sharedBypassPrivate       bool
 	localBypassPort           []commonEBPF.PortRange
+	endpointConnectedBypass   option.EBPFEndpointConnectedBypassOptions
+	endpointEnableTCP         bool
+	endpointEnableUDP         bool
+	endpointConnectedPorts    []commonEBPF.PortRange
 	sharedBypassPort          []commonEBPF.PortRange
 	tcPriority                uint16
 	fakeIPIPv4Prefix          netip.Prefix
@@ -110,6 +115,8 @@ type Inbound struct {
 	cgroupReleaseWait         sync.WaitGroup
 	lifecycleAccess           sync.Mutex
 	interfaceMonitor          tcInterfaceMonitor
+	vpnReady                  atomic.Bool
+	vpnInterfacePackets       map[vpnInterfaceIdentity]vpnInterfaceState
 
 	bypassRuleSetAccess       sync.Mutex
 	bypassRuleSet             []adapter.RuleSet
@@ -260,6 +267,10 @@ func NewInbound(ctx context.Context, router adapter.Router, logger log.ContextLo
 	if err != nil {
 		return nil, err
 	}
+	endpointConnectedBypass, endpointConnectedPorts, endpointEnableTCP, endpointEnableUDP, err := normalizeEndpointConnectedBypass(options.Local.EndpointConnectedBypass)
+	if err != nil {
+		return nil, err
+	}
 	sharedBypassPort, err := parsePortRanges("shared.bypass_port", options.Shared.BypassPort, options.Shared.BypassPortRange)
 	if err != nil {
 		return nil, err
@@ -322,9 +333,13 @@ func NewInbound(ctx context.Context, router adapter.Router, logger log.ContextLo
 		sharedDataPlane:     sharedDataPlane,
 		sharedIPv6:          sharedEnabled && enabledByDefault(options.Shared.IPv6),
 		sharedBypassPrivate: options.Shared.BypassPrivateAddress == nil || *options.Shared.BypassPrivateAddress,
-		localBypassPort:     localBypassPort,
-		sharedBypassPort:    sharedBypassPort,
-		tcPriority:          uint16(options.TCPriority),
+		localBypassPort:         localBypassPort,
+		sharedBypassPort:        sharedBypassPort,
+		endpointConnectedBypass: endpointConnectedBypass,
+		endpointEnableTCP:       endpointEnableTCP,
+		endpointEnableUDP:       endpointEnableUDP,
+		endpointConnectedPorts:  endpointConnectedPorts,
+		tcPriority:              uint16(options.TCPriority),
 		sharedIncludeMAC:    sharedIncludeMAC,
 		sharedExcludeMAC:    sharedExcludeMAC,
 		localPolicy: commonEBPF.LocalPolicy{
