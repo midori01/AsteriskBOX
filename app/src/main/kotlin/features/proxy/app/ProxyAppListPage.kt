@@ -60,7 +60,6 @@ import app.collectAppState
 import app.modes.ProxyAppListModeBlacklist
 import app.modes.ProxyAppListModeGlobal
 import app.modes.ProxyAppListModeWhitelist
-import app.modes.RunModeVpnService
 import features.proxy.app.model.ProxyAppListItem
 import features.proxy.app.model.ProxyAppListUserSpaceTabUi
 import features.proxy.app.model.name
@@ -146,14 +145,8 @@ fun ProxyAppListPage(
 
     val proxyAppListModes = proxyAppListModeLabels()
     val modeIndex = appState.proxyAppListMode.coerceIn(proxyAppListModes.indices)
-    val isVpnServiceMode = appState.runMode == RunModeVpnService
     val selectedAppKeys = remember(appState.proxyAppListSelectedApps) {
         appState.proxyAppListSelectedApps.toSet()
-    }
-    val vpnServiceUserId = if (isVpnServiceMode) {
-        pageState.userSpaces.firstOrNull()?.id
-    } else {
-        null
     }
     val userTabIds = remember(pageState.userTabs) {
         pageState.userTabs.map { tab -> tab.id }
@@ -179,8 +172,6 @@ fun ProxyAppListPage(
         pageState = pageState,
         selectedApps = appState.proxyAppListSelectedApps,
         selectedAppKeys = selectedAppKeys,
-        isVpnServiceMode = isVpnServiceMode,
-        vpnServiceUserId = vpnServiceUserId,
         selfPackageName = selfPackageName,
         selectedUserIndex = selectedUserIndex,
         userTabIds = userTabIds,

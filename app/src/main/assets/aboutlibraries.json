@@ -14,19 +14,6 @@
             ]
         },
         {
-            "uniqueId": "com.github.asterisk4magisk:libbox",
-            "artifactVersion": "v1.15.0-alpha.8-reF1nd",
-            "name": "AndroidLibBoxLite",
-            "description": "Pinned Android JNI and command API bindings for sing-box.",
-            "website": "https://github.com/Asterisk4Magisk/AndroidLibBoxLite",
-            "scm": {
-                "url": "https://github.com/Asterisk4Magisk/AndroidLibBoxLite"
-            },
-            "licenses": [
-                "LGPL-3.0"
-            ]
-        },
-        {
             "uniqueId": "androidx.navigation3:navigation3-runtime",
             "artifactVersion": "1.2.0",
             "name": "Androidx Navigation 3 Runtime",
@@ -60,19 +47,6 @@
             "website": "https://github.com/Asterisk4Magisk/asteriskd",
             "scm": {
                 "url": "https://github.com/Asterisk4Magisk/asteriskd"
-            },
-            "licenses": [
-                "GPL-3.0"
-            ]
-        },
-        {
-            "uniqueId": "github:Asterisk4Magisk/bpf2socks",
-            "artifactVersion": "v1.0.15",
-            "name": "bpf2socks",
-            "description": "A root Android/Linux traffic bridge that forwards TCP and UDP through a SOCKS5 upstream using eBPF.",
-            "website": "https://github.com/Asterisk4Magisk/bpf2socks",
-            "scm": {
-                "url": "https://github.com/Asterisk4Magisk/bpf2socks"
             },
             "licenses": [
                 "GPL-3.0"
@@ -170,19 +144,6 @@
             ]
         },
         {
-            "uniqueId": "com.android.tools.smali:smali-dexlib2",
-            "artifactVersion": "3.0.10",
-            "name": "dexlib2",
-            "description": "dexlib2 is a library for reading/modifying/writing Android dex files",
-            "website": "https://github.com/google/smali",
-            "scm": {
-                "url": "https://github.com/google/smali/tree/master/dexlib2"
-            },
-            "licenses": [
-                "BSD-3-Clause"
-            ]
-        },
-        {
             "uniqueId": "io.github.rosemoe:editor",
             "artifactVersion": "0.24.6",
             "name": "editor",
@@ -219,19 +180,6 @@
             },
             "licenses": [
                 "Apache-2.0"
-            ]
-        },
-        {
-            "uniqueId": "github:heiher/hev-socks5-tunnel",
-            "artifactVersion": "2.17.1",
-            "name": "hev-socks5-tunnel",
-            "description": "A tun2socks tunnel that forwards TUN traffic to a SOCKS5 server.",
-            "website": "https://github.com/heiher/hev-socks5-tunnel",
-            "scm": {
-                "url": "https://github.com/heiher/hev-socks5-tunnel"
-            },
-            "licenses": [
-                "MIT"
             ]
         },
         {
@@ -391,13 +339,13 @@
             ]
         },
         {
-            "uniqueId": "github:reF1nd/sing-box",
-            "artifactVersion": null,
-            "name": "sing-box (reF1nd)",
-            "description": "The sing-box proxy core shared by VPN and ROOT through AndroidLibBoxLite.",
-            "website": "https://github.com/reF1nd/sing-box",
+            "uniqueId": "github:reF1nd/sing-box-releases",
+            "artifactVersion": "v1.15.0-alpha.6-reF1nd",
+            "name": "sing-box reF1nd build",
+            "description": "A reF1nd build of the sing-box proxy platform used by AsteriskBOX ROOT modes.",
+            "website": "https://github.com/reF1nd/sing-box-releases",
             "scm": {
-                "url": "https://github.com/reF1nd/sing-box"
+                "url": "https://github.com/reF1nd/sing-box-releases"
             },
             "licenses": [
                 "GPL-3.0"
@@ -440,6 +388,19 @@
             },
             "licenses": [
                 "Apache-2.0"
+            ]
+        },
+        {
+            "uniqueId": "org.tukaani:xz",
+            "artifactVersion": "1.10",
+            "name": "XZ for Java",
+            "description": "A complete implementation of XZ data compression in pure Java.",
+            "website": "https://tukaani.org/xz/java.html",
+            "scm": {
+                "url": "https://github.com/tukaani-project/xz-java"
+            },
+            "licenses": [
+                "Public Domain"
             ]
         }
     ]

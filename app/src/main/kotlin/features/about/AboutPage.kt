@@ -17,7 +17,11 @@ import androidx.compose.ui.unit.dp
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.R
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import features.updater.AppUpdateBottomSheet
+import features.updater.rememberAppUpdateState
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 
@@ -27,6 +31,9 @@ fun AboutPage(
 ) {
     val isWideScreen = LocalIsWideScreen.current
     val navigator = LocalNavigator.current
+    val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
+    val updateState = rememberAppUpdateState()
 
     AsteriskScaffold(
         topBar = {
@@ -55,10 +62,24 @@ fun AboutPage(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item(key = "about_identity") { AboutIdentityHeader() }
+            item(key = "about_update") {
+                AboutUpdateSection(
+                    onCheckUpdate = { updateState.checkForUpdate(context, manual = true) },
+                )
+            }
             item(key = "about_runtime") { AboutRuntimeSection() }
             item(key = "about_other") {
                 AboutLinksSection(title = stringResource(R.string.about_other))
             }
         }
+        AppUpdateBottomSheet(
+            show = updateState.showSheet,
+            updateInfo = updateState.updateInfo,
+            downloadState = updateState.downloadState,
+            onDismissRequest = { updateState.dismiss() },
+            onStartDownload = { updateState.startDownload(context) },
+            onInstall = { file -> updateState.install(context, file) },
+            onOpenInBrowser = { url -> uriHandler.openUri(url) },
+        )
     }
 }

@@ -1,26 +1,15 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name">AsteriskBOX</string>
+    <string name="app_name">MidoriBOX</string>
     <string name="error_backup_file_open_failed">Failed to open backup file</string>
     <string name="error_backup_file_too_large">Backup file is too large (maximum 32 MB)</string>
     <string name="error_backup_file_creator_missing">Backup file creator is not registered</string>
-    <string name="error_vpn_permission_denied">VPN permission was not granted. VPN Service cannot be started</string>
     <string name="error_qr_camera_permission_denied">Camera permission was not granted. QR code scanning cannot start</string>
     <string name="error_qr_scan_launcher_missing">QR code scanner launcher is not registered</string>
     <string name="error_qr_image_decode_failed">No QR code was found in this image</string>
-    <string name="error_vpn_start_config_missing">VPN Service start configuration is missing</string>
-    <string name="error_vpn_tunnel_establish_failed">Unable to establish VPN tunnel</string>
-    <string name="error_vpn_tun_fd_unavailable">VPN TUN file descriptor is unavailable</string>
     <string name="error_tproxy_root_required">ROOT access is required for TPROXY mode</string>
     <string name="error_tproxy_start_failed">Failed to start TPROXY mode: %1$s</string>
-    <string name="error_tun_root_required">ROOT access is required for TUN mode</string>
-    <string name="error_tun_start_failed">Failed to start TUN mode: %1$s</string>
-    <string name="error_tun2socks_root_required">ROOT access is required for TUN2SOCKS mode</string>
-    <string name="error_tun2socks_start_failed">Failed to start TUN2SOCKS mode: %1$s</string>
-    <string name="error_bpf2socks_root_required">ROOT access is required for BPF2SOCKS mode</string>
-    <string name="error_bpf2socks_start_failed">Failed to start BPF2SOCKS mode: %1$s</string>
     <string name="error_ebpf_root_required">ROOT access is required for eBPF mode</string>
     <string name="error_ebpf_start_failed">Failed to start eBPF mode: %1$s</string>
-    <string name="error_vpn_permission_launcher_missing">VPN permission launcher is not registered</string>
     <string name="error_resource_file_picker_missing">Resource file picker is not registered</string>
     <string name="error_log_export_launcher_missing">Log export launcher is not registered</string>
     <string name="resource_file_download_notification_channel">Resource file updates</string>
@@ -33,11 +22,10 @@
     <string name="proxy_traffic_stats_notification_channel">Proxy statistics</string>
     <string name="proxy_traffic_stats_notification_speed">Speed: ↑ %1$s / ↓ %2$s</string>
     <string name="proxy_traffic_stats_notification_traffic">Traffic: ↑ %1$s / ↓ %2$s</string>
-    <string name="quick_settings_tile_label">AsteriskBOX</string>
+    <string name="quick_settings_tile_label">MidoriBOX</string>
     <string name="quick_settings_tile_running">Proxy running</string>
     <string name="quick_settings_tile_stopped">Proxy stopped</string>
     <string name="quick_settings_tile_processing">Processing…</string>
-    <string name="quick_settings_tile_vpn_permission_required">Grant VPN permission, then tap again to start</string>
     <string name="quick_settings_tile_toggle_failed">Failed to toggle proxy</string>
     <string name="root_foreign_owner_conflict">The ROOT proxy service is being used by %1$s. Stop it in %1$s and try again.</string>
     <string name="qr_scan_album_button">Album</string>
@@ -155,6 +143,7 @@
     <string name="monitor_connections_target">Target</string>
     <string name="monitor_connections_process">Process</string>
     <string name="monitor_connections_network">Network</string>
+    <string name="monitor_connections_inbound">Inbound</string>
     <string name="monitor_connections_rule">Rule</string>
     <string name="monitor_connections_chain">Policy chain</string>
     <string name="monitor_connections_download">Download</string>
@@ -296,19 +285,11 @@
     <string name="settings_theme_color">Accent color</string>
     <string name="settings_advanced">Advanced settings</string>
     <string name="settings_run_mode">Run mode</string>
-    <string name="settings_run_mode_vpn_service">VPN Service</string>
-    <string name="settings_run_mode_tproxy">TPROXY (ROOT)</string>
-    <string name="settings_run_mode_tun">TUN (ROOT)</string>
-    <string name="settings_run_mode_tun2socks">TUN2SOCKS (ROOT)</string>
-    <string name="settings_run_mode_bpf2socks">BPF2SOCKS (ROOT)</string>
-    <string name="settings_run_mode_ebpf">eBPF (ROOT)</string>
+    <string name="settings_run_mode_tproxy">TPROXY</string>
+    <string name="settings_run_mode_ebpf">eBPF</string>
     <string name="settings_root_required">No ROOT access detected!</string>
     <string name="settings_proxy_tproxy">Proxy settings (TPROXY)</string>
-    <string name="settings_proxy_tun">Proxy settings (TUN)</string>
-    <string name="settings_proxy_tun2socks">Proxy settings (TUN2SOCKS)</string>
-    <string name="settings_proxy_bpf2socks">Proxy settings (BPF2SOCKS)</string>
     <string name="settings_proxy_ebpf">Proxy settings (eBPF)</string>
-    <string name="settings_proxy_vpn_service">Proxy settings (VPN Service)</string>
     <string name="settings_root_boot_script">Start on boot</string>
     <string name="settings_root_boot_script_summary">Generate service.d startup script</string>
     <string name="settings_root_boot_script_failed">Failed to update start on boot</string>
@@ -336,23 +317,7 @@
     <string name="settings_local_proxy_summary_fixed">127.0.0.1:{port}</string>
     <string name="settings_local_proxy_summary_all_interfaces">0.0.0.0:{port}</string>
     <string name="settings_local_proxy_summary_tproxy">Transparent proxy port {port}</string>
-    <string name="settings_local_proxy_summary_tun2socks">TUN2SOCKS SOCKS5 port {port}</string>
-    <string name="settings_local_proxy_summary_bpf2socks">Bridge port {bridgePort}, SOCKS5 port {socksPort}</string>
-    <string name="settings_vpn_append_http_proxy">Append HTTP proxy</string>
-    <string name="settings_vpn_append_http_proxy_summary">Supported apps use HTTP proxy directly</string>
-    <string name="settings_vpn_hev_tun">Use Hev TUN</string>
-    <string name="settings_vpn_hev_tun_summary">Use hev-socks5-tunnel to create the TUN device</string>
-    <string name="settings_tun">TUN settings</string>
-    <string name="settings_tun_summary">MTU {mtu}, VPN DNS {vpnDns}, IPv4 {ipv4}, IPv6 {ipv6}</string>
-    <string name="settings_tun_summary_without_dns">MTU {mtu}, IPv4 {ipv4}, IPv6 {ipv6}</string>
-    <string name="settings_tun_mtu">MTU</string>
-    <string name="settings_tun_vpn_dns">VPN DNS</string>
-    <string name="settings_tun_ipv4_cidr">IPv4 CIDR</string>
-    <string name="settings_tun_ipv6_cidr">IPv6 CIDR</string>
-    <string name="settings_tun_mtu_invalid">MTU must be 1280–65535</string>
-    <string name="settings_tun_dns_invalid">VPN DNS must be a numeric IPv4 or IPv6 address</string>
-    <string name="settings_tun_ipv4_cidr_invalid">Invalid IPv4 CIDR</string>
-    <string name="settings_tun_ipv6_cidr_invalid">Invalid IPv6 CIDR</string>
+
     <string name="settings_external_interfaces">Tethering sharing</string>
     <string name="settings_external_interfaces_summary">Select which tethering types accept external inbound traffic</string>
     <string name="settings_external_interfaces_none">Not enabled</string>
@@ -393,6 +358,10 @@
     <string name="settings_ignored_interfaces_selected">Selected: {interfaces}</string>
     <string name="settings_ignored_interfaces_empty">No ignored interfaces configured</string>
     <string name="settings_ignored_interfaces_invalid">Use 1–15 letters, digits, _, . or -. A single + is allowed only at the end.</string>
+    <string name="settings_ignored_interfaces_loading">Loading network interfaces…</string>
+    <string name="settings_ignored_interfaces_error">Failed to load interfaces: {message}</string>
+    <string name="settings_ignored_interfaces_error_detail">Unable to read network interfaces</string>
+    <string name="settings_ignored_interfaces_custom_input">Custom interfaces</string>
     <string name="settings_private_addresses">Private addresses</string>
     <string name="settings_private_addresses_summary">Private addresses do not enter the proxy core. Add them below if needed</string>
     <string name="settings_private_addresses_none">Not configured</string>
@@ -630,7 +599,7 @@
     <string name="settings_restore_stop_failed">Failed to stop the current proxy before restore</string>
     <string name="settings_restore_root_cleanup_failed">Failed to remove the ROOT boot script before restore</string>
     <string name="settings_restore_confirm_title">Restore user data?</string>
-    <string name="settings_restore_confirm_summary">Current settings, outbound groups, outbounds, endpoints, selectors, routing, DNS, and app proxy data will be replaced. The current proxy will stop, the ROOT boot script will be removed, and run mode will switch to VPN Service.</string>
+    <string name="settings_restore_confirm_summary">Current settings, outbound groups, outbounds, endpoints, selectors, routing, DNS, and app proxy data will be replaced. The current proxy will stop, the ROOT boot script will be removed, and run mode will reset to eBPF.</string>
     <string name="settings_restore_backup_version">Backup version {version}, app {appVersion}</string>
     <string name="settings_restore_backup_created_at">Created: {time}</string>
     <string name="settings_restore_backup_counts">{groups} groups · {outbounds} outbounds · {endpoints} endpoints · {selectors} selectors · {routes} routing rules · {dnsServers} DNS servers · {dnsRules} DNS rules</string>
@@ -640,10 +609,21 @@
     <string name="settings_about">About</string>
     <string name="settings_about_project">About project</string>
     <string name="settings_open_source_licenses">Open source licenses</string>
+    <string name="settings_check_update">Check for updates</string>
+    <string name="update_dialog_title">New Version Available</string>
+    <string name="update_checking">Checking for updates…</string>
+    <string name="update_already_latest">Already on latest version (%1$s)</string>
+    <string name="update_check_failed">Failed to check for updates: %1$s</string>
+    <string name="update_current_version">Current version: %1$s</string>
+    <string name="update_new_version">Latest build: %1$s</string>
+    <string name="update_btn_now">Update Now</string>
+    <string name="update_btn_view_action">View on GitHub</string>
+    <string name="update_downloading">Downloading (%1$d%%)</string>
+    <string name="update_downloading_indeterminate">Downloading…</string>
+    <string name="update_install">Install Update</string>
+    <string name="update_download_failed">Download failed: %1$s</string>
+    <string name="update_permission_install_unknown">Please grant permission to install unknown apps to continue</string>
     <string name="settings_transparent_proxy_port">Transparent proxy port</string>
-    <string name="settings_tun2socks_socks5_port">TUN2SOCKS SOCKS5 port</string>
-    <string name="settings_bpf2socks_bridge_port">BPF2SOCKS bridge port</string>
-    <string name="settings_bpf2socks_socks5_port">SOCKS5 port</string>
     <string name="settings_dns_hosts_invalid">Invalid DNS hosts entry</string>
 
     <!-- Options -->
@@ -985,7 +965,7 @@
     <string name="outbound_editor_section_protocol">Protocol</string>
     <string name="outbound_editor_section_protocol_summary">Options specific to the selected proxy protocol</string>
     <string name="outbound_editor_section_tls">TLS</string>
-    <string name="outbound_editor_section_tls_summary">sing-box TLS, uTLS, and Reality client options</string>
+    <string name="outbound_editor_section_tls_summary">sing-box TLS and Reality client options</string>
     <string name="outbound_editor_section_transport">V2Ray transport</string>
     <string name="outbound_editor_section_transport_summary">Optional HTTP, WebSocket, QUIC, gRPC, or HTTPUpgrade transport</string>
     <string name="outbound_editor_section_multiplex">Multiplex</string>
@@ -1135,8 +1115,6 @@
     <string name="outbound_field_user">User</string>
     <string name="outbound_field_user_key">User key</string>
     <string name="outbound_field_username">Username</string>
-    <string name="outbound_field_utls">uTLS</string>
-    <string name="outbound_field_utls_fingerprint">uTLS fingerprint</string>
     <string name="outbound_field_uuid">UUID</string>
 
     <!-- DNS and routing management -->
@@ -1261,7 +1239,6 @@
     <string name="routing_network_icmp">ICMP</string>
     <string name="routing_inbound">Inbounds</string>
     <string name="managed_inbound_local">Local proxy</string>
-    <string name="managed_inbound_tun">TUN</string>
     <string name="managed_inbound_root">ROOT forwarding</string>
     <string name="managed_inbound_empty">No managed inbounds are available in the current run mode</string>
     <string name="managed_preferred_by_empty">No DNS servers provide preferred domains</string>
@@ -1297,7 +1274,7 @@
     <string name="common_disabled">Disabled</string>
     <string name="common_error_details">%1$s: %2$s</string>
     <string name="home_network_speed_summary">↑ %1$s   ↓ %2$s</string>
-    <string name="home_network_summary">IPv4 · %1$s\nIPv6 · %2$s</string>
+    <string name="home_network_summary">Local · %1$s\nPublic · %2$s</string>
     <string name="monitor_speed_per_second">%1$s/s</string>
     <string name="monitor_rate_pair">↓ %1$s/s · ↑ %2$s/s</string>
     <string name="monitor_network_public_ipv4">Public IPv4</string>
@@ -1419,11 +1396,6 @@
     <string name="proxy_error_ebpf_tc_unsupported_switch">Workaround: open Settings → Advanced settings, confirm eBPF (ROOT) is selected in Run mode, then under Proxy settings (eBPF) change Data plane from tc to cgroup and retry.</string>
     <string name="proxy_error_ebpf_tc_unsupported_fallback">If cgroup also fails to start, open Settings → Advanced settings and select TUN (ROOT) in Run mode instead.</string>
     <string name="proxy_error_ebpf_tc_unsupported_report">When reporting this, include the error text above and the asteriskd / sing-box section of logcat.</string>
-    <string name="shared_core_migration_title">App updated</string>
-    <string name="shared_core_migration_message">VPN and ROOT now share the built-in Core. Remove the custom Core to save space? You can still upload a custom Core later.</string>
-    <string name="shared_core_migration_stop_root">Any ROOT service will stop before removal.</string>
-    <string name="shared_core_migration_keep">Keep</string>
-    <string name="shared_core_migration_remove">Remove</string>
     <string name="settings_service_control_keyguard_enable">Enable lock screen control</string>
     <string name="settings_service_control_keyguard">Lock screen control</string>
     <string name="settings_service_control_lock_start">Start on lock</string>

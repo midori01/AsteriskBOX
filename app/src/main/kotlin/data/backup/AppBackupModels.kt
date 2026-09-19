@@ -76,12 +76,6 @@ internal data class AppBackupSettings(
     val localProxyListenAllInterfaces: Boolean = BackupDefaults.localProxyListenAllInterfaces,
     val localProxyUsername: String = BackupDefaults.localProxyUsername,
     val localProxyPassword: String = BackupDefaults.localProxyPassword,
-    val enableVpnAppendHttpProxy: Boolean = BackupDefaults.enableVpnAppendHttpProxy,
-    val enableVpnHevTun: Boolean = BackupDefaults.enableVpnHevTun,
-    val tunMtu: String = BackupDefaults.tunMtu,
-    val tunVpnDns: String = BackupDefaults.tunVpnDns,
-    val tunIpv4Cidr: String = BackupDefaults.tunIpv4Cidr,
-    val tunIpv6Cidr: String = BackupDefaults.tunIpv6Cidr,
     val enableConfigOverrideScript: Boolean = BackupDefaults.enableConfigOverrideScript,
     val configOverrideScript: String = BackupDefaults.configOverrideScript,
     val coreLogLevel: String = BackupDefaults.coreLogLevel,
@@ -90,8 +84,6 @@ internal data class AppBackupSettings(
     val enableResourceAutoUpdate: Boolean = BackupDefaults.enableResourceAutoUpdate,
     val resourceAutoUpdateInterval: String = BackupDefaults.resourceAutoUpdateInterval,
     val resourceFileSource: Int = BackupDefaults.resourceFileSource,
-    val customResourceFileGeositeCategoryAdsAllUrl: String =
-        BackupDefaults.customResourceFileGeositeCategoryAdsAllUrl,
     val customResourceFileGeositeGoogleUrl: String = BackupDefaults.customResourceFileGeositeGoogleUrl,
     val customResourceFileGeositeCnUrl: String = BackupDefaults.customResourceFileGeositeCnUrl,
     val customResourceFileGeoipCnUrl: String = BackupDefaults.customResourceFileGeoipCnUrl,
@@ -126,8 +118,6 @@ internal data class AppBackupSettings(
     val ebpfLocalBypassIpCidr: List<String> = BackupDefaults.ebpfLocalBypassIpCidr,
     val ebpfLocalBypassPort: List<String> = BackupDefaults.ebpfLocalBypassPort,
     val enableRootIpv6Disabler: Boolean = BackupDefaults.enableRootIpv6Disabler,
-    val socks5ProxyPort: String = BackupDefaults.socks5ProxyPort,
-    val bpf2SocksBridgePort: String = BackupDefaults.bpf2SocksBridgePort,
     val externalInterfaces: List<String> = BackupDefaults.externalInterfaces,
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     @SerialName("ebpfSharedNetworkInterfaces")
