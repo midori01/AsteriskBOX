@@ -492,8 +492,9 @@ private fun ConnectionCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = listOf(
+                    text = listOfNotNull(
                         connection.process.ifBlank { stringResource(R.string.monitor_connections_unknown_source) },
+                        connection.inboundType.takeIf { it.isNotBlank() },
                         connection.network.uppercase().ifBlank { stringResource(R.string.monitor_value_unknown) },
                         formatDuration(connection.startedAtMillis, detectedClosedAt),
                     ).joinToString(" · "),
@@ -545,6 +546,7 @@ private fun ConnectionCard(
                     )
                 }
                 DetailRow(stringResource(R.string.monitor_connections_source), connection.sourceAddress)
+                DetailRow(stringResource(R.string.monitor_connections_inbound), connection.inboundType)
                 DetailRow(stringResource(R.string.monitor_connections_target), connection.destinationAddress)
                 DetailRow(stringResource(R.string.monitor_connections_process), connection.process)
                 DetailRow(stringResource(R.string.monitor_connections_network), connection.network.uppercase())

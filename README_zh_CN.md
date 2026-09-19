@@ -2,7 +2,7 @@
 
 # AsteriskBOX
 
-一个 Android sing-box GUI 客户端。
+一个 Android sing-box GUI 客户端。ROOT 模式运行 [reF1nd sing-box](https://github.com/reF1nd/sing-box-releases)构建的 Android 二进制文件。
 
 ## Telegram 频道
 
@@ -10,36 +10,15 @@
 
 ## 运行模式
 
-### VPN Service
-
-- 无需 root 权限。
-- 使用 Android `VpnService`。
-
 ### TPROXY(ROOT)
 
 - 通过 libsu 直接运行本地 sing-box 可执行文件。
 - 使用 iptables 和策略路由处理透明代理流量。
 
-### TUN(ROOT)
-
-- 通过 libsu 直接运行本地 sing-box 可执行文件。
-- 使用 sing-box TUN 入站的 `auto_route` 和 `auto_redirect` 管理路由。
-
 ### eBPF(ROOT)
 
 - 通过 libsu 直接运行本地 sing-box 可执行文件。
 - 使用 sing-box eBPF 入站劫持流量。
-- 是否可用取决于设备内核 eBPF 支持情况。
-
-### TUN2SOCKS(ROOT)
-
-- 通过 libsu 直接运行本地 sing-box 可执行文件。
-- 使用 `hev-socks5-tunnel` 创建 TUN 设备并将流量送入 sing-box SOCKS5 入站
-
-### BPF2SOCKS(ROOT)
-
-- 通过 libsu 直接运行本地 sing-box 可执行文件。
-- 使用 `bpf2socks` 劫持流量并送入 sing-box SOCKS5 入站。
 - 是否可用取决于设备内核 eBPF 支持情况。
 
 ### asteriskd
@@ -94,7 +73,7 @@ macOS 或 Linux：
 ./gradlew assembleDebug
 ```
 
-构建会下载固定版本的 AndroidLibBoxLite AAR，构建 native submodule，并生成 ABI split APK 和 universal APK。
+构建会解析已配置的 reF1nd sing-box 版本，构建 native helper submodule，并生成 ABI split APK 和 universal APK。
 
 如果 Gradle 找不到 Android NDK，请通过 Android Studio、`local.properties` 中的 `ndk.dir` 或 `ANDROID_NDK_HOME` 配置。
 
@@ -106,8 +85,6 @@ macOS 或 Linux：
 
 - [@SagerNet/sing-box](https://github.com/SagerNet/sing-box)
 - [@reF1nd/sing-box-releases](https://github.com/reF1nd/sing-box-releases)
-- [@Asterisk4Magisk/AndroidLibBoxLite](https://github.com/Asterisk4Magisk/AndroidLibBoxLite)
-- [@heiher/hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel)
 - [@topjohnwu/libsu](https://github.com/topjohnwu/libsu)
 - [@android/material3](https://developer.android.com/develop/ui/compose/designsystems/material3)
 - [@mayaxcn/china-ip-list](https://github.com/mayaxcn/china-ip-list)

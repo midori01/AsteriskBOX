@@ -3,7 +3,7 @@
 
 @file:Suppress("UnstableApiUsage")
 
-rootProject.name = "AsteriskBOX"
+rootProject.name = "MidoriBOX"
 
 pluginManagement {
     repositories {
@@ -34,28 +34,9 @@ dependencyResolutionManagement {
         }
         mavenCentral()
         maven("https://jitpack.io")
-        exclusiveContent {
-            forRepository {
-                ivy {
-                    name = "AndroidLibBoxLiteGitHubRelease"
-                    url = uri("https://github.com/Asterisk4Magisk/AndroidLibBoxLite/releases/download")
-                    patternLayout {
-                        artifact("[revision]/[artifact].[ext]")
-                    }
-                    metadataSources {
-                        artifact()
-                    }
-                }
-            }
-            filter {
-                includeModule("com.github.asterisk4magisk", "libbox")
-            }
-        }
     }
 }
 
 include(":app")
 include(":asteriskd")
 include(":bpfmatcher")
-include(":bpf2socks")
-include(":hevtun")
