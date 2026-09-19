@@ -63,8 +63,7 @@ fun ResourceManagementPage(
 ) {
     val isWideScreen = LocalIsWideScreen.current
     val navigator = LocalNavigator.current
-    val stateStore = LocalAppStateStore.current
-    val appState by stateStore.collectAppState()
+    val appState by LocalAppStateStore.current.collectAppState()
     val updateAppState = LocalUpdateAppState.current
     val services = LocalAppServices.current
     val resourceFileUseCase = services.resourceFileUseCase
@@ -92,7 +91,6 @@ fun ResourceManagementPage(
     val editCustomResourceFileUrlState = rememberTextFieldState()
     var showCustomSourceEditor by remember { mutableStateOf(false) }
     var showResourceAutoUpdateSheet by remember { mutableStateOf(false) }
-    val sourceGeositeCategoryAdsAllUrlState = rememberTextFieldState()
     val sourceGeositeGoogleUrlState = rememberTextFieldState()
     val sourceGeositeCnUrlState = rememberTextFieldState()
     val sourceGeoipCnUrlState = rememberTextFieldState()
@@ -326,11 +324,6 @@ fun ResourceManagementPage(
 
     fun openCustomSourceEditor() {
         val source = appState.resourceFileUpdateSource()
-        sourceGeositeCategoryAdsAllUrlState.setTextAndPlaceCursorAtEnd(
-            appState.customResourceFileGeositeCategoryAdsAllUrl.ifBlank {
-                source.geositeCategoryAdsAllUrl
-            },
-        )
         sourceGeositeGoogleUrlState.setTextAndPlaceCursorAtEnd(
             appState.customResourceFileGeositeGoogleUrl.ifBlank { source.geositeGoogleUrl },
         )
@@ -513,23 +506,13 @@ fun ResourceManagementPage(
                     description = stringResource(R.string.settings_resource_files_root_only),
                     onReplace = {
                         runResourceFileAction(
-                            action = {
-                                services.replaceSingBoxCore(
-                                    currentState = { stateStore.state.value },
-                                    onRootStopped = { updateAppState { it.copy(proxyRunning = false) } },
-                                )
-                            },
+                            action = { resourceFileUseCase.replace(kind, appState.customResourceFiles) },
                             successMessage = replacedMessage.formatTemplate("name" to kind.displayName),
                         )
                     },
                     onRestore = {
                         runResourceFileAction(
-                            action = {
-                                services.restoreSharedSingBoxCore(
-                                    state = appState,
-                                    onRootStopped = { updateAppState { it.copy(proxyRunning = false) } },
-                                )
-                            },
+                            action = { resourceFileUseCase.restoreBundled(kind, appState.customResourceFiles) },
                             successMessage = restoredMessage.formatTemplate("name" to kind.displayName),
                         )
                     },
@@ -703,7 +686,6 @@ fun ResourceManagementPage(
         )
         CustomResourceSourceEditorSheet(
             show = showCustomSourceEditor,
-            geositeCategoryAdsAllUrlState = sourceGeositeCategoryAdsAllUrlState,
             geositeGoogleUrlState = sourceGeositeGoogleUrlState,
             geositeCnUrlState = sourceGeositeCnUrlState,
             geoipCnUrlState = sourceGeoipCnUrlState,
@@ -714,8 +696,6 @@ fun ResourceManagementPage(
                 updateAppState { state ->
                     state.copy(
                         resourceFileSource = ResourceFileSourceCustom,
-                        customResourceFileGeositeCategoryAdsAllUrl =
-                            sourceGeositeCategoryAdsAllUrlState.text.toString().trim(),
                         customResourceFileGeositeGoogleUrl = sourceGeositeGoogleUrlState.text.toString().trim(),
                         customResourceFileGeositeCnUrl = sourceGeositeCnUrlState.text.toString().trim(),
                         customResourceFileGeoipCnUrl = sourceGeoipCnUrlState.text.toString().trim(),

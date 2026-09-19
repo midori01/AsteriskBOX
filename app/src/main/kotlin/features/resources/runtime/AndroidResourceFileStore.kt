@@ -1,4 +1,4 @@
-﻿// Copyright 2026, AsteriskBOX contributors
+// Copyright 2026, AsteriskBOX contributors
 // SPDX-License-Identifier: GPL-3.0
 
 package features.resources.runtime
@@ -17,6 +17,7 @@ import features.resources.ResourceFileSourceDefault
 import features.resources.hasSingBoxRuleSetExtension
 import features.resources.singBoxRuleSetFormatOrNull
 import utils.writeAtomically
+import org.tukaani.xz.XZInputStream
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
@@ -35,10 +36,7 @@ internal class AndroidResourceFileStore(
 
     fun currentStatus(customResourceFiles: List<CustomResourceFileState> = emptyList()): ResourceFilesStatus {
         return ResourceFilesStatus(
-            resourceFiles = ResourceFileKind.entries.associateWith { kind ->
-                val target = if (kind == ResourceFileKind.SingBoxCore) effectiveSingBoxCoreFile() else file(kind)
-                target.toStatus(kind)
-            },
+            resourceFiles = ResourceFileKind.entries.associateWith { kind -> file(kind).toStatus(kind) },
             customResourceFiles = customResourceFiles.map { customFile ->
                 CustomResourceFileStatus(
                     file = customFile,
@@ -92,12 +90,14 @@ internal class AndroidResourceFileStore(
     }
 
     private fun hasBundledFile(kind: ResourceFileKind): Boolean {
-        return when (kind) {
-            ResourceFileKind.SingBoxCore -> bundledSingBoxCoreFileOrNull() != null
-            else -> runCatching {
-                appContext.assets.open(kind.bundledAssetPath()).use { input -> input.read() >= 0 }
-            }.getOrDefault(false)
+        val assetPath = if (kind == ResourceFileKind.SingBoxCore) {
+            BundledSingBoxCoreAssetPath
+        } else {
+            kind.bundledAssetPath()
         }
+        return runCatching {
+            appContext.assets.open(assetPath).use { input -> input.read() >= 0 }
+        }.getOrDefault(false)
     }
 
     private fun ResourceFileKind.bundledAssetPath(): String {
@@ -117,17 +117,34 @@ internal class AndroidResourceFileStore(
         kind.applyPermissions(file(kind))
     }
 
-    fun hasCustomSingBoxCore(): Boolean = file(ResourceFileKind.SingBoxCore).coreBinaryOwnerUidOrNull() != null
-
-    fun effectiveSingBoxCoreFile(): File = if (hasCustomSingBoxCore()) {
-        file(ResourceFileKind.SingBoxCore)
-    } else {
-        File(appContext.applicationInfo.nativeLibraryDir, SingBoxCoreLibraryName)
+    fun stageBundledSingBoxCoreCandidate(): File {
+        val candidate = createSingBoxCoreCandidateFile("sing-box-core-")
+        try {
+            appContext.assets.open(BundledSingBoxCoreAssetPath).use { assetStream ->
+                XZInputStream(assetStream.buffered()).use { xzStream ->
+                    candidate.outputStream().use { output ->
+                        xzStream.copyTo(output)
+                        output.flush()
+                        output.fd.sync()
+                    }
+                }
+            }
+            if (candidate.length() <= 0L) {
+                error("Decompressed bundled sing-box core is empty")
+            }
+            return candidate
+        } catch (error: Throwable) {
+            candidate.delete()
+            throw error
+        }
     }
 
-    private fun bundledSingBoxCoreFileOrNull(): File? {
-        return File(appContext.applicationInfo.nativeLibraryDir, SingBoxCoreLibraryName)
-            .takeIf { it.isFile }
+    fun shouldPublishBundledSingBoxCore(resourceFileSource: Int): Boolean {
+        return hasBundledFile(ResourceFileKind.SingBoxCore) && file(ResourceFileKind.SingBoxCore).needsBundledRestore(
+            ResourceFileKind.SingBoxCore,
+            resourceFileSource,
+            appContext.packageUpdatedAtMillis(),
+        )
     }
 
     fun replace(kind: ResourceFileKind, uri: Uri) {
@@ -153,7 +170,9 @@ internal class AndroidResourceFileStore(
     fun normalizeSingBoxCoreCandidate(uploaded: File): File {
         val extracted = createSingBoxCoreCandidateFile("sing-box-extracted-")
         try {
-            val found = uploaded.extractZipEntry("sing-box", extracted) || uploaded.extractGzip(extracted)
+            val found = uploaded.extractZipEntry("sing-box", extracted) ||
+                uploaded.extractGzip(extracted) ||
+                uploaded.extractXz(extracted)
             return if (found) {
                 uploaded.delete()
                 extracted
@@ -271,11 +290,9 @@ internal class AndroidResourceFileStore(
             dataDir = dataDir.absolutePath,
             asteriskdPath = File(appContext.applicationInfo.nativeLibraryDir, AsteriskdLibraryName).absolutePath,
             bpfMatcherPath = File(appContext.applicationInfo.nativeLibraryDir, BpfMatcherLibraryName).absolutePath,
-            bpf2socksPath = File(appContext.applicationInfo.nativeLibraryDir, Bpf2SocksLibraryName).absolutePath,
-            singBoxCorePath = effectiveSingBoxCoreFile().absolutePath,
+            singBoxCorePath = file(ResourceFileKind.SingBoxCore).absolutePath,
             directCidrIpv4Path = file(ResourceFileKind.DirectCidrIpv4).absolutePath,
             directCidrIpv6Path = file(ResourceFileKind.DirectCidrIpv6).absolutePath,
-            hevSocks5TunnelPath = File(appContext.applicationInfo.nativeLibraryDir, HevSocks5TunnelLibraryName).absolutePath,
         )
     }
 }
@@ -328,11 +345,9 @@ internal data class SingBoxResourceFilePaths(
     val dataDir: String,
     val asteriskdPath: String,
     val bpfMatcherPath: String,
-    val bpf2socksPath: String,
     val singBoxCorePath: String,
     val directCidrIpv4Path: String,
     val directCidrIpv6Path: String,
-    val hevSocks5TunnelPath: String,
 )
 
 internal fun Context.singBoxResourceFilesDir(): File {
@@ -366,11 +381,8 @@ private fun Context.packageUpdatedAtMillis(): Long {
 
 private const val AsteriskdLibraryName = "libasteriskd.so"
 private const val BpfMatcherLibraryName = "libbpf-matcher.so"
-private const val Bpf2SocksLibraryName = "libbpf2socks.so"
-private const val SingBoxCoreLibraryName = "libsing-box.so"
-private const val HevSocks5TunnelLibraryName = "libhev-socks5-tunnel-cli.so"
+private const val BundledSingBoxCoreAssetPath = "sing-box/sing-box.xz"
 private const val SingBoxHomeDirName = "sing-box"
-
 
 internal fun resourceFileExists(
     kind: ResourceFileKind?,
@@ -425,6 +437,21 @@ private fun File.extractGzip(target: File): Boolean {
         true
     }.onFailure { error ->
         AndroidResourceFileLogger.warn("Failed to extract gzip ${absolutePath}", error)
+    }.getOrDefault(false)
+}
+
+private fun File.extractXz(target: File): Boolean {
+    return runCatching {
+        XZInputStream(inputStream().buffered()).use { input ->
+            target.outputStream().use { output ->
+                input.copyTo(output)
+                output.flush()
+                output.fd.sync()
+            }
+        }
+        true
+    }.onFailure { error ->
+        AndroidResourceFileLogger.warn("Failed to extract xz ${absolutePath}", error)
     }.getOrDefault(false)
 }
 

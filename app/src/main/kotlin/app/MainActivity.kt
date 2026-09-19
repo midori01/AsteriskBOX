@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
 import com.journeyapps.barcodescanner.ScanContract
 import data.AppSettingsPreferences
-import engine.vpn.AndroidVpnPermissionRequester
 import features.logs.AndroidLogFileCreator
 import features.resources.runtime.AndroidResourceFilePicker
 import features.settings.locale.localizedAppContext
@@ -36,10 +35,6 @@ import kotlinx.coroutines.launch
 import ui.feedback.AndroidToastTipNotifier
 
 class MainActivity : ComponentActivity() {
-    private val vpnPermissionRequester = AndroidVpnPermissionRequester {
-        getString(R.string.error_vpn_permission_launcher_missing)
-    }
-
     private val qrCodeScanRequester = AndroidQrCodeScanRequester(
         hasCameraPermission = {
             checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
@@ -71,12 +66,6 @@ class MainActivity : ComponentActivity() {
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) {}
-
-    private val vpnPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult(),
-    ) { result ->
-        vpnPermissionRequester.complete(result.resultCode == RESULT_OK)
-    }
 
     private val qrCodePermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -115,9 +104,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        vpnPermissionRequester.registerLauncher { intent ->
-            vpnPermissionLauncher.launch(intent)
-        }
         qrCodeScanRequester.registerPermissionLauncher { permission ->
             qrCodePermissionLauncher.launch(permission)
         }
@@ -205,8 +191,6 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        vpnPermissionRequester.complete(false)
-        vpnPermissionRequester.registerLauncher(null)
         qrCodeScanRequester.completeCameraPermission(false)
         qrCodeScanRequester.completeScan(null)
         qrCodeScanRequester.registerPermissionLauncher(null)
@@ -239,11 +223,9 @@ class MainActivity : ComponentActivity() {
                 backupFilePicker = { resourceFilePicker.pick(BackupFileMimeTypes) },
                 backupFileCreator = backupFileCreator::create,
                 logFileCreator = logFileCreator::create,
-                requestVpnPermission = vpnPermissionRequester::request,
             )
         }
     }
-
 }
 
 private val BackupFileMimeTypes = arrayOf(

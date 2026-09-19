@@ -44,7 +44,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import system.AndroidAppIconFetcher
 import engine.singbox.runtime.SingBoxRuntimeRepository
-import engine.vpn.AndroidLibboxRuntime
 
 class AsteriskApplication : Application(), SingletonImageLoader.Factory {
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -199,7 +198,6 @@ class AsteriskApplication : Application(), SingletonImageLoader.Factory {
                 .distinctUntilChanged()
                 .collect(scheduler::reconcile)
         }
-        AndroidLibboxRuntime.setup(this)
         AndroidLogcatRepository.initialize(applicationContext)
         AndroidCoreLogRepository.initialize(applicationContext)
         AndroidAsteriskdLogRepository.initialize(applicationContext)

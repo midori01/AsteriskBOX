@@ -10,7 +10,6 @@ compose = "1.12.0"
 compose-material-icons = "1.7.3"
 compose-material3 = "1.12.0-alpha03"
 coil = "3.6.2"
-dexlib2 = "3.0.10"
 haze = "1.7.3"
 kotlin = "2.4.20"
 kotlinx-serialization-json = "1.11.0"
@@ -23,6 +22,7 @@ reorderable = "3.1.0"
 sora-editor = "0.24.6"
 snakeyaml-engine = "3.1.1"
 zxing-android-embedded = "4.3.0"
+xz = "1.10"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity-compose" }
@@ -39,7 +39,6 @@ compose-material3 = { module = "org.jetbrains.compose.material3:material3", vers
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose" }
 coil = { module = "io.coil-kt.coil3:coil", version.ref = "coil" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
-dexlib2 = { module = "com.android.tools.smali:smali-dexlib2", version.ref = "dexlib2" }
 haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
 kage = { module = "com.github.android-password-store:kage", version.ref = "kage" }
@@ -50,6 +49,7 @@ reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reo
 sora-editor = { module = "io.github.rosemoe:editor", version.ref = "sora-editor" }
 snakeyaml-engine = { module = "org.snakeyaml:snakeyaml-engine", version.ref = "snakeyaml-engine" }
 zxing-android-embedded = { module = "com.journeyapps:zxing-android-embedded", version.ref = "zxing-android-embedded" }
+xz = { module = "org.tukaani:xz", version.ref = "xz" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

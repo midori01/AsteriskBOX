@@ -14,7 +14,6 @@ import app.SingBoxDnsRuleTypeLogical
 import app.SingBoxDnsServerState
 import app.SingBoxDnsServerTypes
 import app.effectiveLocalDnsEnabled
-import app.modes.RunModeVpnService
 import app.modes.SingBoxModeDirect
 import app.modes.SingBoxModeGlobal
 import engine.singbox.DefaultSingBoxDnsFakeIpRange
@@ -73,13 +72,7 @@ internal object SingBoxDnsCompiler {
                             "DNS rule ${rule.id} contains an empty logical or headless rule"
                         }
                     }
-                    .mapNotNull { rule ->
-                        if (appState.runMode == RunModeVpnService) {
-                            rule
-                        } else {
-                            rule.forSingBoxMode(appState.singBoxMode)
-                        }
-                    }
+                    .mapNotNull { rule -> rule.forSingBoxMode(appState.singBoxMode) }
                     .map(SingBoxDnsRuleState::toJson)
                 if (rules.isNotEmpty()) put("rules", JsonArray(rules))
                 put("final", defaultServer)
@@ -87,8 +80,7 @@ internal object SingBoxDnsCompiler {
                     "strategy",
                     when {
                         appState.enableIpv6Prefer -> "prefer_ipv6"
-                        !appState.enableIpv6 -> "ipv4_only"
-                        else -> "prefer_ipv4"
+                        else -> "ipv4_only"
                     },
                 )
                 appState.dnsCacheCapacity.toLongOrNull()

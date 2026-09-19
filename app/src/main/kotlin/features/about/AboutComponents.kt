@@ -34,7 +34,7 @@ import ui.components.AsteriskListRow
 import ui.components.AsteriskSection
 import ui.theme.AsteriskShapeTokens
 
-private const val ProjectSourceUri = "https://github.com/Asterisk4Magisk/AsteriskBOX"
+private const val ProjectSourceUri = "https://github.com/midori01/AsteriskBOX"
 private const val TelegramChannelUri = "https://t.me/Asterisk4Magisk"
 private const val AboutIconForegroundScale = 1.25f
 
@@ -46,7 +46,7 @@ internal fun AboutIdentityHeader(
         projectName = ProjectInfo.PROJECT_NAME,
         versionName = ProjectInfo.VERSION_NAME,
         versionCode = ProjectInfo.VERSION_CODE,
-        androidLibBoxLiteVersion = ProjectInfo.ANDROID_LIB_BOX_LITE_VERSION,
+        singBoxVersion = ProjectInfo.SING_BOX_VERSION,
     )
     Column(
         modifier = modifier
@@ -110,6 +110,24 @@ private data class AboutIconStyle(
 )
 
 @Composable
+internal fun AboutUpdateSection(
+    onCheckUpdate: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    AsteriskSection(
+        modifier = modifier.fillMaxWidth(),
+        title = stringResource(R.string.settings_check_update),
+    ) {
+        AsteriskListRow(
+            title = stringResource(R.string.settings_check_update),
+            summary = "v${ProjectInfo.VERSION_NAME} (${ProjectInfo.VERSION_CODE})",
+            leadingIcon = Icons.Rounded.Sync,
+            onClick = onCheckUpdate,
+        )
+    }
+}
+
+@Composable
 internal fun AboutRuntimeSection(
     modifier: Modifier = Modifier,
 ) {
@@ -117,12 +135,7 @@ internal fun AboutRuntimeSection(
         modifier = modifier.fillMaxWidth(),
         title = stringResource(R.string.about_runtime),
     ) {
-        AboutRuntimeRow(
-            "AndroidLibBoxLite",
-            ProjectInfo.ANDROID_LIB_BOX_LITE_VERSION,
-            Icons.Rounded.Extension,
-        )
-        AboutRuntimeRow("hev-socks5-tunnel", ProjectInfo.HEV_SOCKS5_TUNNEL_VERSION, Icons.Rounded.VpnLock)
+        AboutRuntimeRow("sing-box", ProjectInfo.SING_BOX_VERSION, Icons.Rounded.Router)
     }
 }
 
