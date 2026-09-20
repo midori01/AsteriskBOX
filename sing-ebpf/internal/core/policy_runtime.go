@@ -56,6 +56,9 @@ type policyMapTargets struct {
 	UID               *CiliumEBPF.Map
 	LocalPort         *CiliumEBPF.Map
 	SharedPort        *CiliumEBPF.Map
+	EndpointPort      *CiliumEBPF.Map
+	EndpointIPv4      *CiliumEBPF.Map
+	EndpointIPv6      *CiliumEBPF.Map
 	LocalBypassIPv4   *CiliumEBPF.Map
 	LocalBypassIPv6   *CiliumEBPF.Map
 	SharedBypassIPv4  *CiliumEBPF.Map
@@ -88,6 +91,7 @@ func populateCompiledPolicyMaps(targets policyMapTargets, policy CompiledPolicy)
 	}{
 		{name: "local port", mapInst: targets.LocalPort, values: policy.localBypassPortEntries},
 		{name: "shared port", mapInst: targets.SharedPort, values: policy.sharedBypassPortEntries},
+		{name: "endpoint port", mapInst: targets.EndpointPort, values: policy.endpointPortEntries},
 	} {
 		if entry.mapInst == nil || len(entry.values) == 0 {
 			continue
@@ -109,6 +113,8 @@ func populateCompiledPolicyMaps(targets policyMapTargets, policy CompiledPolicy)
 		{name: "include source IPv6", mapInst: targets.IncludeSourceIPv6, prefixes: policy.includeSource.ipv6},
 		{name: "exclude source IPv4", mapInst: targets.ExcludeSourceIPv4, prefixes: policy.excludeSource.ipv4},
 		{name: "exclude source IPv6", mapInst: targets.ExcludeSourceIPv6, prefixes: policy.excludeSource.ipv6},
+		{name: "endpoint IPv4", mapInst: targets.EndpointIPv4, prefixes: policy.endpoint.ipv4},
+		{name: "endpoint IPv6", mapInst: targets.EndpointIPv6, prefixes: policy.endpoint.ipv6},
 	} {
 		if entry.mapInst == nil || len(entry.prefixes) == 0 {
 			continue
