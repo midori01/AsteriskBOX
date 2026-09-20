@@ -346,6 +346,7 @@ func NewInbound(ctx context.Context, router adapter.Router, logger log.ContextLo
 		sharedExcludeMAC:    sharedExcludeMAC,
 		localPolicy: localUIDPolicy{
 			BypassPrivateAddress: options.Local.BypassPrivateAddress == nil || *options.Local.BypassPrivateAddress,
+			BypassIPCIDR:         options.Local.BypassIPCIDR,
 			IncludeUIDConfigured: len(options.Local.IncludeUID) > 0 ||
 				len(options.Local.IncludeUIDRange) > 0 || len(options.Local.IncludePackage) > 0,
 			IncludeUID: includeUIDRanges,

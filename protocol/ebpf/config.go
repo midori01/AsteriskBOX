@@ -116,7 +116,8 @@ func validateLocalOptions(enabled bool, options option.EBPFLocalOptions) error {
 	if options.BypassPrivateAddress != nil {
 		return E.New("local.bypass_private_address requires local interception")
 	}
-	if len(options.IncludeUID) > 0 || len(options.IncludeUIDRange) > 0 ||
+	if len(options.BypassIPCIDR) > 0 ||
+		len(options.IncludeUID) > 0 || len(options.IncludeUIDRange) > 0 ||
 		len(options.ExcludeUID) > 0 || len(options.ExcludeUIDRange) > 0 ||
 		len(options.IncludeAndroidUser) > 0 || len(options.IncludePackage) > 0 ||
 		len(options.ExcludePackage) > 0 || len(options.BypassPort) > 0 || len(options.BypassPortRange) > 0 ||
@@ -311,6 +312,7 @@ func validateSharedOptions(enabled bool, options option.EBPFSharedOptions) error
 		return nil
 	}
 	if options.DataPlane != "" || options.DNSMode != "" || len(options.Interface) > 0 || options.IPv6 != nil || options.BypassPrivateAddress != nil ||
+		len(options.BypassIPCIDR) > 0 ||
 		len(options.IncludeSourceCIDR) > 0 || len(options.ExcludeSourceCIDR) > 0 ||
 		len(options.IncludeMACAddress) > 0 || len(options.ExcludeMACAddress) > 0 ||
 		len(options.BypassPort) > 0 || len(options.BypassPortRange) > 0 {
