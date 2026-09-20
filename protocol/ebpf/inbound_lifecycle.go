@@ -52,6 +52,9 @@ func (i *Inbound) startInbound() error {
 	if err := i.closeTCDataPlane(); err != nil {
 		return E.Cause(err, "reclaim previous TC data plane")
 	}
+	if !i.localSocketAssignEnabled() {
+		i.removeAndroidEgressGuard()
+	}
 	if i.localEnabled && i.androidUIDOptions != nil {
 		if err := i.resolveAndroidUIDPolicy(); err != nil {
 			return E.Cause(err, "resolve Android UID policy")
@@ -190,6 +193,7 @@ func (i *Inbound) startInbound() error {
 		if err = backend.Enable(); err != nil {
 			return err
 		}
+		i.syncAndroidEgressGuard(localInterface)
 	}
 	if backend != nil && !i.sharedRewriteEnabled() {
 		i.startTCAssignmentJanitor()
@@ -537,6 +541,7 @@ func (i *Inbound) closeResources() error {
 	if dataPlane != nil {
 		disableErr = dataPlane.Disable()
 	}
+	i.removeAndroidEgressGuard()
 	cgroupBackend := i.takeCgroupBackend()
 	cgroupErr := error(nil)
 	if cgroupBackend != nil {
