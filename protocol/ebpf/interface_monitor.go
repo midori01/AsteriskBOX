@@ -4,15 +4,19 @@ package ebpf
 
 import (
 	"context"
+	"net"
+	"runtime"
 	"slices"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/sagernet/netlink"
 	"github.com/sagernet/sing-tun"
 	"github.com/sagernet/sing/common/control"
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/sagernet/sing/common/x/list"
+	"golang.org/x/sys/unix"
 )
 
 type tcInterfaceMonitor struct {
@@ -93,6 +97,7 @@ func (i *Inbound) startTCInterfaceMonitor() error {
 	monitorContext, cancel := context.WithCancel(i.ctx)
 	done := make(chan struct{})
 	updates := make(chan struct{}, 1)
+	initialDefaultInterface := i.currentDefaultInterfaceName()
 	state := &i.interfaceMonitor
 	state.access.Lock()
 	if state.network != nil {
@@ -115,7 +120,7 @@ func (i *Inbound) startTCInterfaceMonitor() error {
 	state.updates = updates
 	state.networkCallback = networkMonitor.RegisterCallback(i.notifyTCInterfaceUpdate)
 	state.defaultInterfaceCallback = defaultInterfaceMonitor.RegisterCallback(i.defaultInterfaceUpdated)
-	state.defaultInterfaceName = interfaceName(defaultInterfaceMonitor.DefaultInterface())
+	state.defaultInterfaceName = initialDefaultInterface
 	state.access.Unlock()
 	i.resetVPNReadinessState()
 	go i.runTCInterfaceUpdates(monitorContext, updates, done)
@@ -182,7 +187,11 @@ func (i *Inbound) stopTCInterfaceMonitor() error {
 }
 
 func (i *Inbound) defaultInterfaceUpdated(defaultInterface *control.Interface, _ int) {
-	i.setDefaultInterfaceName(interfaceName(defaultInterface))
+	name := interfaceName(defaultInterface)
+	if name == "" && runtime.GOOS == "android" {
+		name = androidDefaultInterfaceFinder()
+	}
+	i.setDefaultInterfaceName(name)
 }
 
 func interfaceName(networkInterface *control.Interface) string {
@@ -192,12 +201,125 @@ func interfaceName(networkInterface *control.Interface) string {
 	return networkInterface.Name
 }
 
+var androidDefaultInterfaceFinder = findAndroidDefaultInterfaceName
+
 func (i *Inbound) currentDefaultInterfaceName() string {
-	defaultInterfaceMonitor := i.networkManager.InterfaceMonitor()
-	if defaultInterfaceMonitor == nil {
+	var name string
+	if defaultInterfaceMonitor := i.networkManager.InterfaceMonitor(); defaultInterfaceMonitor != nil {
+		name = interfaceName(defaultInterfaceMonitor.DefaultInterface())
+	}
+	if name == "" && runtime.GOOS == "android" {
+		name = androidDefaultInterfaceFinder()
+	}
+	return name
+}
+
+type routeLinkResolver struct {
+	names map[int]string
+}
+
+func newRouteLinkResolver() *routeLinkResolver {
+	return &routeLinkResolver{names: make(map[int]string)}
+}
+
+func (r *routeLinkResolver) resolve(index int) string {
+	if index <= 0 {
 		return ""
 	}
-	return interfaceName(defaultInterfaceMonitor.DefaultInterface())
+	if name, ok := r.names[index]; ok {
+		return name
+	}
+	link, err := netlink.LinkByIndex(index)
+	if err != nil || link == nil || link.Attrs() == nil {
+		r.names[index] = ""
+		return ""
+	}
+	attrs := link.Attrs()
+	if attrs.Flags&net.FlagUp == 0 || attrs.Flags&net.FlagLoopback != 0 || isVPNInterface(attrs.Name) {
+		r.names[index] = ""
+		return ""
+	}
+	r.names[index] = attrs.Name
+	return attrs.Name
+}
+
+func isCandidateDefaultRoute(route netlink.Route) bool {
+	if route.Table == unix.RT_TABLE_LOCAL || (route.Type != unix.RTN_UNICAST && route.Type != 0) {
+		return false
+	}
+	if route.LinkIndex <= 0 {
+		return false
+	}
+	if route.Dst == nil {
+		return true
+	}
+	ones, bits := route.Dst.Mask.Size()
+	return ones == 0 && (bits == net.IPv4len*8 || bits == net.IPv6len*8)
+}
+
+func findAndroidDefaultInterfaceByRules(family int, resolver *routeLinkResolver) string {
+	rules, err := netlink.RuleList(family)
+	if err != nil {
+		return ""
+	}
+	checkedTables := make(map[int]bool)
+	for _, rule := range rules {
+		table := rule.Table
+		if table <= 0 || table == unix.RT_TABLE_LOCAL || checkedTables[table] {
+			continue
+		}
+		checkedTables[table] = true
+		routes, err := netlink.RouteListFiltered(
+			family,
+			&netlink.Route{Table: table},
+			netlink.RT_FILTER_TABLE,
+		)
+		if err != nil {
+			continue
+		}
+		for _, route := range routes {
+			if !isCandidateDefaultRoute(route) {
+				continue
+			}
+			if iface := resolver.resolve(route.LinkIndex); iface != "" {
+				return iface
+			}
+		}
+	}
+	return ""
+}
+
+func findAndroidDefaultInterfaceByRoutes(family int, resolver *routeLinkResolver) string {
+	routes, err := netlink.RouteListFiltered(
+		family,
+		&netlink.Route{Table: unix.RT_TABLE_UNSPEC},
+		netlink.RT_FILTER_TABLE,
+	)
+	if err != nil {
+		return ""
+	}
+	for _, route := range routes {
+		if !isCandidateDefaultRoute(route) {
+			continue
+		}
+		if iface := resolver.resolve(route.LinkIndex); iface != "" {
+			return iface
+		}
+	}
+	return ""
+}
+
+func findAndroidDefaultInterfaceName() string {
+	resolver := newRouteLinkResolver()
+	for _, family := range []int{netlink.FAMILY_V4, netlink.FAMILY_V6} {
+		if name := findAndroidDefaultInterfaceByRules(family, resolver); name != "" {
+			return name
+		}
+		if name := findAndroidDefaultInterfaceByRoutes(family, resolver); name != "" {
+			return name
+		}
+	}
+	return ""
 }
 
 func (i *Inbound) setDefaultInterfaceName(interfaceName string) {
@@ -391,11 +513,16 @@ func (i *Inbound) runTCInterfaceUpdates(ctx context.Context, updates <-chan stru
 	}, i.recordNextRetryDeadline, vpnTicks, i.syncVPNReadiness)
 }
 
+const androidTCDriftCheckInterval = 3 * time.Second
+
 func (i *Inbound) interfaceDriftCheckInterval() time.Duration {
 	i.tcDataPlaneAccess.RLock()
 	hasTCDataPlane := i.tcDataPlane != nil
 	i.tcDataPlaneAccess.RUnlock()
 	if hasTCDataPlane || i.sharedRewriteInstance() != nil {
+		if runtime.GOOS == "android" {
+			return androidTCDriftCheckInterval
+		}
 		return tcDriftCheckInterval
 	}
 	return 0
