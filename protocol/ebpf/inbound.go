@@ -29,6 +29,7 @@ const (
 	dnsModeRespectPolicy         = "respect_policy"
 	dnsModeOff                   = "off"
 	defaultTCPriority            = 1
+	defaultAndroidTCPriority     = 2
 )
 
 var (
@@ -125,6 +126,7 @@ type Inbound struct {
 	cgroupRecoveryEvents      chan commonEBPF.UDPReleaseEvent
 	lifecycleAccess           sync.Mutex
 	interfaceMonitor          tcInterfaceMonitor
+	egressGuard               androidEgressGuard
 	vpnReady                  atomic.Bool
 	vpnInterfacePackets       map[vpnInterfaceIdentity]vpnInterfaceState
 	vpnReadyUpdateFailing     bool
@@ -341,7 +343,11 @@ func NewInbound(ctx context.Context, router adapter.Router, logger log.ContextLo
 		tcAssignmentWake:  make(chan struct{}, 1),
 	}
 	if inbound.tcPriority == 0 {
-		inbound.tcPriority = defaultTCPriority
+		if runtime.GOOS == "android" {
+			inbound.tcPriority = defaultAndroidTCPriority
+		} else {
+			inbound.tcPriority = defaultTCPriority
+		}
 	}
 	inbound.tcAssignmentSweepFailure.Store("")
 	if dnsTransportManager := service.FromContext[adapter.DNSTransportManager](ctx); dnsTransportManager != nil {
