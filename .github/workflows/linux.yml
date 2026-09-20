@@ -1,19 +1,7 @@
 name: Build Linux Packages
 
 on:
-  #push:
-  #  branches:
-  #    - stable
-  #    - testing
   workflow_dispatch:
-    inputs:
-      version:
-        description: "Version name"
-        required: true
-        type: string
-  release:
-    types:
-      - published
 
 jobs:
   calculate_version:
