@@ -332,7 +332,21 @@ internal fun compileEbpfInbound(
             put("data_plane", appState.ebpfLocalDataPlane)
             put("dns_mode", appState.ebpfLocalDnsMode.effectiveEbpfDnsMode(appState.enableLocalDns))
             put("ipv6", appState.enableIpv6)
-            put("bypass_private_address", appState.enableRootEbpfPrivateAddressBypass)
+            put("bypass_private_address", appState.enableRootEbpfPrivateAddressBypass || appState.ebpfLocalBypassPrivateAddress)
+            if (appState.ebpfLocalBypassIpCidr.isNotEmpty()) {
+                putJsonArray("bypass_ip_cidr") {
+                    appState.ebpfLocalBypassIpCidr
+                        .map(String::trim)
+                        .filter(String::isNotEmpty)
+                        .map { if ("/" in it) it else if (":" in it) "$it/128" else "$it/32" }
+                        .forEach(::add)
+                }
+            }
+            if (appState.ebpfLocalBypassPort.isNotEmpty()) {
+                putJsonArray("bypass_port") {
+                    appState.ebpfLocalBypassPort.mapNotNull { it.trim().toIntOrNull() }.forEach(::add)
+                }
+            }
             if (bypassRuleSets.isNotEmpty()) {
                 putJsonArray("bypass_rule_set") {
                     bypassRuleSets.forEach(::add)
