@@ -372,6 +372,17 @@
     <string name="settings_ebpf_endpoint_connected_bypass_ip_cidr_empty">未配置 IP/CIDR</string>
     <string name="settings_ebpf_endpoint_connected_bypass_port">端口</string>
     <string name="settings_ebpf_endpoint_connected_bypass_port_empty">未配置端口</string>
+    <string name="settings_ebpf_local_bypass_private_address">绕过私有地址</string>
+    <string name="settings_ebpf_local_bypass_private_address_short">私有地址</string>
+    <string name="settings_ebpf_local_bypass_private_address_summary">在内核中直接放行私有及保留网段（10/8、172.16/12、192.168/16 等）</string>
+    <string name="settings_ebpf_local_bypass_ip_cidr">绕过目标 IP/CIDR</string>
+    <string name="settings_ebpf_local_bypass_ip_cidr_summary">直接绕过 eBPF 拦截的目标 IP 或网段（如 192.168.1.0/24、10.0.0.1）</string>
+    <string name="settings_ebpf_local_bypass_ip_cidr_empty">未配置绕过 IP/CIDR</string>
+    <string name="settings_ebpf_local_bypass_ip_cidr_invalid">请输入有效的 IP 地址或 CIDR 网段</string>
+    <string name="settings_ebpf_local_bypass_port">绕过目标端口</string>
+    <string name="settings_ebpf_local_bypass_port_summary">直接绕过 eBPF 拦截的目标端口（如 22、8022）</string>
+    <string name="settings_ebpf_local_bypass_port_empty">未配置绕过端口</string>
+    <string name="settings_ebpf_local_bypass_port_invalid">端口范围必须在 1 到 65535 之间</string>
     <string name="settings_ignored_interfaces">忽略接口设置</string>
     <string name="settings_ignored_interfaces_input">接口选择器</string>
     <string name="settings_ignored_interfaces_summary">每项输入一个接口名称。在末尾添加 + 可匹配前缀，例如 wlan+。</string>

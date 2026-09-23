@@ -24,6 +24,8 @@ import features.logs.reportFailure
 import features.settings.sheets.TunBypassRuleSetBottomSheet
 import features.settings.sheets.TunSharedNetworkBottomSheet
 import features.settings.sheets.EbpfEndpointConnectedBypassBottomSheet
+import features.settings.sheets.sanitizeIpCidrList
+import features.settings.sheets.sanitizePortList
 import features.settings.sheets.ExternalInterfacesBottomSheet
 import features.settings.sheets.IgnoredInterfacesBottomSheet
 import features.settings.sheets.LocalProxySettingsBottomSheet
@@ -333,15 +335,26 @@ internal fun SettingsBottomSheetsHost(
         saving = validating,
         choices = tunBypassRuleSetChoices,
         selectedTags = sheetState.tunBypassRuleSetTagsDraft,
+        bypassPrivateAddress = sheetState.ebpfLocalBypassPrivateAddressDraft,
+        ipCidr = sheetState.ebpfLocalBypassIpCidrDraft,
+        port = sheetState.ebpfLocalBypassPortDraft,
         onSelectedTagsChange = { tags ->
             sheetState.tunBypassRuleSetTagsDraft = sanitizeTunBypassRuleSetTags(tags)
         },
+        onBypassPrivateAddressChange = { sheetState.ebpfLocalBypassPrivateAddressDraft = it },
+        onIpCidrChange = { sheetState.ebpfLocalBypassIpCidrDraft = it },
+        onPortChange = { sheetState.ebpfLocalBypassPortDraft = it },
         onDismissRequest = { sheetState.showTunBypassRuleSets = false },
-        onSave = { tags ->
+        onSave = {
             validateAndCommit(
                 operation = "save_root_bypass_rule_sets",
                 transform = { state ->
-                    state.copy(tunBypassRuleSetTags = sanitizeTunBypassRuleSetTags(tags))
+                    state.copy(
+                        tunBypassRuleSetTags = sanitizeTunBypassRuleSetTags(sheetState.tunBypassRuleSetTagsDraft),
+                        ebpfLocalBypassPrivateAddress = sheetState.ebpfLocalBypassPrivateAddressDraft,
+                        ebpfLocalBypassIpCidr = sanitizeIpCidrList(sheetState.ebpfLocalBypassIpCidrDraft),
+                        ebpfLocalBypassPort = sanitizePortList(sheetState.ebpfLocalBypassPortDraft),
+                    )
                 },
                 close = { sheetState.showTunBypassRuleSets = false },
             )

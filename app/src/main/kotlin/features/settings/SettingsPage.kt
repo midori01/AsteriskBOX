@@ -260,6 +260,9 @@ private fun SettingsContent(
     val tunBypassRuleSetsSummary = tunBypassRuleSetSummary(
         selectedTags = appState.tunBypassRuleSetTags,
         choices = tunBypassRuleSetChoices,
+        bypassPrivateAddress = appState.ebpfLocalBypassPrivateAddress,
+        ipCidr = appState.ebpfLocalBypassIpCidr,
+        port = appState.ebpfLocalBypassPort,
     )
     val ebpfEndpointConnectedBypassSummary = ebpfEndpointConnectedBypassSummary(appState.ebpfEndpointConnectedBypassEnabled)
     val externalInterfacesSummary = if (appState.runMode == RunModeEbpf || appState.runMode == RunModeTun) {

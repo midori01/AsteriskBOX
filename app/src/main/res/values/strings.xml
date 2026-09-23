@@ -375,6 +375,17 @@
     <string name="settings_ebpf_endpoint_connected_bypass_ip_cidr_empty">No IP/CIDR</string>
     <string name="settings_ebpf_endpoint_connected_bypass_port">Port</string>
     <string name="settings_ebpf_endpoint_connected_bypass_port_empty">No port</string>
+    <string name="settings_ebpf_local_bypass_private_address">Bypass private address</string>
+    <string name="settings_ebpf_local_bypass_private_address_short">Private address</string>
+    <string name="settings_ebpf_local_bypass_private_address_summary">Bypass private and special-use address ranges (10/8, 172.16/12, 192.168/16, etc.) directly in kernel</string>
+    <string name="settings_ebpf_local_bypass_ip_cidr">Bypass IP/CIDR</string>
+    <string name="settings_ebpf_local_bypass_ip_cidr_summary">Destination IP or CIDR prefixes to bypass eBPF interception (e.g. 192.168.1.0/24, 10.0.0.1)</string>
+    <string name="settings_ebpf_local_bypass_ip_cidr_empty">No bypass IP/CIDR configured</string>
+    <string name="settings_ebpf_local_bypass_ip_cidr_invalid">Invalid IP address or CIDR notation</string>
+    <string name="settings_ebpf_local_bypass_port">Bypass port</string>
+    <string name="settings_ebpf_local_bypass_port_summary">Destination ports to bypass eBPF interception (e.g. 22, 8022)</string>
+    <string name="settings_ebpf_local_bypass_port_empty">No bypass port configured</string>
+    <string name="settings_ebpf_local_bypass_port_invalid">Port must be between 1 and 65535</string>
     <string name="settings_ignored_interfaces">Ignored interfaces</string>
     <string name="settings_ignored_interfaces_input">Interface selectors</string>
     <string name="settings_ignored_interfaces_summary">Enter one interface name per item. Add + at the end to match a prefix, for example wlan+.</string>

@@ -323,6 +323,7 @@ internal fun compileEbpfInbound(
     require(sharedInterfaces.isEmpty() || appState.ebpfSharedDataPlane in EbpfSharedDataPlanes) {
         "eBPF shared data_plane must be socket_assign or packet_rewrite"
     }
+    val bypassRuleSets = appState.availableTunBypassRuleSetTags(availableRuleSetTags)
     return buildJsonObject {
         put("type", "ebpf")
         put("tag", APP_ROOT_INBOUND)
@@ -331,7 +332,26 @@ internal fun compileEbpfInbound(
             put("data_plane", appState.ebpfLocalDataPlane)
             put("dns_mode", appState.ebpfLocalDnsMode.effectiveEbpfDnsMode(appState.enableLocalDns))
             put("ipv6", appState.enableIpv6)
-            put("bypass_private_address", false)
+            put("bypass_private_address", appState.ebpfLocalBypassPrivateAddress)
+            if (appState.ebpfLocalBypassIpCidr.isNotEmpty()) {
+                putJsonArray("bypass_ip_cidr") {
+                    appState.ebpfLocalBypassIpCidr
+                        .map(String::trim)
+                        .filter(String::isNotEmpty)
+                        .map { if ("/" in it) it else if (":" in it) "$it/128" else "$it/32" }
+                        .forEach(::add)
+                }
+            }
+            if (appState.ebpfLocalBypassPort.isNotEmpty()) {
+                putJsonArray("bypass_port") {
+                    appState.ebpfLocalBypassPort.mapNotNull { it.trim().toIntOrNull() }.forEach(::add)
+                }
+            }
+            if (bypassRuleSets.isNotEmpty()) {
+                putJsonArray("bypass_rule_set") {
+                    bypassRuleSets.forEach(::add)
+                }
+            }
             if (uidPolicy.includeUids.isNotEmpty()) {
                 putJsonArray("include_uid") {
                     uidPolicy.includeUids.distinct().sorted().forEach(::add)
@@ -358,12 +378,6 @@ internal fun compileEbpfInbound(
                 }
             }
         }
-        val bypassRuleSets = appState.availableTunBypassRuleSetTags(availableRuleSetTags)
-        if (bypassRuleSets.isNotEmpty()) {
-            putJsonArray("bypass_rule_set") {
-                bypassRuleSets.forEach(::add)
-            }
-        }
         if (sharedInterfaces.isNotEmpty()) {
             putJsonObject("shared") {
                 put("enabled", true)
@@ -373,6 +387,11 @@ internal fun compileEbpfInbound(
                     sharedInterfaces.forEach(::add)
                 }
                 put("bypass_private_address", false)
+                if (bypassRuleSets.isNotEmpty()) {
+                    putJsonArray("bypass_rule_set") {
+                        bypassRuleSets.forEach(::add)
+                    }
+                }
                 put("ipv6", appState.enableIpv6)
             }
         }
