@@ -131,6 +131,10 @@ var eBPFPrivateDestinationPrefixes = []netip.Prefix{
 }
 
 func (i *Inbound) compileActionPolicy() (commonEBPF.CompiledPolicy, error) {
+	endpointPorts := make([]commonEBPF.PortRange, 0, len(i.endpointConnectedPorts))
+	for _, p := range i.endpointConnectedPorts {
+		endpointPorts = append(endpointPorts, commonEBPF.PortRange{Start: p.Start, End: p.End})
+	}
 	policy := commonEBPF.ActionPolicy{
 		EnableTCP: i.enableTCP,
 		EnableUDP: i.enableUDP,
@@ -140,6 +144,11 @@ func (i *Inbound) compileActionPolicy() (commonEBPF.CompiledPolicy, error) {
 		Shared: commonEBPF.ActionScope{
 			Default: commonEBPF.DecisionIntercept,
 		},
+		EndpointEnabled:   i.endpointConnectedBypass.Enabled,
+		EndpointEnableTCP: i.endpointEnableTCP,
+		EndpointEnableUDP: i.endpointEnableUDP,
+		EndpointCIDR:      i.endpointConnectedBypass.IPCIDR,
+		EndpointPort:      endpointPorts,
 	}
 	if i.localPolicy.IncludeUIDConfigured {
 		policy.Local.Default = commonEBPF.DecisionPass
