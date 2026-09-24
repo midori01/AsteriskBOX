@@ -3718,6 +3718,19 @@
         "bypass_private_address": {
           "type": "boolean"
         },
+        "bypass_ip_cidr": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
         "bypass_rule_set": {
           "anyOf": [
             {
@@ -3907,6 +3920,19 @@
         },
         "bypass_private_address": {
           "type": "boolean"
+        },
+        "bypass_ip_cidr": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
         },
         "bypass_rule_set": {
           "anyOf": [
