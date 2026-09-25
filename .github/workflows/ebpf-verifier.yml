@@ -2,29 +2,6 @@ name: Verify eBPF integration
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/ebpf-verifier.yml'
-      - 'adapter/ebpf.go'
-      - 'box.go'
-      - 'cmd/sing-box/cmd_api_ebpf.go'
-      - 'cmd/sing-box/cmd_tools_ebpf.go'
-      - 'constant/proxy.go'
-      - 'option/ebpf.go'
-      - 'common/dialer/**'
-      - 'common/listener/**'
-      - 'common/process/**'
-      - 'common/udpio/**'
-      - 'daemon/instance.go'
-      - 'daemon/started_service*.go'
-      - 'daemon/started_service.proto'
-      - 'dns/transport/fakeip/store_ebpf.go'
-      - 'go.mod'
-      - 'go.sum'
-      - 'include/ebpf*.go'
-      - 'protocol/ebpf/**'
-      - 'protocol/tailscale/endpoint.go'
-      - 'route/network*.go'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

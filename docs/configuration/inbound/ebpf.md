@@ -168,6 +168,10 @@ Typical use: keep a VPN/CGNAT range such as Tailscale's `100.64.0.0/10` (and
 IPv6 `fd7a:115c:a1e0::/48`) intercepted so tailnet traffic can reach a
 `tailscale` outbound node instead of being passed straight to the kernel.
 
+### local.bypass_ip_cidr
+
+Destination IP CIDRs that bypass local eBPF interception directly in the kernel data plane.
+
 ### local.bypass_rule_set
 
 Rule sets whose destination IP CIDRs bypass the local data plane. Non-IP rules
@@ -319,6 +323,10 @@ Like `local.bypass_exclude`, but for the shared data plane: CIDR prefixes
 that are force-intercepted ahead of every shared bypass decision. At most one
 IPv4 and one IPv6 prefix is accepted, and a prefix that overlaps the DNS
 fake-ip range is rejected at startup.
+
+### shared.bypass_ip_cidr
+
+Destination IP CIDRs that bypass shared eBPF interception directly in the kernel data plane.
 
 ### shared.bypass_rule_set
 
