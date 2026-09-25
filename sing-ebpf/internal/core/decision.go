@@ -64,10 +64,15 @@ type ActionScope struct {
 // ActionPolicy is the policy input for the action-only API. The caller owns
 // configuration semantics and supplies the final action for every rule.
 type ActionPolicy struct {
-	EnableTCP bool
-	EnableUDP bool
-	Local     ActionScope
-	Shared    ActionScope
+	EnableTCP         bool
+	EnableUDP         bool
+	Local             ActionScope
+	Shared            ActionScope
+	EndpointEnabled   bool
+	EndpointEnableTCP bool
+	EndpointEnableUDP bool
+	EndpointCIDR      []netip.Prefix
+	EndpointPort      []PortRange
 }
 
 func compileDestinationPassDecisions(decisions []CIDRDecision) (dualStackCIDRPrefixes, error) {

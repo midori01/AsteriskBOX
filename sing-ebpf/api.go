@@ -22,6 +22,7 @@ type (
 	UIDDecision                    = core.UIDDecision
 	MACDecision                    = core.MACDecision
 	MACAddress                     = core.MACAddress
+	PortRange                      = core.PortRange
 	CompiledPolicy                 = core.CompiledPolicy
 	CgroupMapCapacity              = core.CgroupMapCapacity
 	MapUsage                       = core.MapUsage
@@ -278,6 +279,14 @@ func (b *TCBackend) SetDeliveryInterface(interfaceIndex uint32, hardwareAddress 
 
 func (b *TCBackend) SetRoutingMark(mark uint32) error {
 	return core.UnwrapTCBackend(b).SetRoutingMark(mark)
+}
+
+func (b *TCBackend) SetEndpointVPNReady(ready bool) error {
+	backend := core.UnwrapTCBackend(b)
+	if backend == nil {
+		return errors.New("uninitialized TC eBPF backend")
+	}
+	return backend.SetEndpointVPNReady(ready)
 }
 
 func (b *TCBackend) Enable() error { return core.UnwrapTCBackend(b).Enable() }
