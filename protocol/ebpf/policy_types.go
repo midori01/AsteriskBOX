@@ -2,6 +2,8 @@
 
 package ebpf
 
+import "net/netip"
+
 // uidRange and portRange are sing-box configuration-side ranges. They are
 // deliberately kept out of sing-ebpf: the library receives only final
 // UIDDecision and PortDecision actions, while parsing and selector semantics
@@ -18,6 +20,7 @@ type portRange struct {
 
 type localUIDPolicy struct {
 	BypassPrivateAddress bool
+	BypassIPCIDR         []netip.Prefix
 	IncludeUIDConfigured bool
 	IncludeUID           []uidRange
 	ExcludeUID           []uidRange

@@ -34,6 +34,7 @@ type EBPFLocalOptions struct {
 	CgroupPath              string                             `json:"cgroup_path,omitempty"`
 	IPv6                    *bool                              `json:"ipv6,omitempty"`
 	BypassPrivateAddress    *bool                              `json:"bypass_private_address,omitempty"`
+	BypassIPCIDR            badoption.Listable[netip.Prefix]   `json:"bypass_ip_cidr,omitempty"`
 	BypassRuleSet           badoption.Listable[string]         `json:"bypass_rule_set,omitempty" reference:"rule_set"`
 	IncludeUID              badoption.Listable[uint32]         `json:"include_uid,omitempty"`
 	IncludeUIDRange         badoption.Listable[string]         `json:"include_uid_range,omitempty"`
@@ -61,6 +62,7 @@ type EBPFSharedOptions struct {
 	Interface            badoption.Listable[string]       `json:"interface,omitempty"`
 	IPv6                 *bool                            `json:"ipv6,omitempty"`
 	BypassPrivateAddress *bool                            `json:"bypass_private_address,omitempty"`
+	BypassIPCIDR         badoption.Listable[netip.Prefix] `json:"bypass_ip_cidr,omitempty"`
 	BypassRuleSet        badoption.Listable[string]       `json:"bypass_rule_set,omitempty" reference:"rule_set"`
 	IncludeSourceCIDR    badoption.Listable[netip.Prefix] `json:"include_source_cidr,omitempty"`
 	ExcludeSourceCIDR    badoption.Listable[netip.Prefix] `json:"exclude_source_cidr,omitempty"`
