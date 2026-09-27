@@ -171,6 +171,11 @@ func (i *Inbound) compileActionPolicy() (commonEBPF.CompiledPolicy, error) {
 			})
 		}
 	}
+	for _, prefix := range i.localPolicy.BypassIPCIDR {
+		policy.Local.DestinationCIDR = append(policy.Local.DestinationCIDR, commonEBPF.CIDRDecision{
+			Prefix: prefix, Action: commonEBPF.DecisionPass,
+		})
+	}
 	if i.fakeIPIPv4Prefix.IsValid() {
 		policy.Local.DestinationCIDR = append(policy.Local.DestinationCIDR, commonEBPF.CIDRDecision{
 			Prefix: i.fakeIPIPv4Prefix, Action: commonEBPF.DecisionIntercept,
@@ -209,6 +214,11 @@ func (i *Inbound) compileActionPolicy() (commonEBPF.CompiledPolicy, error) {
 				Prefix: prefix, Action: commonEBPF.DecisionPass,
 			})
 		}
+	}
+	for _, prefix := range i.sharedOptions.BypassIPCIDR {
+		policy.Shared.DestinationCIDR = append(policy.Shared.DestinationCIDR, commonEBPF.CIDRDecision{
+			Prefix: prefix, Action: commonEBPF.DecisionPass,
+		})
 	}
 	if i.fakeIPIPv4Prefix.IsValid() {
 		policy.Shared.DestinationCIDR = append(policy.Shared.DestinationCIDR, commonEBPF.CIDRDecision{

@@ -131,6 +131,10 @@ Enables local IPv6 interception. Default is `true`.
 
 Bypasses private and special-use destinations. Default is `true`.
 
+### local.bypass_ip_cidr
+
+Destination IP CIDRs that bypass local eBPF interception directly in the kernel data plane.
+
 ### local.bypass_rule_set
 
 Rule sets whose destination IP CIDRs bypass the local data plane. Non-IP rules
@@ -275,6 +279,10 @@ client addresses, router advertisements, forwarding or upstream IPv6 routing.
 ### shared.bypass_private_address
 
 Bypasses private and special-use destinations. Default is `true`.
+
+### shared.bypass_ip_cidr
+
+Destination IP CIDRs that bypass shared eBPF interception directly in the kernel data plane.
 
 ### shared.bypass_rule_set
 

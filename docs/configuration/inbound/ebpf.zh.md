@@ -124,6 +124,10 @@ Android 厂商的 netd hook 可能造成挂载冲突。sing-box 优先尝试多�
 
 绕过私有和特殊用途目标地址，默认 `true`。
 
+### local.bypass_ip_cidr
+
+直接在内核数据面绕过本地 eBPF 拦截的目标 IP CIDR 列表。
+
 ### local.bypass_rule_set
 
 目标 IP CIDR 命中这些规则集时绕过 local 数据面，非 IP 规则会被忽略。该策略与
@@ -262,6 +266,10 @@ raw-IP、PPP/PPPoE 和受支持的隧道链路应使用 `socket_assign`。local 
 ### shared.bypass_private_address
 
 绕过私有和特殊用途目标地址，默认 `true`。
+
+### shared.bypass_ip_cidr
+
+直接在内核数据面绕过共享 eBPF 拦截的目标 IP CIDR 列表。
 
 ### shared.bypass_rule_set
 
