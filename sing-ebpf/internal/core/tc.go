@@ -66,6 +66,8 @@ const (
 	tcFlagSharedBypassPort = 1 << 21
 	tcFlagSharedBypassIPv4 = 1 << 22
 	tcFlagSharedBypassIPv6 = 1 << 23
+	tcFlagEndpointEnabled  = 1 << 24
+	tcFlagEndpointReady    = 1 << 25
 )
 
 const (
@@ -206,9 +208,10 @@ func prepareTC(config TCConfig, forceLegacyTCP bool) (*TCBackend, error) {
 	forceInterceptIPv6 := policy.forceInterceptIPv6
 	includeIPv4, includeIPv6 := policy.includeSource.ipv4, policy.includeSource.ipv6
 	excludeIPv4, excludeIPv6 := policy.excludeSource.ipv4, policy.excludeSource.ipv6
+	endpointIPv4, endpointIPv6 := policy.endpoint.ipv4, policy.endpoint.ipv6
 	if err = checkLPMTriePolicyCompatibility(
-		"TC eBPF UID and source CIDR",
-		len(uidEntries)+len(includeIPv4)+len(includeIPv6)+len(excludeIPv4)+len(excludeIPv6),
+		"TC eBPF UID, source CIDR, and endpoint CIDR",
+		tcLPMPolicyEntryCount(policy),
 	); err != nil {
 		return nil, err
 	}
@@ -233,6 +236,9 @@ func prepareTC(config TCConfig, forceLegacyTCP bool) (*TCBackend, error) {
 		"tc_host_ipv6":           {name: "sb_tc_host6", mapType: CiliumEBPF.Hash, maxEntries: maxHostAddressPolicyEntries, flags: bpfFlagNoPrealloc},
 		"tc_local_bypass_port":   {name: "sb_tc_lport", mapType: CiliumEBPF.Hash, maxEntries: max(uint32(len(policy.localBypassPortEntries)), 1), flags: bpfFlagNoPrealloc},
 		"tc_shared_bypass_port":  {name: "sb_tc_sport", mapType: CiliumEBPF.Hash, maxEntries: max(uint32(len(policy.sharedBypassPortEntries)), 1), flags: bpfFlagNoPrealloc},
+		"tc_endpoint_ipv4":       {name: "sb_tc_endpoint4", mapType: CiliumEBPF.LPMTrie, maxEntries: max(uint32(len(endpointIPv4)), 1), flags: bpfFlagNoPrealloc},
+		"tc_endpoint_ipv6":       {name: "sb_tc_endpoint6", mapType: CiliumEBPF.LPMTrie, maxEntries: max(uint32(len(endpointIPv6)), 1), flags: bpfFlagNoPrealloc},
+		"tc_endpoint_port":       {name: "sb_tc_endpointp", mapType: CiliumEBPF.Hash, maxEntries: tcPortPolicyCapacity},
 	}
 	if config.EnableLocal {
 		selfMapCapacity := uint32(selfBypassSocketCapacity)
@@ -318,6 +324,9 @@ func prepareTC(config TCConfig, forceLegacyTCP bool) (*TCBackend, error) {
 		UID:               maps["tc_uid_policy"],
 		LocalPort:         maps["tc_local_bypass_port"],
 		SharedPort:        maps["tc_shared_bypass_port"],
+		EndpointPort:      maps["tc_endpoint_port"],
+		EndpointIPv4:      maps["tc_endpoint_ipv4"],
+		EndpointIPv6:      maps["tc_endpoint_ipv6"],
 		LocalBypassIPv4:   maps["tc_local_bypass_ipv4"],
 		LocalBypassIPv6:   maps["tc_local_bypass_ipv6"],
 		SharedBypassIPv4:  maps["tc_shared_bypass_ipv4"],
@@ -340,6 +349,13 @@ func prepareTC(config TCConfig, forceLegacyTCP bool) (*TCBackend, error) {
 		}
 	}
 	return backend, nil
+}
+
+func tcLPMPolicyEntryCount(policy CompiledPolicy) int {
+	return len(policy.uidEntries) +
+		len(policy.includeSource.ipv4) + len(policy.includeSource.ipv6) +
+		len(policy.excludeSource.ipv4) + len(policy.excludeSource.ipv6) +
+		len(policy.endpoint.ipv4) + len(policy.endpoint.ipv6)
 }
 
 func loadTCResources(config TCConfig, baseOverrides map[string]mapSpecOverride, legacyTCP bool) (map[string]*CiliumEBPF.Map, []*CiliumEBPF.Program, error) {
@@ -441,7 +457,7 @@ func (b *TCBackend) SetRoutingMark(mark uint32) error {
 }
 
 func tcFlags(config TCConfig, policy CompiledPolicy) uint32 {
-	return policyVector{
+	flags := policyVector{
 		EnableTCP:           config.EnableTCP,
 		EnableUDP:           config.EnableUDP,
 		EnableIPv4:          config.EnableIPv4,
@@ -460,6 +476,42 @@ func tcFlags(config TCConfig, policy CompiledPolicy) uint32 {
 		IncludeSourceMAC:    len(policy.includeSourceMAC) > 0,
 		ExcludeSourceMAC:    len(policy.excludeSourceMAC) > 0,
 	}.tcFlags()
+	if config.EnableLocal && policy.endpointEnabled {
+		flags |= tcFlagEndpointEnabled
+	}
+	return flags
+}
+
+func endpointReadyFlags(flags uint32, ready bool) uint32 {
+	if ready {
+		return flags | tcFlagEndpointReady
+	}
+	return flags &^ tcFlagEndpointReady
+}
+
+// SetEndpointVPNReady changes only the endpoint gate: matching local traffic
+// is forced to interception while false, and natively bypassed while true.
+// FakeIP/DNS precedence and shared policy are unchanged. Failed writes leave
+// the previously committed state intact; disabled endpoint policy is a no-op.
+func (b *TCBackend) SetEndpointVPNReady(ready bool) error {
+	b.access.Lock()
+	defer b.access.Unlock()
+	if err := b.requireUsableLocked(); err != nil {
+		return err
+	}
+	if b.control.Flags&tcFlagEndpointEnabled == 0 {
+		return nil
+	}
+	previous := b.control.Flags
+	b.control.Flags = endpointReadyFlags(previous, ready)
+	if b.control.Flags == previous {
+		return nil
+	}
+	if err := b.updateControlLocked(); err != nil {
+		b.control.Flags = previous
+		return err
+	}
+	return nil
 }
 
 func (b *TCBackend) requireUsableLocked() error {

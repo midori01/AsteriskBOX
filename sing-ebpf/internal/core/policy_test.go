@@ -180,6 +180,73 @@ func TestCompileActionPolicySnapshot(t *testing.T) {
 	}
 }
 
+func TestCompileEndpointPolicyRequiresCIDRAndPort(t *testing.T) {
+	for _, config := range []ActionPolicy{
+		{EnableTCP: true, EndpointEnabled: true, EndpointPort: []PortRange{{Start: 4500, End: 4500}}, Local: ActionScope{Default: DecisionIntercept}, Shared: ActionScope{Default: DecisionIntercept}},
+		{EnableTCP: true, EndpointEnabled: true, EndpointCIDR: []netip.Prefix{netip.MustParsePrefix("203.0.113.0/24")}, Local: ActionScope{Default: DecisionIntercept}, Shared: ActionScope{Default: DecisionIntercept}},
+	} {
+		if _, err := CompileActionPolicy(config); err == nil {
+			t.Fatalf("invalid endpoint policy was accepted: %+v", config)
+		}
+	}
+}
+
+func TestCompileEndpointNetworkPolicy(t *testing.T) {
+	endpointCIDR := []netip.Prefix{netip.MustParsePrefix("203.0.113.0/24")}
+	endpointPort := []PortRange{{Start: 4500, End: 4500}}
+	for _, test := range []struct {
+		name      string
+		config    ActionPolicy
+		protocols []uint8
+	}{
+		{
+			name: "default TCP and UDP",
+			config: ActionPolicy{
+				EnableTCP: true, EnableUDP: true, EndpointEnabled: true,
+				EndpointCIDR: endpointCIDR, EndpointPort: endpointPort,
+				Local:  ActionScope{Default: DecisionIntercept},
+				Shared: ActionScope{Default: DecisionIntercept},
+			},
+			protocols: []uint8{ProtocolTCP, ProtocolUDP},
+		},
+		{
+			name: "TCP only",
+			config: ActionPolicy{
+				EnableTCP: true, EnableUDP: true, EndpointEnabled: true, EndpointEnableTCP: true,
+				EndpointCIDR: endpointCIDR, EndpointPort: endpointPort,
+				Local:  ActionScope{Default: DecisionIntercept},
+				Shared: ActionScope{Default: DecisionIntercept},
+			},
+			protocols: []uint8{ProtocolTCP},
+		},
+		{
+			name: "UDP only",
+			config: ActionPolicy{
+				EnableTCP: true, EnableUDP: true, EndpointEnabled: true, EndpointEnableUDP: true,
+				EndpointCIDR: endpointCIDR, EndpointPort: endpointPort,
+				Local:  ActionScope{Default: DecisionIntercept},
+				Shared: ActionScope{Default: DecisionIntercept},
+			},
+			protocols: []uint8{ProtocolUDP},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			policy, err := CompileActionPolicy(test.config)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(policy.endpointPortEntries) != len(test.protocols) {
+				t.Fatalf("unexpected endpoint port count: %d != %d", len(policy.endpointPortEntries), len(test.protocols))
+			}
+			for index, protocol := range test.protocols {
+				if entry := policy.endpointPortEntries[index]; entry.Protocol != protocol || entry.Port != 4500 {
+					t.Fatalf("unexpected endpoint port entry: %+v", entry)
+				}
+			}
+		})
+	}
+}
+
 func TestDestinationCIDRPolicyDelta(t *testing.T) {
 	current := []netip.Prefix{
 		netip.MustParsePrefix("10.0.0.0/8"),

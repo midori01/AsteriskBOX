@@ -28,6 +28,9 @@ type CompiledPolicy struct {
 	sharedBypassPortEntries []tcPortKey
 	localInitialBypass      dualStackCIDRPrefixes
 	sharedInitialBypass     dualStackCIDRPrefixes
+	endpointEnabled         bool
+	endpoint                dualStackCIDRPrefixes
+	endpointPortEntries     []tcPortKey
 }
 
 // CompileActionPolicy translates the caller's final pass/intercept rules into
@@ -64,6 +67,18 @@ func CompileActionPolicy(config ActionPolicy) (CompiledPolicy, error) {
 	if !forceIPv6.IsValid() {
 		forceIPv6 = sharedForceIPv6
 	}
+	endpoint, endpointPortEntries, err := compileEndpointPolicy(
+		config.EndpointEnabled,
+		config.EndpointEnableTCP,
+		config.EndpointEnableUDP,
+		config.EndpointCIDR,
+		config.EndpointPort,
+		config.EnableTCP,
+		config.EnableUDP,
+	)
+	if err != nil {
+		return CompiledPolicy{}, err
+	}
 	return CompiledPolicy{
 		uidEntries:              local.uidEntries,
 		uidDefaultBypass:        local.uidDefaultBypass,
@@ -80,6 +95,9 @@ func CompileActionPolicy(config ActionPolicy) (CompiledPolicy, error) {
 		sharedInitialBypass:     sharedBypass,
 		sharedDNSMode:           actionDNSMode(config.Shared),
 		sharedBypassPrivate:     false,
+		endpointEnabled:         config.EndpointEnabled,
+		endpoint:                endpoint,
+		endpointPortEntries:     endpointPortEntries,
 	}, nil
 }
 
@@ -209,4 +227,62 @@ func compileActionScope(scope ActionScope, name string) (compiledActionScope, du
 		}
 	}
 	return result, bypass, forceIPv4, forceIPv6, nil
+}
+
+func compileEndpointPolicy(
+	enabled, enableTCP, enableUDP bool,
+	cidr []netip.Prefix,
+	portRanges []PortRange,
+	globalTCP, globalUDP bool,
+) (dualStackCIDRPrefixes, []tcPortKey, error) {
+	if !enabled {
+		return dualStackCIDRPrefixes{}, nil, nil
+	}
+	if len(cidr) == 0 || len(portRanges) == 0 {
+		return dualStackCIDRPrefixes{}, nil, E.New("TC eBPF endpoint policy requires CIDR and port entries")
+	}
+	endpointIPv4, endpointIPv6, err := compileCIDRPrefixes(cidr)
+	if err != nil {
+		return dualStackCIDRPrefixes{}, nil, E.Cause(err, "compile TC eBPF endpoint CIDR policy")
+	}
+	if len(endpointIPv4) > maxDestinationCIDRPolicyEntries || len(endpointIPv6) > maxDestinationCIDRPolicyEntries {
+		return dualStackCIDRPrefixes{}, nil, E.New("TC eBPF endpoint CIDR policy exceeds map capacity")
+	}
+	endpointEnableTCP := enableTCP
+	endpointEnableUDP := enableUDP
+	if !endpointEnableTCP && !endpointEnableUDP {
+		endpointEnableTCP = true
+		endpointEnableUDP = true
+	}
+	endpointEnableTCP = endpointEnableTCP && globalTCP
+	endpointEnableUDP = endpointEnableUDP && globalUDP
+	if !endpointEnableTCP && !endpointEnableUDP {
+		return dualStackCIDRPrefixes{}, nil, E.New("TC eBPF endpoint network does not overlap enabled inbound network")
+	}
+	endpointPortEntries, err := compilePortPolicy(portRanges, endpointEnableTCP, endpointEnableUDP)
+	if err != nil {
+		return dualStackCIDRPrefixes{}, nil, E.Cause(err, "compile TC eBPF endpoint port policy")
+	}
+	return dualStackCIDRPrefixes{ipv4: endpointIPv4, ipv6: endpointIPv6}, endpointPortEntries, nil
+}
+
+func compilePortPolicy(ranges []PortRange, enableTCP, enableUDP bool) ([]tcPortKey, error) {
+	var entries []tcPortKey
+	for _, portRange := range ranges {
+		if portRange.Start == 0 || portRange.Start > portRange.End {
+			return nil, E.New("invalid eBPF port bypass range")
+		}
+		for port := uint32(portRange.Start); port <= uint32(portRange.End); port++ {
+			if enableTCP {
+				entries = append(entries, tcPortKey{Protocol: ProtocolTCP, Port: uint16(port)})
+			}
+			if enableUDP {
+				entries = append(entries, tcPortKey{Protocol: ProtocolUDP, Port: uint16(port)})
+			}
+			if len(entries) > tcPortPolicyCapacity {
+				return nil, E.New("eBPF port bypass policy exceeds map capacity")
+			}
+		}
+	}
+	return entries, nil
 }
