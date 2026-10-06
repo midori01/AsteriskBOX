@@ -473,6 +473,9 @@ func (i *Inbound) checkKernelCapabilities() error {
 }
 
 func (i *Inbound) needsLPMPolicy() bool {
+	if i.endpointConnectedBypass.Enabled {
+		return true
+	}
 	if (i.localTCEnabled() || i.localCgroupEnabled()) &&
 		(len(i.localPolicy.IncludeUID) > 0 || len(i.localPolicy.ExcludeUID) > 0) {
 		return true
@@ -501,9 +504,13 @@ func combineStartError(startErr error, cleanupErr error) error {
 }
 
 func (i *Inbound) Close() error {
+	// The interface worker takes lifecycleAccess for each reconcile round, and
+	// stopping the monitor waits for that worker to exit. Stop it before taking
+	// the lock, or a round that passed its context check would deadlock Close.
+	monitorErr := i.stopTCInterfaceMonitor()
 	i.lifecycleAccess.Lock()
 	defer i.lifecycleAccess.Unlock()
-	return i.closeResources()
+	return E.Errors(monitorErr, i.closeResources())
 }
 
 func (i *Inbound) cleanupStartFailure() error {
