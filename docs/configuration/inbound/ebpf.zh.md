@@ -156,6 +156,10 @@ fake-ip 范围重叠的前缀会在启动时报错，因为 fake-ip 已占用该
 `fd7a:115c:a1e0::/48`）保持被接管，使 tailnet 流量能够到达 `tailscale`
 出站节点，而不是被内核直连放行。
 
+### local.bypass_ip_cidr
+
+直接在内核数据面绕过本地 eBPF 拦截的目标 IP CIDR 列表。
+
 ### local.bypass_rule_set
 
 目标 IP CIDR 命中这些规则集时绕过 local 数据面，非 IP 规则会被忽略。该策略与
@@ -300,6 +304,10 @@ raw-IP、PPP/PPPoE 和受支持的隧道链路应使用 `socket_assign`。local 
 与 `local.bypass_exclude` 相同，但作用于 shared 数据面：这些 CIDR 前缀会在
 所有 shared bypass 决策之前被强制接管。每个地址族最多接受一个前缀，与 DNS
 fake-ip 范围重叠的前缀会在启动时报错。
+
+### shared.bypass_ip_cidr
+
+直接在内核数据面绕过共享 eBPF 拦截的目标 IP CIDR 列表。
 
 ### shared.bypass_rule_set
 
