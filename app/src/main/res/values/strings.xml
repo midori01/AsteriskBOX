@@ -1621,4 +1621,6 @@
     <string name="license_title">Third Party Licenses</string>
     <string name="settings_about_project">About project</string>
     <string name="settings_open_source_licenses">Open source licenses</string>
+    <string name="settings_dynamic_vpn_tether_bypass_title">Route tethering via system VPN</string>
+    <string name="settings_dynamic_vpn_tether_bypass_summary">Automatically route tethered traffic through active system VPN when connected, falling back to sing-box proxy when disconnected</string>
 </resources>

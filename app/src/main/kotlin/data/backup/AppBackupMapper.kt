@@ -155,6 +155,7 @@ private fun AppState.toBackupSettings(): AppBackupSettings =
         bpf2SocksBridgePort = bpf2SocksBridgePort,
         externalInterfaces = externalInterfaces,
         tunSharedNetworkInterfaces = tunSharedNetworkInterfaces,
+        dynamicVpnTetheringBypass = dynamicVpnTetheringBypass,
         ignoredInterfaces = ignoredInterfaces,
         serviceControl = serviceControl.toBackup(),
         privateAddressCidrs = privateAddressCidrs,
@@ -411,6 +412,7 @@ private fun AppBackupData.toAppState(): AppState {
         externalInterfaces = settings.externalInterfaces,
         tunSharedNetworkInterfaces = settings.tunSharedNetworkInterfaces
             ?: settings.legacyEbpfSharedNetworkInterfaces,
+        dynamicVpnTetheringBypass = settings.dynamicVpnTetheringBypass,
         ignoredInterfaces = settings.ignoredInterfaces,
         serviceControl = normalizeServiceControlSettings(settings.serviceControl.toState()),
         privateAddressCidrs = settings.privateAddressCidrs,

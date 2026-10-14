@@ -1600,4 +1600,6 @@
     <string name="license_title">第三方开源许可</string>
     <string name="settings_about_project">关于项目</string>
     <string name="settings_open_source_licenses">开源许可</string>
+    <string name="settings_dynamic_vpn_tether_bypass_title">热点优先跟随系统 VPN</string>
+    <string name="settings_dynamic_vpn_tether_bypass_summary">系统 VPN 连接时热点流量自动切换至该 VPN 出口，断开后无缝回落至 sing-box 代理</string>
 </resources>

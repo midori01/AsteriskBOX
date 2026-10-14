@@ -328,6 +328,10 @@ internal class AppSettingsPreferences(
                 },
                 defaults.tunSharedNetworkInterfaces,
             ),
+            dynamicVpnTetheringBypass = preferences.getBoolean(
+                KeyDynamicVpnTetheringBypass,
+                defaults.dynamicVpnTetheringBypass,
+            ),
             ignoredInterfaces = preferences.getStringList(
                 KeyIgnoredInterfaces,
                 defaults.ignoredInterfaces,
@@ -588,6 +592,7 @@ internal const val KeyServiceControlWifiDisconnectStopSsids = "service_control_w
 internal const val KeyServiceControlWifiDisconnectStopBssids = "service_control_wifi_disconnect_stop_bssids"
 internal const val KeyExternalInterfaces = "external_interfaces"
 internal const val KeyTunSharedNetworkInterfaces = "tun_shared_network_interfaces"
+internal const val KeyDynamicVpnTetheringBypass = "dynamic_vpn_tethering_bypass"
 private const val LegacyKeyEbpfSharedNetworkInterfaces = "ebpf_shared_network_interfaces"
 internal const val KeyIgnoredInterfaces = "ignored_interfaces"
 internal const val KeyPrivateAddressCidrs = "private_address_cidrs"
