@@ -1,30 +1,116 @@
 name: CI Build
 
+run-name: sing-box branch - ${{ github.event.inputs.core_branch || 'core-next' }}
+
 on:
-  pull_request:
+  push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      core_branch:
+        description: "sing-box branch"
+        required: true
+        type: choice
+        default: "core-next"
+        options:
+          - "core"
+          - "core-next"
+          - "core-stable"
 
+
+# Read-only by default; only the publish job below can write releases.
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.event.pull_request.number }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  build-sing-box:
+    name: Build (${{ matrix.target.goarch }})
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - goarch: arm64
+            compiler: aarch64-linux-android35-clang
+    env:
+      BASE_TAGS: with_quic,with_ebpf,with_wireguard,with_tailscale,badlinkname,tfogo_checklinkname0
+    steps:
+      - name: Checkout sing-box
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.inputs.core_branch || 'core-next' }}
+          fetch-depth: 0
+          # Third-party build scripts and Go modules run in this job; don't leave a token in .git/config.
+          persist-credentials: false
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 1.26.8
+
+      - name: Setup Android NDK
+        id: setup-ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r29
+
+      - name: Build with eBPF
+        env:
+          CGO_ENABLED: "1"
+          GOOS: android
+          GOARCH: ${{ matrix.target.goarch }}
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          CC: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.target.compiler }}
+          CGO_CFLAGS: "-O3 -DNDEBUG -fvisibility=hidden -ffunction-sections -fdata-sections"
+        run: |
+          tags="${BASE_TAGS}"
+          export TAGS="${tags}"
+          make build
+          "${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip" -s sing-box || llvm-strip -s sing-box || strip -s sing-box
+          # 8 MiB dictionary: the app decodes on the Java heap
+          xz --lzma2=preset=9e,dict=8MiB sing-box
+
+      - name: Upload sing-box binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: sing-box-arm64
+          path: sing-box.xz
+
   compile:
-    name: Compile Check
+    name: Build MidoriBOX APK
+    needs: build-sing-box
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      version_code: ${{ steps.sign.outputs.version_code }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          persist-credentials: false
           # Initialize submodules before parallel Gradle sync tasks can contend for .git/config.
           submodules: recursive
+
+      - name: Download sing-box binary
+        uses: actions/download-artifact@v8
+        with:
+          name: sing-box-arm64
+          path: sing-box
+
+      - name: Prepare sing-box binary
+        run: |
+          chmod +r sing-box/sing-box.xz || true
 
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
@@ -41,18 +127,12 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
         with:
-          # The action defaults to `tools platform-tools`, but the legacy `tools`
-          # package is no longer published: sdkmanager now fails with
-          # "Failed to find package 'tools'" and the job never reaches Gradle.
-          # The step below installs whatever platform, build-tools and NDK the
-          # project asks for, so only platform-tools is needed here.
           packages: platform-tools
 
       - name: Install Android SDK packages
         shell: bash
         run: |
           set -euo pipefail
-
           set +o pipefail
           yes | sdkmanager --licenses >/dev/null
           licenses_status="${PIPESTATUS[1]}"
@@ -103,5 +183,155 @@ jobs:
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$ndk_version" >> "$GITHUB_ENV"
           echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/$ndk_version" >> "$GITHUB_ENV"
 
-      - name: Assemble release APKs
-        run: ./gradlew --no-daemon :app:assembleRelease
+      - name: Assemble APK
+        run: ./gradlew --no-daemon :app:assembleRelease -Pandroid.splits.abi.include=arm64-v8a -Psingbox.local=${{ github.workspace }}/sing-box/sing-box.xz
+
+      - name: Sign APK
+        id: sign
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for name in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Signing secret for $name is not configured."
+              exit 1
+            fi
+          done
+          keystore="$RUNNER_TEMP/release.jks"
+          trap 'rm -f "$keystore"' EXIT
+          echo "$KEYSTORE_BASE64" | base64 -d > "$keystore"
+          APK="app/build/outputs/apk/release/app-arm64-v8a-release-unsigned.apk"
+          SIGNED="app/build/outputs/apk/release/app-arm64-v8a-release-signed.apk"
+          zipalign=$(find $ANDROID_HOME/build-tools -name zipalign | sort -V | tail -1)
+          apksigner=$(find $ANDROID_HOME/build-tools -name apksigner | sort -V | tail -1)
+          "$zipalign" -p -f 4 "$APK" "${APK}.aligned"
+          # env: keeps passwords out of the process argument list.
+          "$apksigner" sign \
+            --ks "$keystore" \
+            --ks-pass env:KEYSTORE_PASSWORD \
+            --ks-key-alias "$KEY_ALIAS" \
+            --key-pass env:KEY_PASSWORD \
+            --out "$SIGNED" \
+            "${APK}.aligned"
+          "$apksigner" verify "$SIGNED"
+          mv "$SIGNED" "$APK"
+          VERSION_CODE=$(git rev-list --count HEAD)
+          echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          RENAMED="app/build/outputs/apk/release/MidoriBOX-${VERSION_CODE}-arm64-v8a-release.apk"
+          mv "$APK" "$RENAMED"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: MidoriBOX-${{ env.VERSION_CODE }}
+          path: app/build/outputs/apk/release/MidoriBOX-${{ env.VERSION_CODE }}-arm64-v8a-release.apk
+          if-no-files-found: error
+          archive: false
+
+  publish:
+    name: Publish ci-latest release
+    needs: compile
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # A newer push must not cancel this job between removing old assets and finishing the new release.
+    concurrency:
+      group: publish-ci-latest
+      cancel-in-progress: false
+    env:
+      VERSION_CODE: ${{ needs.compile.outputs.version_code }}
+
+    steps:
+      - name: Download APK
+        uses: actions/download-artifact@v8
+        with:
+          pattern: MidoriBOX-${{ needs.compile.outputs.version_code }}*
+          merge-multiple: true
+          path: apk
+
+      - name: Publish Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          apk_file="$(find apk -name "MidoriBOX-${VERSION_CODE}-arm64-v8a-release.apk" -print -quit)"
+          if [ -z "$apk_file" ]; then
+            echo "::error::Signed APK for VERSION_CODE=${VERSION_CODE} was not found."
+            exit 1
+          fi
+          apk_name="$(basename "$apk_file")"
+          commit_subject="$(gh api "repos/${GH_REPO}/commits/${GITHUB_SHA}" --jq '.commit.message | split("\n")[0]')"
+          release_notes="Release Build (${VERSION_CODE}): ${commit_subject} (${GITHUB_SHA::7})"
+
+          gh_retry() {
+            local n=1 max=5 delay=5
+            while true; do
+              if "$@"; then
+                return 0
+              elif [[ $n -lt $max ]]; then
+                ((n++))
+                echo "Command '$1' failed. Retrying in $delay seconds..." >&2
+                sleep $delay
+                delay=$((delay * 2))
+              else
+                echo "Command '$1' failed after $max attempts." >&2
+                return 1
+              fi
+            done
+          }
+
+          check_release() {
+            local n=1 max=5 delay=5
+            while true; do
+              local err exit_code
+              err=$(gh release view ci-latest 2>&1 >/dev/null) && exit_code=0 || exit_code=$?
+              if [[ $exit_code -eq 0 ]]; then return 0; fi
+              if [[ "$err" == *"release not found"* || "$err" == *"HTTP 404"* ]]; then return 1; fi
+              if [[ $n -lt $max ]]; then
+                ((n++))
+                echo "gh release view failed: $err. Retrying in $delay seconds..." >&2
+                sleep $delay
+                delay=$((delay * 2))
+              else
+                echo "gh release view failed after $max attempts: $err" >&2
+                return 2
+              fi
+            done
+          }
+
+          release_status=0
+          check_release || release_status=$?
+          if [[ $release_status -eq 2 ]]; then exit 1; fi
+
+          if [[ $release_status -eq 0 ]]; then
+            # Move the tag to this commit; `gh release edit --target` only applies when the tag is created.
+            gh_retry gh api -X PATCH "repos/${GH_REPO}/git/refs/tags/ci-latest" -f sha="$GITHUB_SHA" -F force=true
+
+            # Upload first, then prune: the release never lacks an installable APK.
+            gh_retry gh release upload ci-latest "$apk_file" --clobber
+            gh_retry gh release edit ci-latest \
+              --title "MidoriBOX (${VERSION_CODE})" \
+              --notes "$release_notes" \
+              --prerelease=false \
+              --latest
+            assets=$(gh_retry gh release view ci-latest --json assets --jq '.assets[].name')
+            while IFS= read -r asset; do
+              if [[ -n "$asset" && "$asset" == *.apk && "$asset" != "$apk_name" ]]; then
+                echo "Removing previous release asset: $asset"
+                gh_retry gh release delete-asset ci-latest "$asset" -y
+              fi
+            done <<< "$assets"
+          else
+            gh_retry gh release create ci-latest "$apk_file" \
+              --target "$GITHUB_SHA" \
+              --title "MidoriBOX (${VERSION_CODE})" \
+              --notes "$release_notes" \
+              --latest
+          fi

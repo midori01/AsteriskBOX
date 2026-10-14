@@ -82,14 +82,19 @@ internal object RootEbpfFailureAnalyzer {
                 append(extraContext)
             }
         }
-        return buildExplanation(runMode, rawMessage, occurredAtEpochMillis)
+        return buildExplanation(runMode, rawMessage, occurredAtEpochMillis, modeWireValue = mode)
     }
 
-    private fun modeToRunMode(mode: String): Int =
+    // A supervisor started by an older release may still report a retired mode; it has no diagnostics rules.
+    private fun modeToRunMode(mode: String): Int? =
         RootModeCatalog.definitions.firstOrNull { it.daemonMode.wireValue == mode }?.runMode
-            ?: error("Unknown asteriskd mode: $mode")
 
-    private fun buildExplanation(runMode: Int, rawMessage: String, occurredAtEpochMillis: Long): ProxyErrorExplanation {
+    private fun buildExplanation(
+        runMode: Int?,
+        rawMessage: String,
+        occurredAtEpochMillis: Long,
+        modeWireValue: String = modeWireValue(runMode),
+    ): ProxyErrorExplanation {
         // Rules match the error's own wording, so they run against the original text.
         val diagnostics = rules
             .filter { it.runMode == runMode }
@@ -98,7 +103,7 @@ internal object RootEbpfFailureAnalyzer {
             ?.toList()
             ?: emptyList()
         return ProxyErrorExplanation(
-            mode = modeWireValue(runMode),
+            mode = modeWireValue,
             occurredAtEpochMillis = occurredAtEpochMillis,
             // Redacted on the way in, so the dialog and the clipboard both receive sanitized text
             // whichever producer built this explanation. The actionable FATAL signature survives.
@@ -123,6 +128,6 @@ internal object RootEbpfFailureAnalyzer {
     }
 
     /** Wire value of the daemon mode the failed start targeted, for UI labelling. */
-    private fun modeWireValue(runMode: Int): String =
-        RootModeCatalog.find(runMode)?.daemonMode?.wireValue ?: "unknown"
+    private fun modeWireValue(runMode: Int?): String =
+        runMode?.let(RootModeCatalog::find)?.daemonMode?.wireValue ?: "unknown"
 }

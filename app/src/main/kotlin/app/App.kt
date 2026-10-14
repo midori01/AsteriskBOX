@@ -9,8 +9,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import app.effects.AppUpdateSynchronizer
 import app.effects.ProxyStatusSynchronizer
 import app.effects.ResourceFileSynchronizer
 import app.effects.EnhancementModuleUpgradeChecker
@@ -23,7 +25,6 @@ import app.effects.TrafficStatsNotificationSynchronizer
 import data.backup.AndroidAppBackupDocumentGateway
 import data.backup.AppBackupUseCase
 import engine.proxy.ProxyServiceUseCase
-import engine.proxy.VpnPermissionRequester
 import features.logs.AndroidCoreLogRepository
 import features.logs.AndroidAsteriskdLogRepository
 import features.logs.AndroidLogcatRepository
@@ -41,6 +42,11 @@ import system.AndroidUserSpaceProvider
 import ui.AppTheme
 import ui.feedback.AndroidToastTipNotifier
 import ui.keyColorFor
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import app.modes.isRootRunMode
+import app.R
 
 @Composable
 fun App(
@@ -50,7 +56,6 @@ fun App(
     backupFilePicker: suspend () -> Uri?,
     backupFileCreator: suspend (String) -> Uri?,
     logFileCreator: suspend (String) -> Uri?,
-    requestVpnPermission: VpnPermissionRequester,
 ) {
     val appContext = LocalContext.current.applicationContext
     val systemUiSnapshot = appContext.currentSystemUiSnapshot()
@@ -125,13 +130,24 @@ fun App(
             rootBootScriptUseCase = rootBootScriptUseCase,
         )
     }
-    val proxyServiceUseCase = remember(proxyEngine, requestVpnPermission) {
-        ProxyServiceUseCase(proxyEngine, requestVpnPermission)
+    val proxyServiceUseCase = remember(proxyEngine) {
+        ProxyServiceUseCase(proxyEngine)
     }
     val applyServiceControlUseCase = remember(proxyEngine) {
         ApplyServiceControlUseCase(proxyEngine)
     }
     val tipNotifier = remember(appContext) { AndroidToastTipNotifier(appContext) }
+    LaunchedEffect(stateStore, rootAccess, tipNotifier) {
+        // Check once per run mode, not on every state emission, so a missing root does not toast repeatedly.
+        stateStore.state
+            .map { state -> state.runMode }
+            .distinctUntilChanged()
+            .collect { runMode ->
+                if (runMode.isRootRunMode() && !rootAccess.hasRootAccess()) {
+                    tipNotifier.show(appContext.getString(R.string.settings_root_required))
+                }
+            }
+    }
     val services = remember(
         appScope,
         proxyEngine,
@@ -217,6 +233,9 @@ fun App(
     TrafficStatsNotificationSynchronizer(
         stateStore = stateStore,
     )
+    AppUpdateSynchronizer(
+        stateStore = stateStore,
+    )
 
     EnhancementModuleUpgradeChecker(stateStore, enhancementModuleCoordinator)
 
@@ -237,7 +256,6 @@ fun App(
             ) {
                 AppContent(padding = padding)
                 EnhancementModulePrompt()
-                features.resources.SharedCoreMigrationPrompt()
             }
         }
     }

@@ -4,7 +4,8 @@
 package engine.proxy
 
 import android.content.Context
-import app.modes.RunModeVpnService
+import app.modes.RunModeEbpf
+import app.modes.RunModeTproxy
 import engine.proxy.mode.AndroidModeProxyEngine
 import engine.root.RootModeEngine
 import engine.root.runtime.model.RootRuntimeMode
@@ -12,9 +13,7 @@ import engine.root.runtime.model.RootRuntimeOwner
 import engine.stats.SingBoxTrafficStatsNotificationService
 import engine.stats.toSingBoxTrafficStatsRuntime
 import engine.singbox.withResolvedSingBoxControlPort
-import engine.vpn.VpnSingBoxEngine
-import features.logs.AndroidAppLogger
-import kotlinx.coroutines.CancellationException
+import engine.singbox.SingBoxConfigFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,11 +37,6 @@ internal class AndroidProxyEngine(
     private val rootAccess: AndroidRootShellGateway,
 ) {
     private val appContext = context.applicationContext
-    private var requestVpnPermission: VpnPermissionRequester = DenyVpnPermission
-    private val vpnSingBoxEngine = VpnSingBoxEngine(
-        context = appContext,
-        requestVpnPermission = { intent -> requestVpnPermission(intent) },
-    )
     private val rootEngines = RootModeEngine.createAll(appContext, rootAccess)
     private val rootEnginesByRunMode = rootEngines.associateBy(RootModeEngine::runMode)
     private val vpnTetheringRelayManager: VpnTetheringRelayManager
@@ -58,9 +52,7 @@ internal class AndroidProxyEngine(
         request: ProxyEngineStartRequest,
         requestVpnPermission: VpnPermissionRequester = DenyVpnPermission,
     ): ProxyEngineStatus = operationMutex.withLock {
-        withVpnPermissionRequester(requestVpnPermission) {
-            startUnlocked(request)
-        }
+        startUnlocked(request)
     }
 
     suspend fun stop(preferredRunMode: Int? = null): ProxyEngineStatus = operationMutex.withLock {
@@ -75,73 +67,15 @@ internal class AndroidProxyEngine(
         shutdownRunModeUnlocked(runMode)
     }
 
-    suspend fun <T> changeRootCore(
-        runMode: Int,
-        onRootStopped: () -> Unit,
-        action: suspend () -> T,
-    ): T = operationMutex.withLock {
-        // A resident supervisor also retains the old executable path. Republish on next start.
-        if (runMode in rootEnginesByRunMode) {
-            shutdownRunModeUnlocked(runMode)
-            onRootStopped()
-        }
-        action()
-    }
-
     suspend fun restart(
         request: ProxyEngineStartRequest,
         requestVpnPermission: VpnPermissionRequester = DenyVpnPermission,
     ): ProxyEngineStatus {
         val status = operationMutex.withLock {
-            withVpnPermissionRequester(requestVpnPermission) {
-                startUnlocked(request, explicitRestart = true)
-            }
+            startUnlocked(request, explicitRestart = true)
         }
         mutableRootStatusWatchGeneration.update { generation -> generation + 1L }
         return status
-    }
-
-    /**
-     * Applies a recompiled configuration to a running VPN core in place: the VpnService, its
-     * foreground notification and the libbox command server stay up, and only the sing-box
-     * instance (including its TUN) is recreated inside them. Falls back to an explicit
-     * restart only when the in-place reload fails. Both steps run under [operationMutex], so a stop from the
-     * tile or a broadcast cannot slip in between and then be undone by the fallback.
-     *
-     * Only the VPN engine is consulted, so this path performs no ROOT probing.
-     */
-    suspend fun reloadVpnOrRestart(
-        request: ProxyEngineStartRequest,
-        requestVpnPermission: VpnPermissionRequester = DenyVpnPermission,
-        reload: suspend () -> Unit,
-    ): ProxyEngineStatus = operationMutex.withLock {
-        val status = vpnSingBoxEngine.status()
-        // Stopped since the caller looked: there is nothing to apply, and starting it here
-        // would override the stop.
-        if (!status.running) return@withLock status
-        try {
-            reload()
-            return@withLock status.copy(appState = request.appState)
-        } catch (error: CancellationException) {
-            throw error
-        } catch (error: Throwable) {
-            AndroidAppLogger.warn(LogTag, "VPN configuration reload failed; restarting the service", error)
-        }
-        withVpnPermissionRequester(requestVpnPermission) {
-            startUnlocked(request, explicitRestart = true)
-        }
-    }
-
-    private suspend fun <T> withVpnPermissionRequester(
-        requester: VpnPermissionRequester,
-        block: suspend () -> T,
-    ): T {
-        requestVpnPermission = requester
-        return try {
-            block()
-        } finally {
-            requestVpnPermission = DenyVpnPermission
-        }
     }
 
     suspend fun reconfigureServiceControl(nextState: app.AppState): app.AppState {
@@ -181,24 +115,10 @@ internal class AndroidProxyEngine(
         request: ProxyEngineStartRequest,
         explicitRestart: Boolean = false,
     ): ProxyEngineStatus = withContext(Dispatchers.Default) {
+        SingBoxConfigFactory.buildConfigBytes(appContext, request.appState)
         val requestedEngine = request.appState.runMode.engine()
         val hasOtherActiveEngine = activeEngine.let { active -> active != null && active !== requestedEngine }
         var rootResumeChecked = false
-        // A start that reaches an already running engine does not relaunch the core, so the
-        // ports it is running with must be kept instead of being resolved again.
-        if (!explicitRestart && requestedEngine is VpnSingBoxEngine && activeEngine === requestedEngine) {
-            val status = requestedEngine.status()
-            if (status.running) {
-                SingBoxTrafficStatsNotificationService.reconcile(
-                    appContext,
-                    request.appState.toSingBoxTrafficStatsRuntime(status.runMode ?: request.appState.runMode),
-                )
-                if (status.running) {
-                    vpnTetheringRelayManager.start(request.appState)
-                }
-                return@withContext status.copy(appState = request.appState)
-            }
-        }
         if (shouldResumeRootBeforeResolvingPorts(explicitRestart, hasOtherActiveEngine, requestedEngine is RootModeEngine)) {
             requestedEngine as RootModeEngine
             requestedEngine.resumeIfRunning(request)?.let { status ->
@@ -231,7 +151,6 @@ internal class AndroidProxyEngine(
         try {
             val status = when {
                 explicitRestart && nextEngine is RootModeEngine -> nextEngine.restart(resolvedRequest)
-                explicitRestart && nextEngine is VpnSingBoxEngine -> nextEngine.restart(resolvedRequest)
                 shouldUsePreResolvedRootStart(
                     explicitRestart = explicitRestart,
                     resumeChecked = rootResumeChecked,
@@ -304,7 +223,6 @@ internal class AndroidProxyEngine(
             ?: withRootRuntimeProbe(preferredRunMode) {
                 rootEngines.firstOrNull { engine -> engine.status().running }
             }
-            ?: vpnSingBoxEngine.takeIf { it.status().running }
             ?: withRootRuntimeProbe(preferredRunMode) {
                 rootEngines.firstOrNull { engine -> engine.ownsRuntime() }
             }
@@ -365,11 +283,6 @@ internal class AndroidProxyEngine(
             }
         }
 
-        if (active !== vpnSingBoxEngine && preferredRunMode != RunModeVpnService) {
-            val status = vpnSingBoxEngine.status()
-            if (status.running) return@withContext accept(status, vpnSingBoxEngine)
-        }
-
         activeEngine = null
         (fallbackStatus ?: ProxyEngineStatus(running = false, runMode = preferredRunMode))
             .withTrafficStatsReconciled(appState)
@@ -380,7 +293,7 @@ internal class AndroidProxyEngine(
         ?.runMode
 
     private fun Int.engine(): AndroidModeProxyEngine {
-        return rootEnginesByRunMode[this] ?: vpnSingBoxEngine
+        return rootEnginesByRunMode[this] ?: error("Unsupported run mode: $this")
     }
 
     private suspend fun AndroidModeProxyEngine.ownsRootRuntime(): Boolean {
@@ -416,7 +329,7 @@ internal fun normalizeRootRuntimeStatus(
 internal suspend fun <T> withRootRuntimeProbe(
     preferredRunMode: Int?,
     probe: suspend () -> T,
-): T? = if (preferredRunMode == RunModeVpnService) null else probe()
+): T? = probe()
 
 internal fun shouldResumeRootBeforeResolvingPorts(
     explicitRestart: Boolean,
@@ -429,5 +342,3 @@ internal fun shouldUsePreResolvedRootStart(
     resumeChecked: Boolean,
     nextEngineIsRoot: Boolean,
 ): Boolean = !explicitRestart && resumeChecked && nextEngineIsRoot
-
-private const val LogTag = "AndroidProxyEngine"

@@ -6,7 +6,6 @@ package engine.singbox.runtime
 import app.AppState
 import engine.singbox.singBoxControlConfig
 import engine.singbox.singBoxModeName
-import io.nekohasekai.libbox.StatusMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -20,7 +19,7 @@ internal suspend fun restoreRootSingBoxMode(appState: AppState) = withContext(Di
         listener = object : SingBoxCommandListener {
             override fun onConnected() = Unit
             override fun onDisconnected(message: String) = Unit
-            override fun onStatus(status: StatusMessage) = Unit
+            override fun onStatus(status: SingBoxStatusMessage) = Unit
             override fun onProxies(proxies: SingBoxProxiesState) = Unit
             override fun onConnections(connections: SingBoxConnectionsState) = Unit
         },
