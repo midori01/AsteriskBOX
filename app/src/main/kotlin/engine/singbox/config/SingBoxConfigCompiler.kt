@@ -350,6 +350,31 @@ internal fun compileEbpfInbound(
                     uidPolicy.excludeUids.distinct().sorted().forEach(::add)
                 }
             }
+            val endpointBypassIpCidr = appState.ebpfEndpointConnectedBypassIpCidr
+                .map(String::trim)
+                .filter(String::isNotEmpty)
+                .map(::toSingBoxIpPrefix)
+                .distinct()
+            val endpointBypassPort = appState.ebpfEndpointConnectedBypassPort
+                .mapNotNull(String::toPortOrNull)
+                .distinct()
+            // sing-box rejects an enabled bypass without both ip_cidr and port, so omit an incomplete one.
+            if (
+                appState.ebpfLocalDataPlane == "tc" &&
+                appState.ebpfEndpointConnectedBypassEnabled &&
+                endpointBypassIpCidr.isNotEmpty() &&
+                endpointBypassPort.isNotEmpty()
+            ) {
+                putJsonObject("endpoint_connected_bypass") {
+                    put("enabled", true)
+                    putJsonArray("ip_cidr") {
+                        endpointBypassIpCidr.forEach(::add)
+                    }
+                    putJsonArray("port") {
+                        endpointBypassPort.forEach(::add)
+                    }
+                }
+            }
         }
         if (sharedInterfaces.isNotEmpty()) {
             putJsonObject("shared") {
@@ -1032,3 +1057,10 @@ private fun compileExperimental(appState: AppState): JsonObject? {
 }
 
 private val RouteRejectMethods = setOf("default", "drop", "reply")
+
+// netip.Prefix requires an explicit prefix length; promote bare addresses to host prefixes.
+internal fun toSingBoxIpPrefix(value: String): String = when {
+    "/" in value -> value
+    ":" in value -> "$value/128"
+    else -> "$value/32"
+}
