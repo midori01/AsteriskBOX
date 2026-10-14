@@ -31,13 +31,8 @@ internal object AsteriskdConfigValidator {
                 require(modeOptions.transparentPort != null && modeOptions.tunnelName == null)
                 require(helper == null)
             }
-            AsteriskdMode.Tun2Socks -> {
-                require(modeOptions.transparentPort == null && modeOptions.tunnelName == null)
-                require(helper is AsteriskdHevSocks5TunnelHelper)
-            }
-            AsteriskdMode.Bpf2Socks -> {
-                require(modeOptions.transparentPort == null && modeOptions.tunnelName == null)
-                require(helper is AsteriskdBpf2SocksHelper && matcher == null)
+            AsteriskdMode.Tun2Socks, AsteriskdMode.Bpf2Socks -> {
+                error("Unsupported mode: $mode")
             }
             AsteriskdMode.Tun -> {
                 require(modeOptions.transparentPort == null && !modeOptions.tunnelName.isNullOrBlank())

@@ -13,7 +13,8 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import app.R
-import app.modes.RunModeVpnService
+import app.modes.RunModeEbpf
+import app.modes.isRootRunMode
 import features.logs.AndroidAppLogger
 import features.settings.locale.localizedFromSavedLanguage
 import kotlinx.coroutines.CoroutineScope
@@ -44,10 +45,10 @@ internal class RootQuickSettingsOperationService : Service() {
             return START_NOT_STICKY
         }
 
-        val runMode = intent?.getIntExtra(RunModeExtra, RunModeVpnService) ?: RunModeVpnService
+        val runMode = intent?.getIntExtra(RunModeExtra, RunModeEbpf) ?: RunModeEbpf
         scope.launch {
             try {
-                if (intent != null && intent.hasExtra(ShouldRunExtra) && runMode != RunModeVpnService) {
+                if (intent != null && intent.hasExtra(ShouldRunExtra) && runMode.isRootRunMode()) {
                     val shouldRun = intent.getBooleanExtra(ShouldRunExtra, false)
                     runCatching {
                         AndroidAppLogger.info(LogTag, "root_tile_foreground runMode=$runMode shouldRun=$shouldRun")

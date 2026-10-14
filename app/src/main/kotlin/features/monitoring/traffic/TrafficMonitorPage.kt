@@ -56,11 +56,10 @@ internal fun TrafficMonitorPage(padding: PaddingValues) {
     ) { contentPadding ->
         val todayCard: @Composable () -> Unit = {
             MonitoringSectionCard(stringResource(R.string.monitor_traffic_today)) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
+                Column {
+                    MonitoringValueRow(
+                        stringResource(R.string.monitor_traffic_total),
                         traffic.today.total.toReadableBytes(),
-                        style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.SemiBold,
                     )
                     MonitoringValueRow(
                         stringResource(R.string.monitor_connections_download),
@@ -76,10 +75,11 @@ internal fun TrafficMonitorPage(padding: PaddingValues) {
         val sessionCard: @Composable () -> Unit = {
             MonitoringSectionCard(stringResource(R.string.monitor_traffic_session)) {
                 val uptime = monitoring.resource.uptimeMillis
-                Column {
-                    MonitoringValueRow(
-                        stringResource(R.string.monitor_traffic_session_total),
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
                         combinedBytes(traffic.sessionDownloadBytes, traffic.sessionUploadBytes),
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.SemiBold,
                     )
                     MonitoringValueRow(
                         stringResource(R.string.monitor_connections_download),
@@ -141,18 +141,18 @@ internal fun TrafficMonitorPage(padding: PaddingValues) {
                     item("traffic-columns") {
                         Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                                todayCard()
+                                sessionCard()
                                 sevenDayCard(false)
                             }
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                                sessionCard()
+                                todayCard()
                                 thirtyDayCard()
                             }
                         }
                     }
                 } else {
-                    item("today") { todayCard() }
                     item("session") { sessionCard() }
+                    item("today") { todayCard() }
                     item("week") { sevenDayCard(true) }
                     item("month") { thirtyDayCard() }
                 }

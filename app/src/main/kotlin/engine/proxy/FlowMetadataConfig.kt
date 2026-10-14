@@ -5,9 +5,6 @@ package engine.proxy
 
 import android.content.Context
 import app.AppState
-import app.modes.RunModeBpf2Socks
-import app.modes.RunModeTun2Socks
-import app.modes.RunModeVpnService
 import java.io.File
 import java.util.UUID
 import utils.writeAtomically
@@ -16,9 +13,7 @@ internal const val FlowMetadataInboundTag = "asterisk-bridge"
 internal const val FlowMetadataPort = 65530
 internal const val FlowMetadataUsername = "__asterisk_flow_v1"
 
-internal fun AppState.usesFlowMetadata(runMode: Int = this.runMode): Boolean =
-    runMode == RunModeTun2Socks || runMode == RunModeBpf2Socks ||
-        (runMode == RunModeVpnService && enableVpnHevTun)
+internal fun AppState.usesFlowMetadata(runMode: Int = this.runMode): Boolean = false
 
 /** Compiled in the app process; the service only receives the resulting config. */
 @Synchronized

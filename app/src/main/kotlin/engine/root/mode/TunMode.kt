@@ -10,6 +10,7 @@ import engine.root.config.RootModeStartConfig
 import engine.root.config.buildAsteriskdConfig
 import engine.root.daemon.config.AsteriskdMode
 import engine.root.daemon.config.AsteriskdModeOptions
+import engine.singbox.config.SingBoxTunAutoRedirectOutputMark
 import engine.singbox.config.SingBoxTunDevice
 
 internal fun RootConfigBuildContext.buildTunStartConfig(): RootModeStartConfig {
@@ -31,4 +32,24 @@ internal fun RootConfigBuildContext.buildTunStartConfig(): RootModeStartConfig {
             ),
         ),
     )
+}
+
+private val TunVpnInterfacePatterns = listOf("tun+", "ipsec+")
+
+// Android discards replies addressed to a VPN's address that arrive on any other interface, so
+// traffic Android routes into a VPN gets the auto_redirect output mark and stays on that VPN.
+internal fun tunVpnYieldCommands(enabled: Boolean): List<String> {
+    val mark = "0x" + SingBoxTunAutoRedirectOutputMark.toString(16) + "/0xffffffff"
+    return buildList {
+        for (iptables in listOf("iptables", "ip6tables")) {
+            for (pattern in TunVpnInterfacePatterns) {
+                val rule = "OUTPUT -o $pattern -j MARK --set-xmark $mark"
+                if (enabled) {
+                    add("{ $iptables -t raw -C $rule 2>/dev/null || $iptables -t raw -A $rule; }")
+                } else {
+                    add("while $iptables -t raw -D $rule 2>/dev/null; do :; done")
+                }
+            }
+        }
+    }
 }

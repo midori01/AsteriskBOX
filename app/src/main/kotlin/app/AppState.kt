@@ -10,9 +10,9 @@ import app.modes.NetworkActivityStyleDotted
 import app.modes.OutboundListLayoutAuto
 import app.modes.OutboundListSortDefault
 import app.modes.ProxyAppListModeGlobal
+import app.modes.RunModeEbpf
 import app.modes.isRootRunMode
 import app.modes.supportsAppListEnhancement
-import app.modes.RunModeVpnService
 import app.modes.SingBoxModeRule
 import app.modes.SingBoxProxyGroupLayoutTabs
 import app.modes.SingBoxProxyLayoutAuto
@@ -64,7 +64,7 @@ data class AppState(
     val selectors: List<SingBoxSelectorState> = emptyList(),
     val nextSelectorId: Int = 1,
     val selectorSelections: Map<String, String> = emptyMap(),
-    val routeAutoDetectInterface: Boolean = false,
+    val routeAutoDetectInterface: Boolean = true,
     val routeOverrideAndroidVpn: Boolean = false,
     val routeDefaultNetworkStrategy: String = "",
     val routeDefaultNetworkTypes: List<String> = emptyList(),
@@ -75,7 +75,7 @@ data class AppState(
     val routeRules: List<SingBoxRouteRuleState> = DefaultSingBoxRouteRules,
     val nextRouteRuleId: Int =
         (DefaultSingBoxRouteRules.maxOfOrNull(SingBoxRouteRuleState::id) ?: 0) + 1,
-    val runMode: Int = RunModeVpnService,
+    val runMode: Int = RunModeEbpf,
     val singBoxMode: Int = SingBoxModeRule,
     val singBoxProxyLayout: Int = SingBoxProxyLayoutAuto,
     val singBoxProxyGroupLayout: Int = SingBoxProxyGroupLayoutTabs,
@@ -84,19 +84,11 @@ data class AppState(
     val singBoxControlSecret: String = "",
     val enableLocalDns: Boolean = true,
 
-    val localProxyPort: String = VpnDefaults.LOCAL_PROXY_PORT.toString(),
+    val localProxyPort: String = "10810",
     val enableDynamicLocalProxyPort: Boolean = false,
     val localProxyListenAllInterfaces: Boolean = false,
     val localProxyUsername: String = "",
     val localProxyPassword: String = "",
-    val enableVpnAppendHttpProxy: Boolean = false,
-    val enableVpnHevTun: Boolean = false,
-
-    /**
-     * Starts the VPN Service by itself after boot or an app update. VPN Service mode only:
-     * ROOT modes bring their own boot entry ([enableRootBootScript]).
-     */
-    val enableAutoConnect: Boolean = false,
     val tunMtu: String = VpnDefaults.MTU.toString(),
     val tunVpnDns: String = VpnDefaults.IPV4_DNS,
     val tunIpv4Cidr: String = VpnDefaults.IPV4_CIDR,
@@ -126,8 +118,8 @@ data class AppState(
     val enableResourceAutoUpdate: Boolean = false,
     val enableResourceCoreAutoUpdate: Boolean = false,
     val resourceAutoUpdateInterval: String = "24",
+    val enableAppAutoUpdateCheck: Boolean = true,
     val resourceFileSource: Int = ResourceFileSourceDefault,
-    val customResourceFileGeositeCategoryAdsAllUrl: String = "",
     val customResourceFileGeositeGoogleUrl: String = "",
     val customResourceFileGeositeCnUrl: String = "",
     val customResourceFileGeoipCnUrl: String = "",
@@ -140,7 +132,7 @@ data class AppState(
     val snifferProtocols: List<String> = DefaultSingBoxSnifferProtocols,
     val snifferTimeout: String = DefaultSingBoxSnifferTimeout,
 
-    val enableIpv6: Boolean = false,
+    val enableIpv6: Boolean = true,
     val enableIpv6Prefer: Boolean = false,
 
     val dnsFinal: String = DefaultSingBoxDnsFinal,
@@ -165,7 +157,7 @@ data class AppState(
     val enableRootBootScript: Boolean = false,
     val enableAppListEnhancement: Boolean = false,
     val enableRootEbpfRules: Boolean = false,
-    val enableRootEbpfDirectCidrBypass: Boolean = false,
+    val enableRootEbpfDirectCidrBypass: Boolean = true,
     val enableRootEbpfPrivateAddressBypass: Boolean = false,
     val ebpfLocalDataPlane: String = DefaultEbpfLocalDataPlane,
     val ebpfSharedDataPlane: String = DefaultEbpfSharedDataPlane,
@@ -178,8 +170,6 @@ data class AppState(
     val ebpfLocalBypassIpCidr: List<String> = emptyList(),
     val ebpfLocalBypassPort: List<String> = emptyList(),
     val enableRootIpv6Disabler: Boolean = false,
-    val socks5ProxyPort: String = RootModeEngine.DefaultTun2SocksProxyPort.toString(),
-    val bpf2SocksBridgePort: String = RootModeEngine.DefaultBpf2SocksBridgePort.toString(),
 
     val serviceControl: ServiceControlSettings = ServiceControlSettings(),
 

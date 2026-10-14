@@ -33,7 +33,7 @@ internal object RootPublicationCommand {
                 appendLine("[ -f ${path.shellQuote()} ] && [ ! -L ${path.shellQuote()} ] || exit 70")
             }
             if (bundle.bootEnabled) {
-                RootBootPublicationCommand.appendInstallBoot(this, layout)
+                RootBootPublicationCommand.appendInstallBoot(this, layout, bundle.bootRules)
             } else {
                 RootBootPublicationCommand.appendRemoveBoot(this, layout)
             }

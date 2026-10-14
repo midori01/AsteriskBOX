@@ -5,7 +5,6 @@ package features.monitoring
 
 import android.content.Context
 import android.os.SystemClock
-import app.modes.RunModeVpnService
 import app.modes.isRootRunMode
 import data.AndroidAppStateStore
 import engine.proxy.LocalProxyLoopbackAddress
@@ -83,6 +82,9 @@ internal class MonitoringRepository(
     private var networkPageSessionId: String? = null
     private var publicProbeGeneration = 0L
     private var publicProbeJob: Job? = null
+    private var publicProbeNetworkPageScoped = false
+    private var homeProbeProxyRunning: Boolean? = null
+    private var lastPublicProbeCompletedAtMillis: Long = 0L
     private val connectionRefreshMutex = Mutex()
     private val observerCounts = MutableStateFlow<Map<MonitoringIntent, Int>>(emptyMap())
     private val observerRegistry = MonitoringObserverRegistry { counts ->
@@ -180,6 +182,9 @@ internal class MonitoringRepository(
             networkPageSessionId = pageSessionId
         }
         observerRegistry.acquire(intent)
+        if (intent == MonitoringIntent.Home) {
+            refreshHomePublicIpv4()
+        }
         return MonitoringObservation {
             observerRegistry.release(intent)
         }
@@ -188,12 +193,25 @@ internal class MonitoringRepository(
     suspend fun probeProxyEntry(hosts: List<String>, family: AddressFamily?) = networkMonitor.probeProxyEntry(hosts, family)
 
     fun refreshPublicNetworkProbe(family: AddressFamily? = null) {
-        if (!networkPageWasVisible) return
         startPublicNetworkProbe(family)
     }
 
+    // Home only shows the public IPv4. Re-entering Home (tab switch, foreground) reuses a recent
+    // result instead of contacting the third-party probe endpoints again; a proxy start/stop changes
+    // the egress address, so it invalidates the cached value.
+    private fun refreshHomePublicIpv4() {
+        val proxyRunning = stateStore.state.value.proxyRunning
+        val probe = mutableState.value.network.publicProbe
+        // Throttle on the last completed attempt (success or failure) so an unreachable endpoint isn't hammered.
+        val lastCompletedAt = lastPublicProbeCompletedAtMillis
+        val age = System.currentTimeMillis() - lastCompletedAt
+        val fresh = lastCompletedAt > 0L && age in 0 until HomePublicProbeMinIntervalMillis
+        if (probe.refreshing || (fresh && proxyRunning == homeProbeProxyRunning)) return
+        homeProbeProxyRunning = proxyRunning
+        startPublicNetworkProbe(AddressFamily.Ipv4, networkPageScoped = false)
+    }
+
     fun refreshNetworkStatus() {
-        if (!networkPageWasVisible) return
         refreshLocalNetworkSnapshot()
         startPublicNetworkProbe()
     }
@@ -260,7 +278,7 @@ internal class MonitoringRepository(
                 }
             } else {
                 val reading = processStatsSource.read(appState)
-                val isVpnMode = appState.runMode == RunModeVpnService
+                val isVpnMode = !appState.runMode.isRootRunMode()
                 val baseline = previousProcessSnapshot.takeIf {
                     previousProcessSource == reading?.source
                 }
@@ -549,6 +567,8 @@ internal class MonitoringRepository(
             }
         } else if (!visible && networkPageWasVisible) {
             networkPageWasVisible = false
+            // Leaving the network page must not cancel a probe the home dashboard is waiting on.
+            if (!publicProbeNetworkPageScoped) return
             publicProbeGeneration += 1L
             publicProbeJob?.cancel()
             publicProbeJob = null
@@ -569,7 +589,8 @@ internal class MonitoringRepository(
         }
     }
 
-    private fun startPublicNetworkProbe(family: AddressFamily? = null) {
+    private fun startPublicNetworkProbe(family: AddressFamily? = null, networkPageScoped: Boolean = true) {
+        publicProbeNetworkPageScoped = networkPageScoped
         publicProbeGeneration += 1L
         val generation = publicProbeGeneration
         publicProbeJob?.cancel()
@@ -584,10 +605,10 @@ internal class MonitoringRepository(
         }
         publicProbeJob = appScope.launch {
             try {
-                if (generation != publicProbeGeneration || !networkPageWasVisible) return@launch
+                if (generation != publicProbeGeneration) return@launch
                 val batch = if (family == null) publicNetworkProbeClient.probe() else null
                 val single = family?.let { selected -> publicNetworkProbeClient.probe(selected) }
-                if (generation != publicProbeGeneration || !networkPageWasVisible) return@launch
+                if (generation != publicProbeGeneration) return@launch
                 mutableState.update { current ->
                     val next = current.copy(
                         network = current.network.copy(
@@ -608,7 +629,8 @@ internal class MonitoringRepository(
             } catch (error: CancellationException) {
                 throw error
             } finally {
-                if (generation == publicProbeGeneration && networkPageWasVisible) {
+                if (generation == publicProbeGeneration) {
+                    lastPublicProbeCompletedAtMillis = System.currentTimeMillis()
                     mutableState.update { current ->
                         current.copy(
                             network = current.network.copy(
@@ -659,5 +681,8 @@ private fun List<SingBoxConnection>.sumKnownRates(selector: (SingBoxConnection) 
     }
 }
 
+private const val HomePublicProbeMinIntervalMillis = 5L * 60L * 1_000L
+private const val TrafficSpeedHistoryMillis = 5L * 60L * 1_000L
+private const val MaxTrafficSpeedSamples = 301
 private const val MemoryMonitoringIntervalMillis = 3_000L
 private const val LogTag = "MonitoringRepository"

@@ -3,7 +3,6 @@
 
 package features.settings
 
-import android.net.VpnService
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
@@ -25,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -35,6 +35,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalUriHandler
 import app.LocalAppServices
 import app.LocalAppStateStore
 import app.LocalIsWideScreen
@@ -42,14 +43,12 @@ import app.LocalNavigator
 import app.LocalUpdateAppState
 import app.ProjectInfo
 import app.R
+import features.updater.rememberAppUpdateState
 import app.collectAppState
 import app.managedRuleSetChoices
-import app.modes.RunModeBpf2Socks
 import app.modes.RunModeEbpf
 import app.modes.RunModeTproxy
 import app.modes.RunModeTun
-import app.modes.RunModeTun2Socks
-import app.modes.RunModeVpnService
 import app.modes.isRootRunMode
 import app.navigation.Route
 import app.withPrunedManagedInboundReferences
@@ -146,7 +145,10 @@ private fun SettingsContent(
     val isWideScreen = LocalIsWideScreen.current
     val updateAppState = LocalUpdateAppState.current
     val navigator = LocalNavigator.current
+    val uriHandler = LocalUriHandler.current
+    val updateState = rememberAppUpdateState()
     val services = LocalAppServices.current
+    val latestAppState = rememberUpdatedState(appState)
     val switchRunModeUseCase = services.switchRunModeUseCase
     val rootBootScriptUseCase = services.rootBootScriptUseCase
     val rootEbpfProbeUseCase = services.rootEbpfProbeUseCase
@@ -195,12 +197,9 @@ private fun SettingsContent(
         stringResource(R.string.option_simplified_chinese),
     )
     val runModeItems = listOf(
-        RunModeVpnService to stringResource(R.string.settings_run_mode_vpn_service),
+        RunModeEbpf to stringResource(R.string.settings_run_mode_ebpf),
         RunModeTproxy to stringResource(R.string.settings_run_mode_tproxy),
         RunModeTun to stringResource(R.string.settings_run_mode_tun),
-        RunModeEbpf to stringResource(R.string.settings_run_mode_ebpf),
-        RunModeTun2Socks to stringResource(R.string.settings_run_mode_tun2socks),
-        RunModeBpf2Socks to stringResource(R.string.settings_run_mode_bpf2socks),
     )
     val runModeOptions = runModeItems.map { item -> item.second }
     val selectedRunModeIndex = runModeItems
@@ -219,9 +218,9 @@ private fun SettingsContent(
         stringResource(R.string.theme_color_coffee),
     ).take(KeyColors.size + 1)
     val rootRequiredMessage = stringResource(R.string.settings_root_required)
-    val vpnPermissionDeniedMessage = stringResource(R.string.error_vpn_permission_denied)
     val rootBootScriptFailedMessage = stringResource(R.string.settings_root_boot_script_failed)
     val serviceStoppedMessage = stringResource(R.string.proxy_service_stopped)
+    val serviceStartedMessage = stringResource(R.string.proxy_service_started)
     val logLevelFailedMessage = stringResource(R.string.settings_log_level)
     val backupExportedMessage = stringResource(R.string.settings_backup_exported)
     val backupExportFailedMessage = stringResource(R.string.settings_backup_export_failed)
@@ -283,8 +282,6 @@ private fun SettingsContent(
         port = appState.localProxyPort,
         listenAllInterfaces = appState.localProxyListenAllInterfaces,
         transparentProxyPort = appState.transparentProxyPort,
-        bpf2SocksBridgePort = appState.bpf2SocksBridgePort,
-        socks5ProxyPort = appState.socks5ProxyPort,
     )
     val tunBypassRuleSetChoices = remember(appState.customResourceFiles) {
         appState.managedRuleSetChoices(
@@ -316,13 +313,14 @@ private fun SettingsContent(
         vpnDns = appState.tunVpnDns,
         ipv4Cidr = appState.tunIpv4Cidr,
         ipv6Cidr = appState.tunIpv6Cidr,
-        showVpnDns = appState.runMode == RunModeVpnService,
+        showVpnDns = false,
     )
     val ebpfLocalDataPlane = appState.ebpfLocalDataPlane
     val ebpfLocalDnsMode = appState.ebpfLocalDnsMode
     val sheetState = rememberSettingsSheetState(updateAppState)
     val nestedSearchEntries = settingsNestedSearchEntries(
         showEbpfOptions = appState.runMode == RunModeEbpf,
+        showTunOptions = appState.runMode == RunModeTun,
         useTunSharedNetwork = (appState.runMode == RunModeEbpf || appState.runMode == RunModeTun),
         onOpenDns = {
             navigator.push(Route.DnsManagement(openSettings = true))
@@ -343,6 +341,7 @@ private fun SettingsContent(
     )
     val topLevelSearchItems = settingsTopLevelSearchItems(
         showEbpfOptions = appState.runMode == RunModeEbpf,
+        showTunOptions = appState.runMode == RunModeTun,
         ebpfLocalDataPlane = ebpfLocalDataPlane,
         ebpfLocalDnsMode = ebpfLocalDnsMode,
         enableLocalDns = appState.enableLocalDns,
@@ -443,7 +442,7 @@ private fun SettingsContent(
                         updateAppState { state -> state.copy(enableIpv6Prefer = enabled) }
                     },
                     onRunModeChange = { index ->
-                        val targetRunMode = runModeItems.getOrNull(index)?.first ?: RunModeVpnService
+                        val targetRunMode = runModeItems.getOrNull(index)?.first ?: RunModeEbpf
                         if (targetRunMode != appState.runMode && !runModeSwitchInProgress) {
                             runModeSwitchInProgress = true
                             val stateSnapshot = appState
@@ -457,8 +456,32 @@ private fun SettingsContent(
                                                 enableRootBootScript = state.enableRootBootScript && result.runMode.isRootRunMode(),
                                             ).withPrunedManagedInboundReferences()
                                         }
+                                        if (stateSnapshot.proxyRunning) {
+                                            val newState = stateSnapshot.copy(
+                                                runMode = result.runMode,
+                                                proxyRunning = false,
+                                            ).withPrunedManagedInboundReferences()
+                                            services.appScope.launch {
+                                                val startResult = proxyServiceUseCase.restart(newState)
+                                                when (startResult) {
+                                                    is ProxyServiceResult.Success -> {
+                                                        updateAppState { state ->
+                                                            state.copy(
+                                                                proxyRunning = startResult.proxyRunning,
+                                                                localProxyPort = startResult.appState?.localProxyPort ?: state.localProxyPort,
+                                                                singBoxControlPort = startResult.appState?.singBoxControlPort ?: state.singBoxControlPort,
+                                                            )
+                                                        }
+                                                        tipNotifier.show(serviceStartedMessage)
+                                                    }
+                                                    is ProxyServiceResult.Failed -> {
+                                                        updateAppState { state -> state.copy(proxyRunning = false) }
+                                                        tipNotifier.showError(startResult.error, serviceStartedMessage)
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
-
                                     is SwitchRunModeResult.RootUnavailable -> {
                                         updateAppState { state -> state.copy(proxyRunning = result.proxyRunning) }
                                         tipNotifier.show(rootRequiredMessage)
@@ -487,10 +510,6 @@ private fun SettingsContent(
                     ebpfLocalDataPlane = ebpfLocalDataPlane,
                     ebpfLocalDnsMode = ebpfLocalDnsMode,
                     enableLocalDns = appState.enableLocalDns,
-                    enableTrafficStatsNotification = appState.enableTrafficStatsNotification,
-                    enableVpnAppendHttpProxy = appState.enableVpnAppendHttpProxy,
-                    enableVpnHevTun = appState.enableVpnHevTun,
-                    enableAutoConnect = appState.enableAutoConnect,
                     tunSettingsSummary = tunSettingsSummary,
                     enableRootBootScript = appState.enableRootBootScript,
                     enableRootEbpfRules = appState.enableRootEbpfRules,
@@ -500,6 +519,7 @@ private fun SettingsContent(
                     ebpfEndpointConnectedBypassSummary = ebpfEndpointConnectedBypassSummary,
                     enableIpv6 = appState.enableIpv6,
                     enableRootIpv6Disabler = appState.enableRootIpv6Disabler,
+                    enableTrafficStatsNotification = appState.enableTrafficStatsNotification,
                     externalInterfacesSummary = externalInterfacesSummary,
                     ignoredInterfacesSummary = ignoredInterfacesSummary,
                     privateAddressCidrsSummary = privateAddressCidrsSummary,
@@ -518,41 +538,6 @@ private fun SettingsContent(
                     },
                     onEbpfLocalDnsModeChange = { value ->
                         updateAppState { state -> state.copy(ebpfLocalDnsMode = value) }
-                    },
-                    onEnableTrafficStatsNotificationChange = { enabled ->
-                        updateAppState { state -> state.copy(enableTrafficStatsNotification = enabled) }
-                    },
-                    onEnableVpnAppendHttpProxyChange = { enabled ->
-                        updateAppState { state -> state.copy(enableVpnAppendHttpProxy = enabled) }
-                    },
-                    onEnableVpnHevTunChange = { enabled ->
-                        updateAppState { state ->
-                            state.copy(enableVpnHevTun = enabled)
-                                .withPrunedManagedInboundReferences()
-                        }
-                    },
-                    onEnableAutoConnectChange = { enabled ->
-                        if (!enabled) {
-                            updateAppState { state -> state.copy(enableAutoConnect = false) }
-                        } else {
-                            // A boot start cannot ask for the consent, so it is collected here.
-                            scope.launch {
-                                val consent = VpnService.prepare(context)
-                                val granted = try {
-                                    consent == null || services.requestVpnPermission(consent)
-                                } catch (error: CancellationException) {
-                                    throw error
-                                } catch (error: Throwable) {
-                                    tipNotifier.showError(error, vpnPermissionDeniedMessage)
-                                    return@launch
-                                }
-                                if (granted) {
-                                    updateAppState { state -> state.copy(enableAutoConnect = true) }
-                                } else {
-                                    tipNotifier.show(vpnPermissionDeniedMessage)
-                                }
-                            }
-                        }
                     },
                     onOpenTunSettings = { sheetState.openTunSettings(appState) },
                     onEnableRootBootScriptChange = { enabled ->
@@ -635,6 +620,9 @@ private fun SettingsContent(
                     },
                     onEnableRootIpv6DisablerChange = { enabled ->
                         updateAppState { state -> state.copy(enableRootIpv6Disabler = enabled) }
+                    },
+                    onEnableTrafficStatsNotificationChange = { enabled ->
+                        updateAppState { state -> state.copy(enableTrafficStatsNotification = enabled) }
                     },
                     onOpenExternalInterfaces = {
                         if (appState.runMode == RunModeEbpf || appState.runMode == RunModeTun) {
@@ -727,6 +715,11 @@ private fun SettingsContent(
                 SettingsAboutSection(
                     onOpenAbout = { navigator.push(Route.About) },
                     onOpenLicenses = { navigator.push(Route.License) },
+                    onCheckUpdate = { updateState.checkForUpdate(context, manual = true) },
+                    autoCheckUpdate = appState.enableAppAutoUpdateCheck,
+                    onToggleAutoCheckUpdate = { enabled ->
+                        updateAppState { it.copy(enableAppAutoUpdateCheck = enabled) }
+                    },
                 )
             }
         }

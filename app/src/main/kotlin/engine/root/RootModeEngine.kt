@@ -11,11 +11,10 @@ import engine.proxy.ProxyEngineStatus
 import engine.proxy.mode.AndroidModeProxyEngine
 import engine.root.config.prepareRootConfigBuildContext
 import engine.root.config.RootModeStartConfig
-import engine.root.config.RootBpf2SocksDefaultBridgePort as ConfigRootBpf2SocksDefaultBridgePort
 import engine.root.mode.RootModeCatalog
 import engine.root.mode.RootModeDefinition
+import engine.root.mode.ipv6LeakGuard
 import engine.root.mode.DefaultTproxyPort as ModeDefaultTproxyPort
-import engine.root.mode.DefaultTun2SocksProxyPort as ModeDefaultTun2SocksProxyPort
 import engine.root.publication.rootRuntimeLayout
 import engine.root.runtime.RootEbpfFailureAnalyzer
 import engine.root.runtime.RootFailureReport
@@ -24,6 +23,7 @@ import engine.root.runtime.RootPrivateDnsException
 import engine.root.runtime.RootRuntimeBusyException
 import engine.root.runtime.RootRuntimeConflictException
 import engine.root.runtime.RootSupervisorController
+import engine.root.runtime.applyIpv6LeakGuard
 import engine.root.runtime.boundSnapshot
 import engine.root.runtime.toStableProxyEngineStatus
 import engine.singbox.runtime.restoreRootSingBoxMode
@@ -95,6 +95,7 @@ internal class RootModeEngine(
                 controller.start(config.root, config.asteriskdConfig)
             }
             controller.requireRunning(snapshot, definition.daemonMode)
+            rootAccess.applyIpv6LeakGuard(ipv6LeakGuard(config.root.singBoxConfigBytes, config.asteriskdConfig))
             restoreStartedMode(request)
             config.localProxyOptions?.let(LocalProxyRuntime::update) ?: LocalProxyRuntime.clear()
             controller.proxyStatus(snapshot, runMode, definition.daemonMode)
@@ -139,12 +140,14 @@ internal class RootModeEngine(
             .localProxyOptions
 
     override suspend fun stop(): ProxyEngineStatus {
+        rootAccess.applyIpv6LeakGuard(null)
         controller.stopOwn()
         LocalProxyRuntime.clear()
         return status()
     }
 
     suspend fun shutdown(): ProxyEngineStatus {
+        rootAccess.applyIpv6LeakGuard(null)
         controller.shutdownOwn()
         LocalProxyRuntime.clear()
         return status()
@@ -199,8 +202,6 @@ internal class RootModeEngine(
 
     companion object {
         const val DefaultTproxyPort = ModeDefaultTproxyPort
-        const val DefaultTun2SocksProxyPort = ModeDefaultTun2SocksProxyPort
-        const val DefaultBpf2SocksBridgePort = ConfigRootBpf2SocksDefaultBridgePort
 
         fun createAll(context: Context, rootAccess: RootShellGateway): List<RootModeEngine> =
             RootModeCatalog.definitions.map { definition -> RootModeEngine(context, rootAccess, definition) }

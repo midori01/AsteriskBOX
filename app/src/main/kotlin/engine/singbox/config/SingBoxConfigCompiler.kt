@@ -28,12 +28,9 @@ import features.selector.expandSelectorMemberReferences
 import app.isManagedSingBoxTag
 import app.managedOutboundGroupSelectorTag
 import app.managedRuleSetChoices
-import app.modes.RunModeBpf2Socks
 import app.modes.RunModeEbpf
 import app.modes.RunModeTproxy
 import app.modes.RunModeTun
-import app.modes.RunModeTun2Socks
-import app.modes.RunModeVpnService
 import app.modes.isRootRunMode
 import app.rootIpv6DataPathEnabled
 import app.withCanonicalManagedTagReferences
@@ -276,6 +273,8 @@ internal object SingBoxConfigCompiler {
                 availableOutboundTags = availableOutboundTags,
                 dnsEnabled = runtime["dns"] is JsonObject,
                 defaultDomainResolver = dnsResult?.defaultDomainResolver,
+                tunInbound = exposePorts && runMode == RunModeTun,
+                availableRuleSetTags = availableRuleSetTags,
             ),
         )
 
@@ -353,20 +352,11 @@ private fun compileInbounds(
 
     retained += compileLocalInbound(appState)
     when (runMode) {
-        RunModeVpnService -> if (!appState.enableVpnHevTun) {
-            retained += compileTunInbound(appState, rootMode = false)
-        }
         RunModeTproxy -> retained += buildJsonObject {
             put("type", "tproxy")
             put("tag", APP_ROOT_INBOUND)
             put("listen", if (appState.rootIpv6DataPathEnabled) "::" else "0.0.0.0")
             put("listen_port", appState.transparentProxyPort.toPortOrNull() ?: RootModeEngine.DefaultTproxyPort)
-        }
-        RunModeTun2Socks, RunModeBpf2Socks -> retained += buildJsonObject {
-            put("type", "socks")
-            put("tag", APP_ROOT_INBOUND)
-            put("listen", LocalProxyLoopbackAddress)
-            put("listen_port", appState.socks5ProxyPort.toPortOrNull() ?: RootModeEngine.DefaultTun2SocksProxyPort)
         }
         RunModeTun -> retained += compileTunInbound(
             appState,
@@ -494,6 +484,35 @@ private fun AppState.availableTunBypassRuleSetTags(
         .distinct()
         .filter(availableTags::contains)
 
+// Local IPv6 traffic is routed into the TUN ahead of auto_redirect, so its address exclusions
+// arrive here and keep going direct, and IPv6 is refused while it is turned off.
+private fun compileTunIpv6RouteRules(
+    appState: AppState,
+    availableTags: Set<String>,
+): List<JsonObject> = buildList {
+    val bypassTags = appState.availableTunBypassRuleSetTags(availableTags)
+    if (bypassTags.isNotEmpty()) {
+        add(
+            buildJsonObject {
+                putJsonArray("inbound") { add(APP_TUN_INBOUND) }
+                put("ip_version", 6)
+                putJsonArray("rule_set") { bypassTags.forEach(::add) }
+                put("action", "route")
+                put("outbound", APP_DIRECT_OUTBOUND)
+            },
+        )
+    }
+    if (!appState.enableIpv6) {
+        add(
+            buildJsonObject {
+                putJsonArray("inbound") { add(APP_TUN_INBOUND) }
+                put("ip_version", 6)
+                put("action", SingBoxRouteRuleActionReject)
+            },
+        )
+    }
+}
+
 private fun compileLocalInbound(appState: AppState): JsonObject {
     val options = appState.toLocalProxyOptions()
     return buildJsonObject {
@@ -554,6 +573,11 @@ internal fun compileTunInbound(
         putJsonArray("address") {
             add("${options.ipv4Address.address}/${options.ipv4Address.prefixLength}")
             if (appState.enableIpv6) {
+                add("${options.ipv6Address.address}/${options.ipv6Address.prefixLength}")
+            }
+            // With IPv6 off but still up on the system, the TUN keeps an IPv6 address so its traffic
+            // is captured and rejected by the route instead of leaving through the physical network.
+            if (!appState.enableIpv6 && rootMode && !appState.enableRootIpv6Disabler) {
                 add("${options.ipv6Address.address}/${options.ipv6Address.prefixLength}")
             }
         }
@@ -718,11 +742,11 @@ internal fun compileOutbounds(root: JsonObject, appState: AppState): JsonArray {
         .filter(emittableManagedSelectorTags::contains)
         .distinct()
     val globalSelectorMembers = (
-        listOf(APP_DIRECT_OUTBOUND) +
-            managedGroupTags +
+        managedGroupTags +
             customSelectorTags +
             customUrlTestTags +
-            endpointCandidateTags
+            endpointCandidateTags +
+            APP_DIRECT_OUTBOUND
         ).distinct()
     val availableCustomMembers = (
         managedGroupTags +
@@ -929,6 +953,8 @@ internal fun compileRoute(
     availableOutboundTags: Set<String>,
     dnsEnabled: Boolean,
     defaultDomainResolver: String?,
+    tunInbound: Boolean = false,
+    availableRuleSetTags: Set<String> = emptySet(),
 ): JsonObject {
     val finalOutbound = resolveRouteFinal(appState, availableOutboundTags)
     val networkStrategy = appState.routeDefaultNetworkStrategy
@@ -955,6 +981,7 @@ internal fun compileRoute(
                 },
             )
         }
+        if (tunInbound) addAll(compileTunIpv6RouteRules(appState, availableRuleSetTags))
         add(
             buildJsonObject {
                 put("clash_mode", "Global")

@@ -6,10 +6,9 @@ package engine.singbox.runtime
 import engine.root.dns.withRootDnsMutation
 import android.content.Context
 import app.AppState
+import app.ProjectInfo
 import app.effects.RuntimeObservation
 import app.effects.SingBoxRuntimeLifecycleTarget
-import app.modes.RunModeVpnService
-import engine.proxy.ProxyEngineStartRequest
 import engine.network.DnsEventUpdate
 import engine.network.DnsEventsUnavailable
 import engine.network.ProxyIpProbeException
@@ -20,15 +19,12 @@ import engine.network.readOrCreateProxyIpProbeToken
 import engine.singbox.config.parseSingBoxJson
 import engine.singbox.singBoxControlConfig
 import engine.singbox.singBoxModeName
-import engine.vpn.VpnSingBoxConfigFactory
 import features.settings.DefaultConnectionTestUrl
 import features.settings.isValidConnectionTestUrl
 import features.logs.AndroidAppLogger
 import features.resources.runtime.singBoxResourceFilesDir
 import features.resources.runtime.singBoxResourceFilePaths
 import features.resources.runtime.skipsBundledCoreConfigCheck
-import io.nekohasekai.libbox.Libbox
-import io.nekohasekai.libbox.StatusMessage
 import java.io.File
 import java.net.URI
 import java.util.concurrent.atomic.AtomicLong
@@ -166,41 +162,53 @@ internal class SingBoxRuntimeRepository(
         }
     }
 
-    suspend fun refresh(appState: AppState): Result<Unit> = runCatching {
-        requireActiveSession(appState)
+    suspend fun refresh(appState: AppState): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            requireActiveSession(appState)
+            Unit
+        }
     }
 
-    suspend fun refreshProxies(appState: AppState): Result<Unit> = runCatching {
-        requireActiveSession(appState)
-        require(state.value.proxies.updatedAtMillis > 0L) { "sing-box proxy groups are not available" }
+    suspend fun refreshProxies(appState: AppState): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            requireActiveSession(appState)
+            require(state.value.proxies.updatedAtMillis > 0L) { "sing-box proxy groups are not available" }
+        }
     }
 
     suspend fun readRunningProxyGroups(appState: AppState): SingBoxProxiesState? =
         SingBoxCommandClient.readProxyGroups(appState.commandTarget())
 
-    suspend fun getConnections(appState: AppState): Result<SingBoxConnectionsState> = runCatching {
-        requireActiveSession(appState)
-        latestConnections
+    suspend fun getConnections(appState: AppState): Result<SingBoxConnectionsState> = withContext(Dispatchers.IO) {
+        runCatching {
+            requireActiveSession(appState)
+            latestConnections
+        }
     }
 
     suspend fun getConnectionCounts(appState: AppState): Result<ConnectionCounts> =
         getConnections(appState).map { it.connections.connectionCounts() }
 
-    suspend fun closeConnection(appState: AppState, connectionId: String): Result<Boolean> = runCatching {
-        val active = requireActiveSession(appState)
-        active.closeConnection(connectionId)
-        true
+    suspend fun closeConnection(appState: AppState, connectionId: String): Result<Boolean> = withContext(Dispatchers.IO) {
+        runCatching {
+            val active = requireActiveSession(appState)
+            active.closeConnection(connectionId)
+            true
+        }
     }
 
-    suspend fun closeAllConnections(appState: AppState): Result<Unit> = runCatching {
-        requireActiveSession(appState).closeConnections()
+    suspend fun closeAllConnections(appState: AppState): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            requireActiveSession(appState).closeConnections()
+        }
     }
 
     suspend fun patchMode(appState: AppState): Result<Unit> = runCatching {
         val active = requireActiveSession(appState)
         modeMutex.withLock {
             appContext.withRootDnsMutation(appState) {
-                active.setMode(appState.singBoxModeName())
+                desiredMode = appState.singBoxModeName()
+                active.setMode(desiredMode)
             }
         }
     }
@@ -219,28 +227,7 @@ internal class SingBoxRuntimeRepository(
 
     private suspend fun reloadConfiguration(appState: AppState) {
         if (!appState.proxyRunning) return
-        val active = requireActiveSession(appState)
-        val activeGeneration = synchronized(sessionLock) {
-            check(session === active) { "sing-box API session changed before reload" }
-            generation
-        }
-        withContext(Dispatchers.IO) {
-            if (appState.runMode == RunModeVpnService) {
-                VpnSingBoxConfigFactory.create(appContext, ProxyEngineStartRequest(appState))
-                check(updateServiceStartedAtIfCurrent(activeGeneration, active, 0L)) {
-                    "sing-box API session changed during reload"
-                }
-                try {
-                    active.reloadService()
-                } catch (error: Throwable) {
-                    refreshServiceStartedAt(activeGeneration, active)
-                    throw error
-                }
-                replaceSession(appState.commandTarget(), appState, runtimeObservation)
-            } else {
-                error("ROOT runtime configuration changes require a supervised restart")
-            }
-        }
+        error("ROOT runtime configuration changes require a supervised restart")
     }
 
     suspend fun selectProxy(
@@ -317,8 +304,8 @@ internal class SingBoxRuntimeRepository(
         }
     }
 
-    suspend fun refreshMemoryNow(appState: AppState): Long? {
-        return runCatching {
+    suspend fun refreshMemoryNow(appState: AppState): Long? = withContext(Dispatchers.IO) {
+        runCatching {
             requireActiveSession(appState)
             state.value.memory.inUseBytes.takeIf { it > 0L }
         }.getOrNull()
@@ -348,7 +335,7 @@ internal class SingBoxRuntimeRepository(
             }
             next = SingBoxCommandClient(
                 target,
-                commandListener(nextGeneration, target, appState),
+                commandListener(nextGeneration, target, appState) { next },
             )
             mutableState.update { current ->
                 current.copy(
@@ -431,13 +418,15 @@ internal class SingBoxRuntimeRepository(
         listenerGeneration: Long,
         target: SingBoxCommandTarget,
         appState: AppState,
+        client: () -> SingBoxCommandClient,
     ): SingBoxCommandListener =
         object : SingBoxCommandListener {
             override fun onConnected() {
+                val currentClient = runCatching { client() }.getOrNull()
                 updateIfCurrent(listenerGeneration) { current ->
                     current.copy(
                         running = true,
-                        version = SingBoxVersionState(Libbox.version()),
+                        version = SingBoxVersionState(currentClient?.version ?: ProjectInfo.SING_BOX_VERSION),
                         // Keep refreshing until this session supplies its proxy snapshot.
                         lastError = "",
                     )
@@ -479,7 +468,7 @@ internal class SingBoxRuntimeRepository(
                 }
             }
 
-            override fun onStatus(status: StatusMessage) {
+            override fun onStatus(status: SingBoxStatusMessage) {
                 val sample = SingBoxTrafficSample(
                     up = status.uplink,
                     down = status.downlink,
@@ -783,8 +772,7 @@ internal class SingBoxRuntimeRepository(
     }
 
     private fun AppState.commandTarget(): SingBoxCommandTarget {
-        val local = runMode == RunModeVpnService
-        return SingBoxCommandTarget(local = local, control = singBoxControlConfig())
+        return SingBoxCommandTarget(local = false, control = singBoxControlConfig())
     }
 
     private fun refreshDeviceState() {

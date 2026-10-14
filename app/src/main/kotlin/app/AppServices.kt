@@ -8,7 +8,6 @@ import android.net.Uri
 import data.backup.AppBackupUseCase
 import engine.proxy.AndroidProxyEngine
 import engine.proxy.ProxyServiceUseCase
-import engine.proxy.VpnPermissionRequester
 import engine.singbox.runtime.SingBoxRuntimeRepository
 import features.logs.CoreLogRepository
 import features.monitoring.MonitoringRepository
@@ -53,7 +52,6 @@ internal data class AppServices(
     val monitoring: MonitoringRepository,
     val connectionMonitorOverlay: ConnectionMonitorOverlay,
     val proxyServiceUseCase: ProxyServiceUseCase,
-    val requestVpnPermission: VpnPermissionRequester,
     val requestConnectionOverlayPermission: () -> Boolean,
     val switchRunModeUseCase: SwitchRunModeUseCase,
     val applyServiceControlUseCase: ApplyServiceControlUseCase,

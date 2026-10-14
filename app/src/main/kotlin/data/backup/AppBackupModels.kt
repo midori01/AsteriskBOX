@@ -81,8 +81,6 @@ internal data class AppBackupSettings(
     val localProxyListenAllInterfaces: Boolean = BackupDefaults.localProxyListenAllInterfaces,
     val localProxyUsername: String = BackupDefaults.localProxyUsername,
     val localProxyPassword: String = BackupDefaults.localProxyPassword,
-    val enableVpnAppendHttpProxy: Boolean = BackupDefaults.enableVpnAppendHttpProxy,
-    val enableVpnHevTun: Boolean = BackupDefaults.enableVpnHevTun,
     val tunMtu: String = BackupDefaults.tunMtu,
     val tunVpnDns: String = BackupDefaults.tunVpnDns,
     val tunIpv4Cidr: String = BackupDefaults.tunIpv4Cidr,
@@ -93,13 +91,11 @@ internal data class AppBackupSettings(
     val coreLogLevel: String = BackupDefaults.coreLogLevel,
     val enableTrafficStatsNotification: Boolean = BackupDefaults.enableTrafficStatsNotification,
     val enableBroadcastControl: Boolean = BackupDefaults.enableBroadcastControl,
-    val enableAutoConnect: Boolean = BackupDefaults.enableAutoConnect,
     val enableResourceAutoUpdate: Boolean = BackupDefaults.enableResourceAutoUpdate,
     val enableResourceCoreAutoUpdate: Boolean = BackupDefaults.enableResourceCoreAutoUpdate,
     val resourceAutoUpdateInterval: String = BackupDefaults.resourceAutoUpdateInterval,
+    val enableAppAutoUpdateCheck: Boolean = BackupDefaults.enableAppAutoUpdateCheck,
     val resourceFileSource: Int = BackupDefaults.resourceFileSource,
-    val customResourceFileGeositeCategoryAdsAllUrl: String =
-        BackupDefaults.customResourceFileGeositeCategoryAdsAllUrl,
     val customResourceFileGeositeGoogleUrl: String = BackupDefaults.customResourceFileGeositeGoogleUrl,
     val customResourceFileGeositeCnUrl: String = BackupDefaults.customResourceFileGeositeCnUrl,
     val customResourceFileGeoipCnUrl: String = BackupDefaults.customResourceFileGeoipCnUrl,
@@ -137,8 +133,6 @@ internal data class AppBackupSettings(
     val ebpfLocalBypassIpCidr: List<String> = BackupDefaults.ebpfLocalBypassIpCidr,
     val ebpfLocalBypassPort: List<String> = BackupDefaults.ebpfLocalBypassPort,
     val enableRootIpv6Disabler: Boolean = BackupDefaults.enableRootIpv6Disabler,
-    val socks5ProxyPort: String = BackupDefaults.socks5ProxyPort,
-    val bpf2SocksBridgePort: String = BackupDefaults.bpf2SocksBridgePort,
     val externalInterfaces: List<String> = BackupDefaults.externalInterfaces,
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     @SerialName("ebpfSharedNetworkInterfaces")

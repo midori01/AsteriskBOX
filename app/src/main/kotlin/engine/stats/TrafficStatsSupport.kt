@@ -9,7 +9,6 @@ import android.os.Handler
 import android.os.Looper
 import android.os.ResultReceiver
 import app.AppState
-import app.modes.RunModeVpnService
 import engine.singbox.SingBoxControlConfig
 import engine.singbox.singBoxControlConfig
 import kotlinx.coroutines.CoroutineDispatcher
@@ -152,7 +151,7 @@ internal fun AppState.toSingBoxTrafficStatsRuntime(
     if (!enableTrafficStatsNotification) return null
     return SingBoxTrafficStatsRuntime(
         control = singBoxControlConfig(),
-        local = runMode == RunModeVpnService,
+        local = false,
     )
 }
 

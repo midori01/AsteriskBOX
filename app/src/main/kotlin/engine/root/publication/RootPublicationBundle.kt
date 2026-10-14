@@ -8,6 +8,7 @@ internal data class RootPublicationBundle(
     val bootEnabled: Boolean,
     val launchMode: RootPublicationLaunchMode = RootPublicationLaunchMode.Service,
     val restartExpectedOwner: String? = null,
+    val bootRules: List<String> = emptyList(),
 ) {
     init {
         require(restartExpectedOwner == null || restartExpectedOwner in RootPublicationOwners)
