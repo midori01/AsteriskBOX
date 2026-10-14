@@ -70,8 +70,6 @@ private fun AppState.toRootStartConfig(
             coreExecutablePath = resourceFilePaths.singBoxCorePath,
             coreConfigPath = File(dataDirectory, "config.json").absolutePath,
             matcherExecutablePath = resourceFilePaths.bpfMatcherPath,
-            bpf2SocksExecutablePath = resourceFilePaths.bpf2socksPath,
-            hevSocks5TunnelExecutablePath = resourceFilePaths.hevSocks5TunnelPath,
             workingDirectory = resourceFilePaths.dataDir,
             statePath = File(dataDirectory, "asteriskd.state").absolutePath,
             logPath = File(File(dataDirectory, "logs"), "asteriskd.log").absolutePath,
@@ -88,14 +86,6 @@ private fun AppState.toRootStartConfig(
         serviceControl = serviceControl,
         runtimeEventReceiver = runtimeEventReceiver,
     )
-}
-
-internal fun AppState.tun2SocksInternalProxyPortValue(): Int {
-    return socks5ProxyPort.toPortOrNull() ?: DefaultRootTun2SocksProxyPort
-}
-
-internal fun AppState.bpf2SocksBridgePortValue(): Int {
-    return bpf2SocksBridgePort.toPortOrNull() ?: RootBpf2SocksDefaultBridgePort
 }
 
 private fun AppState.rootFakeIpIpv4Pool(): String = dnsFakeIpRange.normalizedFakeIpIpv4Pool()

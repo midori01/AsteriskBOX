@@ -53,15 +53,7 @@ private class BroadcastControlHandler(
     private val appContext = context.applicationContext
     private val stateStore by lazy { AndroidAppStateStore.get(appContext) }
     private val proxyEngine by lazy { (appContext as AsteriskApplication).proxyEngine }
-    private val proxyServiceUseCase by lazy {
-        ProxyServiceUseCase(
-            proxyEngine = proxyEngine,
-            requestVpnPermission = {
-                AndroidAppLogger.warn(LogTag, "Broadcast control cannot request VPN permission in the background")
-                false
-            },
-        )
-    }
+    private val proxyServiceUseCase by lazy { ProxyServiceUseCase(proxyEngine) }
 
     suspend fun handle(command: BroadcastControlCommand) {
         val configuredState = stateStore.state.value

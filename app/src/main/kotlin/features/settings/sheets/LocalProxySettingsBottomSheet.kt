@@ -20,33 +20,23 @@ import ui.icons.AsteriskIcons as Icons
 internal fun LocalProxySettingsBottomSheet(
     show: Boolean,
     saving: Boolean,
-    showBpf2SocksBridgePort: Boolean,
     showInboundProxyPort: Boolean,
-    useTun2SocksProxyPort: Boolean,
-    useBpf2SocksProxyPort: Boolean,
     lockInboundProxyPort: Boolean,
     inboundProxyPort: String,
-    bpf2SocksBridgePort: String,
     port: String,
     enableDynamicPort: Boolean,
     listenAllInterfaces: Boolean,
     username: String,
     password: String,
     onInboundProxyPortChange: (String) -> Unit,
-    onBpf2SocksBridgePortChange: (String) -> Unit,
     onPortChange: (String) -> Unit,
     onEnableDynamicPortChange: (Boolean) -> Unit,
     onListenAllInterfacesChange: (Boolean) -> Unit,
     onUsernameChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onDismissRequest: () -> Unit,
-    onSave: (String, String, String, Boolean, Boolean, String, String) -> Unit,
+    onSave: (String, String, Boolean, Boolean, String, String) -> Unit,
 ) {
-    val bridgePortError = if (showBpf2SocksBridgePort && !lockInboundProxyPort && !isPort(bpf2SocksBridgePort)) {
-        stringResource(R.string.settings_local_proxy_port_invalid)
-    } else {
-        null
-    }
     val inboundProxyPortError = if (showInboundProxyPort && !lockInboundProxyPort && !isPort(inboundProxyPort)) {
         stringResource(R.string.settings_local_proxy_port_invalid)
     } else {
@@ -67,13 +57,11 @@ internal fun LocalProxySettingsBottomSheet(
             AsteriskSaveButton(
                 enabled = !saving &&
                     portError == null &&
-                    inboundProxyPortError == null &&
-                    bridgePortError == null,
+                    inboundProxyPortError == null,
                 onClick = {
-                    if (portError == null && inboundProxyPortError == null && bridgePortError == null) {
+                    if (portError == null && inboundProxyPortError == null) {
                         onSave(
                             inboundProxyPort.trim(),
-                            bpf2SocksBridgePort.trim(),
                             port.trim(),
                             enableDynamicPort,
                             listenAllInterfaces,
@@ -88,32 +76,14 @@ internal fun LocalProxySettingsBottomSheet(
     ) {
         key(
             show,
-            showBpf2SocksBridgePort,
             showInboundProxyPort,
-            useTun2SocksProxyPort,
-            useBpf2SocksProxyPort,
         ) {
             SettingsSheetContent {
-                if (showBpf2SocksBridgePort) {
-                    InboundProxyPortTextField(
-                        value = bpf2SocksBridgePort,
-                        onValueChange = onBpf2SocksBridgePortChange,
-                        label = stringResource(R.string.settings_bpf2socks_bridge_port),
-                        errorText = bridgePortError,
-                        enabled = !lockInboundProxyPort,
-                    )
-                }
                 if (showInboundProxyPort) {
                     InboundProxyPortTextField(
                         value = inboundProxyPort,
                         onValueChange = onInboundProxyPortChange,
-                        label = stringResource(
-                            when {
-                                useBpf2SocksProxyPort -> R.string.settings_bpf2socks_socks5_port
-                                useTun2SocksProxyPort -> R.string.settings_tun2socks_socks5_port
-                                else -> R.string.settings_transparent_proxy_port
-                            },
-                        ),
+                        label = stringResource(R.string.settings_transparent_proxy_port),
                         errorText = inboundProxyPortError,
                         enabled = !lockInboundProxyPort,
                     )

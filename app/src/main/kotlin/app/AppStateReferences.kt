@@ -7,12 +7,9 @@ import engine.singbox.config.DnsConfigurationMatchFields
 import engine.singbox.config.DnsConfigurationServerTypes
 import engine.singbox.config.mapDnsConfigurationTags
 
-import app.modes.RunModeBpf2Socks
 import app.modes.RunModeEbpf
 import app.modes.RunModeTproxy
 import app.modes.RunModeTun
-import app.modes.RunModeTun2Socks
-import app.modes.RunModeVpnService
 import engine.network.isIpAddress
 import engine.singbox.config.SingBoxJson
 import engine.singbox.config.inheritedGroupDetour
@@ -421,9 +418,8 @@ internal fun selectableDnsEndpoints(
 internal fun managedInboundTags(state: AppState): List<String> = buildList {
     add(APP_LOCAL_INBOUND)
     when (state.runMode) {
-        RunModeVpnService -> if (!state.enableVpnHevTun) add(APP_TUN_INBOUND)
         RunModeTun -> add(APP_TUN_INBOUND)
-        RunModeTproxy, RunModeTun2Socks, RunModeBpf2Socks, RunModeEbpf -> add(APP_ROOT_INBOUND)
+        else -> add(APP_ROOT_INBOUND)
     }
 }
 

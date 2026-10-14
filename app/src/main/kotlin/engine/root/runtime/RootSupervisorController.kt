@@ -17,6 +17,9 @@ import engine.root.daemon.control.AsteriskdControlResponse
 import engine.root.daemon.control.AsteriskdResultCode
 import engine.root.daemon.control.AsteriskdSnapshot
 import engine.root.daemon.control.AsteriskdPhase
+import engine.root.mode.ipv6LeakGuard
+import engine.root.mode.ipv6LeakGuardCommands
+import engine.root.mode.tunVpnYieldCommands
 import engine.root.publication.RootBootConfigWriter
 import engine.root.publication.RootBootPublicationCommand
 import engine.root.publication.RootPublicationBundle
@@ -168,6 +171,7 @@ internal class RootSupervisorController(
                 bootEnabled = root.enableBoot,
                 launchMode = launchMode,
                 restartExpectedOwner = restartExpectedOwner?.wireValue,
+                bootRules = root.bootRules(config),
             )
             clearInMemoryServiceLogs()
             stage = "root_prepare"
@@ -291,7 +295,7 @@ internal class RootSupervisorController(
             pluginOptionsBytes = root.pluginOptionsBytes,
         )
         val result = shell.exec(
-            RootBootPublicationCommand.buildInstallation(runtimeLayout),
+            RootBootPublicationCommand.buildInstallation(runtimeLayout, rules = root.bootRules(config)),
             ShellExecOptions(logFailure = false),
         )
         requirePublicationSuccess(result)
@@ -368,3 +372,7 @@ internal fun sanitizeLauncherStderr(stderr: String): String {
 
 // Must exceed asteriskd's core readiness timeout plus the rule and helper stages around it.
 private const val StartTimeoutMilliseconds = 30_000L
+
+private fun RootStartConfig.bootRules(config: AsteriskdConfig): List<String> =
+    (if (config.mode == AsteriskdMode.Tun) tunVpnYieldCommands(enabled = true) else emptyList()) +
+        ipv6LeakGuardCommands(ipv6LeakGuard(singBoxConfigBytes, config))

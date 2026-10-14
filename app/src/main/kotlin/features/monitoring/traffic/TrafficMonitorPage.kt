@@ -61,31 +61,13 @@ internal fun TrafficMonitorPage(padding: PaddingValues) {
             verticalArrangement = Arrangement.spacedBy(14.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            item("today") {
-                MonitoringSectionCard(stringResource(R.string.monitor_traffic_today), TrafficContentModifier) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            traffic.today.total.toReadableBytes(),
-                            style = MaterialTheme.typography.displaySmall,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        MonitoringValueRow(
-                            stringResource(R.string.monitor_connections_download),
-                            traffic.today.download.toReadableBytes(),
-                        )
-                        MonitoringValueRow(
-                            stringResource(R.string.monitor_connections_upload),
-                            traffic.today.upload.toReadableBytes(),
-                        )
-                    }
-                }
-            }
             item("session") {
                 MonitoringSectionCard(stringResource(R.string.monitor_traffic_session), TrafficContentModifier) {
-                    Column {
-                        MonitoringValueRow(
-                            stringResource(R.string.monitor_traffic_session_total),
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
                             combinedBytes(traffic.sessionDownloadBytes, traffic.sessionUploadBytes),
+                            style = MaterialTheme.typography.displaySmall,
+                            fontWeight = FontWeight.SemiBold,
                         )
                         MonitoringValueRow(
                             stringResource(R.string.monitor_connections_download),
@@ -98,6 +80,24 @@ internal fun TrafficMonitorPage(padding: PaddingValues) {
                         MonitoringValueRow(
                             stringResource(R.string.monitor_traffic_runtime),
                             monitoring.resource.uptimeMillis?.let { DateUtils.formatElapsedTime(it / 1_000L) } ?: "—",
+                        )
+                    }
+                }
+            }
+            item("today") {
+                MonitoringSectionCard(stringResource(R.string.monitor_traffic_today), TrafficContentModifier) {
+                    Column {
+                        MonitoringValueRow(
+                            stringResource(R.string.monitor_traffic_total),
+                            traffic.today.total.toReadableBytes(),
+                        )
+                        MonitoringValueRow(
+                            stringResource(R.string.monitor_connections_download),
+                            traffic.today.download.toReadableBytes(),
+                        )
+                        MonitoringValueRow(
+                            stringResource(R.string.monitor_connections_upload),
+                            traffic.today.upload.toReadableBytes(),
                         )
                     }
                 }

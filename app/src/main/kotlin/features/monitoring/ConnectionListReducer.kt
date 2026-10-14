@@ -118,6 +118,8 @@ private fun SingBoxConnection.searchableText(): String {
         append(' ')
         append(processPath)
         append(' ')
+        append(inboundType)
+        append(' ')
         append(outbound)
         append(' ')
         append(outboundType)

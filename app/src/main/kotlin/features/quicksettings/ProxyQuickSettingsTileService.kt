@@ -7,7 +7,6 @@ import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.net.VpnService
 import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
@@ -17,14 +16,12 @@ import app.AppState
 import app.AsteriskApplication
 import app.MainActivity
 import app.R
-import app.modes.RunModeVpnService
 import app.modes.SingBoxModeDirect
 import data.AndroidAppStateStore
 import engine.proxy.ProxyServiceResult
 import engine.proxy.ProxyServiceUseCase
 import engine.singbox.config.APP_DIRECT_OUTBOUND
 import engine.singbox.config.APP_GLOBAL_SELECTOR
-import engine.vpn.VpnSession
 import features.logs.AndroidAppLogger
 import features.logs.FailureLogContext
 import features.logs.reportFailure
@@ -39,7 +36,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import ui.feedback.rootOperationTipMessageOrNull
 import java.lang.ref.WeakReference
 import java.util.concurrent.atomic.AtomicBoolean
@@ -71,12 +67,6 @@ class ProxyQuickSettingsTileService : TileService() {
         }
         listeningJob?.cancel()
         listeningJob = serviceScope.launch {
-            // A surviving VPN may end before the app has ever shown it as running.
-            launch {
-                VpnSession.ended.collect {
-                    if (stateStore.state.value.runMode == RunModeVpnService) refreshTile()
-                }
-            }
             val runtime = singBoxRuntime.state.distinctUntilChanged { old, new ->
                 old.running == new.running && old.proxies === new.proxies
             }
@@ -111,21 +101,15 @@ class ProxyQuickSettingsTileService : TileService() {
         refreshJob?.cancel()
         subtitleJob?.cancel()
 
-        if (runMode != RunModeVpnService) {
+        try {
+            showProcessing()
+            RootQuickSettingsOperationService.start(this, runMode, shouldRun)
+        } catch (error: Exception) {
             try {
-                RootQuickSettingsOperationService.start(this, runMode, shouldRun)
-            } catch (error: Exception) {
-                try {
-                    reportToggleFailure(this, error)
-                } finally {
-                    finishToggle()
-                }
+                reportToggleFailure(this, error)
+            } finally {
+                finishToggle()
             }
-            return
-        }
-
-        operationScope.launch {
-            runToggle(this@ProxyQuickSettingsTileService, runMode, shouldRun, ::launchActivityAndCollapse)
         }
     }
 
@@ -141,9 +125,10 @@ class ProxyQuickSettingsTileService : TileService() {
         }
     }
 
-    private fun refreshTile(): Job {
-        refreshJob?.cancel()
-        return serviceScope.launch { refreshTileState() }.also { refreshJob = it }
+    private fun refreshTile(): Job? {
+        val service = activeService?.get() ?: return null
+        service.refreshJob?.cancel()
+        return service.serviceScope.launch { service.refreshTileState() }.also { service.refreshJob = it }
     }
 
     private suspend fun refreshTileState() {
@@ -188,11 +173,7 @@ class ProxyQuickSettingsTileService : TileService() {
     private suspend fun readProxyRunningState(): Boolean? {
         val runMode = stateStore.state.value.runMode
         return try {
-            if (runMode == RunModeVpnService) {
-                withContext(Dispatchers.IO) { VpnSession.readRunning(applicationContext) }
-            } else {
-                proxyEngine.readRootStatus(runMode).running
-            }
+            proxyEngine.readRootStatus(runMode).running
         } catch (error: CancellationException) {
             throw error
         } catch (error: Exception) {
@@ -281,7 +262,7 @@ class ProxyQuickSettingsTileService : TileService() {
                 if (state.runMode != runMode) return
 
                 activeService?.get()?.showProcessing()
-                finalRunning = context.setProxyRunning(stateStore, state, shouldRun, openVpnPermission)
+                finalRunning = context.setProxyRunning(stateStore, state, shouldRun)
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 reportToggleFailure(context, error)
@@ -306,23 +287,9 @@ class ProxyQuickSettingsTileService : TileService() {
             stateStore: AndroidAppStateStore,
             state: AppState,
             shouldRun: Boolean,
-            openVpnPermission: (Intent) -> Unit,
         ): Boolean? {
-            if (shouldRun && state.runMode == RunModeVpnService) {
-                VpnService.prepare(this)?.let { intent ->
-                    showToast(getString(R.string.quick_settings_tile_vpn_permission_required))
-                    openVpnPermission(intent)
-                    stateStore.update { currentState -> currentState.copy(proxyRunning = false) }
-                    return null
-                }
-            }
-
             val proxyServiceUseCase = ProxyServiceUseCase(
                 proxyEngine = (applicationContext as AsteriskApplication).proxyEngine,
-                requestVpnPermission = { intent ->
-                    openVpnPermission(intent)
-                    false
-                },
             )
             val result = if (shouldRun) {
                 proxyServiceUseCase.start(state)

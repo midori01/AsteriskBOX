@@ -39,14 +39,11 @@ class ResourceFileUseCase(
         return repository.status(customResourceFiles)
     }
 
-    suspend fun hasCustomSingBoxCore(): Boolean = repository.hasCustomSingBoxCore()
-
     internal suspend fun readCidrText(kind: ResourceFileKind): String =
         repository.readCidrText(kind)
 
     internal suspend fun saveCidrText(kind: ResourceFileKind, original: String, content: String) =
         repository.saveCidrText(kind, original, content)
-
     suspend fun restoreBundledDefaults(resourceFileSource: Int): ResourceFilesStatus {
         return repository.restoreBundledDefaults(resourceFileSource)
     }
@@ -99,11 +96,6 @@ class ResourceFileUseCase(
         val uri = resourceFilePicker() ?: return null
         return repository.replace(kind, uri, customResourceFiles)
     }
-
-    internal suspend fun replaceSingBoxCore(
-        uri: Uri,
-        customResourceFiles: List<CustomResourceFileState>,
-    ): ResourceFilesStatus = repository.replace(ResourceFileKind.SingBoxCore, uri, customResourceFiles)
 
     suspend fun replaceCustom(
         customFile: CustomResourceFileState,

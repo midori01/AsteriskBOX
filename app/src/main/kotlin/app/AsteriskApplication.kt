@@ -13,8 +13,6 @@ import android.app.Application
 import features.home.HomeServiceOperationState
 import app.effects.AppActivityForegroundTracker
 import app.effects.SingBoxRuntimeLifecycleCoordinator
-import app.modes.RunModeVpnService
-import features.boot.BootAutoConnect
 import data.AndroidAppStateStore
 import data.AppSettingsPreferences
 import engine.singbox.config.validateSingBoxRuntimeConfiguration
@@ -51,12 +49,6 @@ import kotlinx.coroutines.withContext
 import system.AndroidAppIconFetcher
 import engine.singbox.runtime.SingBoxRuntimeRepository
 import engine.proxy.AndroidProxyEngine
-import system.AndroidRootShellGateway
-import engine.vpn.AndroidLibboxRuntime
-import engine.proxy.LocalProxyRuntime
-import engine.vpn.AsteriskVpnService
-import engine.vpn.VpnSession
-import app.effects.synchronizeProxyStatus
 import app.effects.RunningConfigurationApplier
 import androidx.compose.runtime.snapshotFlow
 import engine.proxy.ProxyServiceResult
@@ -68,9 +60,12 @@ import kotlinx.coroutines.flow.first
 import ui.feedback.AndroidToastTipNotifier
 import engine.proxy.VpnTetheringRelayManager
 import engine.root.runtime.RootSupervisorController
+import engine.root.runtime.applyTunVpnYield
+import app.modes.RunModeTun
 import engine.stats.SingBoxTrafficStatsNotificationService
 import engine.stats.SingBoxTrafficStatsRuntime
 import engine.stats.toSingBoxTrafficStatsRuntime
+import system.AndroidRootShellGateway
 
 class AsteriskApplication : Application(), SingletonImageLoader.Factory {
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -310,47 +305,27 @@ class AsteriskApplication : Application(), SingletonImageLoader.Factory {
         }
     }
 
-    /**
-     * Brings the app state in line when a tunnel ends in the service process, whether it was
-     * stopped, revoked or its process died. The session watch reports the end, so this costs
-     * nothing while the tunnel runs; a tunnel that is up when this process starts is watched
-     * from here as well.
-     */
-    private fun synchronizeOnVpnSessionEnd() {
-        appScope.launch {
-            VpnSession.ended.collect {
-                // Only the VPN mode is resynchronized: other modes are probed through ROOT.
-                if (stateStore.state.value.runMode != RunModeVpnService) return@collect
-                synchronizeProxyStatus(
-                    currentState = { stateStore.state.value },
-                    readStatus = { snapshot ->
-                        runCatching {
-                            proxyEngine.status(snapshot.runMode, snapshot)
-                        }.getOrNull()
-                    },
-                    updateAppState = stateStore::update,
-                )
-            }
-        }
-        appScope.launch(Dispatchers.IO) { VpnSession.watch(applicationContext) }
-    }
-
     override fun onCreate() {
         super.onCreate()
-        // The `:service` process only executes: the VPN Service with its core and the traffic
-        // statistics service. The state store, the schedulers, WorkManager and the core log
-        // repositories belong to this app process; `:service` only appends its own app log.
-        if (AsteriskVpnService.isServiceProcess(this)) {
-            // libbox is set up on demand there: a ROOT traffic statistics service never needs it.
+        // The `:service` process only executes the traffic statistics service. The state store,
+        // the schedulers, WorkManager and the core log repositories belong to this app process;
+        // `:service` only appends its own app log.
+        if (SingBoxTrafficStatsNotificationService.isServiceProcess(this)) {
             AndroidLogcatRepository.initializeServiceProcess(this)
             return
         }
-        // HTTP fetches here go through the tunnel's local proxy, which the service publishes.
-        LocalProxyRuntime.attachExternalSource { VpnSession.runningLocalProxyOptions(applicationContext) }
-        synchronizeOnVpnSessionEnd()
         appScope.launch {
             resourceFileUpdateCoordinator.results.collect { result ->
                 if (result is ResourceFileUpdateResult.Success) runningConfigurationApplier.request()
+            }
+        }
+        // Boot scripts, tiles and broadcasts can start the proxy without the UI ever composing
+        // ResourceFileSynchronizer, so make sure the bundled core is extracted at process start too.
+        appScope.launch {
+            runCatching {
+                resourceFileUseCase.restoreBundledDefaults(stateStore.state.value.resourceFileSource)
+            }.onFailure { error ->
+                AndroidAppLogger.warn("AsteriskApplication", "Failed to restore bundled resources", error)
             }
         }
         appScope.launch {
@@ -360,22 +335,11 @@ class AsteriskApplication : Application(), SingletonImageLoader.Factory {
                 .distinctUntilChanged()
                 .collect(scheduler::reconcile)
         }
-        AndroidLibboxRuntime.setup(this)
         AndroidLogcatRepository.initialize(applicationContext)
         AndroidCoreLogRepository.initialize(applicationContext)
         AndroidAsteriskdLogRepository.initialize(applicationContext)
         foregroundTracker = AppActivityForegroundTracker(singBoxRuntimeLifecycle)
         registerActivityLifecycleCallbacks(foregroundTracker)
-        appScope.launch {
-            stateStore.state
-                .map { state ->
-                    state.enableAutoConnect && state.runMode == RunModeVpnService
-                }
-                .distinctUntilChanged()
-                .collect { enabled ->
-                    BootAutoConnect.setComponentEnabled(applicationContext, enabled)
-                }
-        }
         appScope.launch {
             stateStore.state
                 .map { state ->
@@ -403,6 +367,8 @@ class AsteriskApplication : Application(), SingletonImageLoader.Factory {
                 }
             }
             var activeTrafficRuntime: SingBoxTrafficStatsRuntime? = null
+            val tunVpnYieldShell = AndroidRootShellGateway()
+            var tunVpnYield: Boolean? = null
             stateStore.state.collect { state ->
                 val runtime = if (state.proxyRunning) {
                     state.toSingBoxTrafficStatsRuntime()
@@ -418,6 +384,12 @@ class AsteriskApplication : Application(), SingletonImageLoader.Factory {
                     vpnTetheringRelayManager.start(state)
                 } else {
                     vpnTetheringRelayManager.stop()
+                }
+
+                val yieldToVpn = state.proxyRunning && state.runMode == RunModeTun
+                if (yieldToVpn != tunVpnYield) {
+                    tunVpnYield = yieldToVpn
+                    tunVpnYieldShell.applyTunVpnYield(yieldToVpn)
                 }
             }
         }
