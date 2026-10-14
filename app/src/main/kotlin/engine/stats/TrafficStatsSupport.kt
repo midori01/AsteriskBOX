@@ -10,7 +10,6 @@ import android.content.IntentFilter
 import android.os.PowerManager
 import androidx.core.content.ContextCompat
 import app.AppState
-import app.modes.RunModeVpnService
 import engine.singbox.SingBoxControlConfig
 import engine.singbox.singBoxControlConfig
 import java.util.concurrent.CancellationException
@@ -195,7 +194,7 @@ internal fun AppState.toSingBoxTrafficStatsRuntime(
     if (!enableTrafficStatsNotification) return null
     return SingBoxTrafficStatsRuntime(
         control = singBoxControlConfig(),
-        local = runMode == RunModeVpnService,
+        local = false,
     )
 }
 

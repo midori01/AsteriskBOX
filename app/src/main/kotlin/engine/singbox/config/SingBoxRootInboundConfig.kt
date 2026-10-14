@@ -12,8 +12,6 @@ import app.modes.ProxyAppListModeWhitelist
 import engine.root.config.resolveRootProxyApplicationUids
 import utils.toTrimmedNonEmptyDistinctList
 
-internal const val SingBoxTunDevice = "asterisk0"
-
 internal data class RootInboundUidPolicy(
     val includeUids: List<Int> = emptyList(),
     val excludeUids: List<Int> = emptyList(),

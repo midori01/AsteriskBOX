@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
 import com.journeyapps.barcodescanner.ScanContract
 import data.AppSettingsPreferences
-import engine.vpn.AndroidVpnPermissionRequester
 import features.logs.AndroidLogFileCreator
 import features.resources.runtime.AndroidResourceFilePicker
 import features.settings.locale.localizedAppContext
@@ -31,7 +30,6 @@ import features.importing.ImportOperation
 import features.importing.ImportSource
 import features.importing.ImportStage
 import features.importing.reportImportFailure
-import features.boot.BootAutoConnect
 import features.subscription.parseSubscriptionDeepLink
 import features.subscription.usecase.OutboundSubscriptionUpdateResult
 import kotlinx.coroutines.CancellationException
@@ -42,12 +40,6 @@ import system.setRecentTasksHidden
 import ui.feedback.AndroidToastTipNotifier
 
 class MainActivity : ComponentActivity() {
-    private var pendingAutoConnect = false
-
-    private val vpnPermissionRequester = AndroidVpnPermissionRequester {
-        appString(R.string.error_vpn_permission_launcher_missing)
-    }
-
     private val qrCodeScanRequester = AndroidQrCodeScanRequester(
         hasCameraPermission = {
             checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
@@ -84,12 +76,6 @@ class MainActivity : ComponentActivity() {
     private val startupPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) {}
-
-    private val vpnPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult(),
-    ) { result ->
-        vpnPermissionRequester.complete(result.resultCode == RESULT_OK)
-    }
 
     private val qrCodePermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -142,9 +128,6 @@ class MainActivity : ComponentActivity() {
         observeRecentTasksVisibility()
         observeScreenshotProtection()
         observeLauncherIconVisibility()
-        vpnPermissionRequester.registerLauncher { intent ->
-            vpnPermissionLauncher.launch(intent)
-        }
         qrCodeScanRequester.registerPermissionLauncher { permission ->
             qrCodePermissionLauncher.launch(permission)
         }
@@ -165,39 +148,7 @@ class MainActivity : ComponentActivity() {
         }
         showAppContent()
         requestStartupPermissions()
-        if (savedInstanceState == null) {
-            readAutoConnectRequest(intent)
-            handleExternalIntent(intent)
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        if (!pendingAutoConnect) return
-        pendingAutoConnect = false
-        lifecycleScope.launch {
-            val notifier = AndroidToastTipNotifier(application)
-            BootAutoConnect.connect(applicationContext, vpnPermissionRequester::request)
-                .onSuccess { running ->
-                    if (running) notifier.show(appString(R.string.proxy_service_started))
-                }
-                .onFailure { error ->
-                    notifier.showError(error, appString(R.string.sing_box_dashboard_start_failed))
-                }
-        }
-    }
-
-    /**
-     * The auto connect notification lands here when the VPN consent is missing: the activity is
-     * the only place that may show the system consent dialog, so the request is completed after
-     * the user answers it. A launch from recents or a restored activity replays the original
-     * intent, so only a fresh delivery counts as a request.
-     */
-    private fun readAutoConnectRequest(intent: Intent?) {
-        if (intent?.action != BootAutoConnect.ActionConnectAfterConsent) return
-        if (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0) return
-        intent.action = null
-        pendingAutoConnect = true
+        if (savedInstanceState == null) handleExternalIntent(intent)
     }
 
     private fun observeRecentTasksVisibility() {
@@ -218,7 +169,6 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleExternalIntent(intent)
-        readAutoConnectRequest(intent)
     }
 
     private fun handleExternalIntent(intent: Intent?) {
@@ -282,8 +232,6 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        vpnPermissionRequester.complete(false)
-        vpnPermissionRequester.registerLauncher(null)
         qrCodeScanRequester.completeCameraPermission(false)
         qrCodeScanRequester.completeScan(null)
         qrCodeScanRequester.registerPermissionLauncher(null)
@@ -324,11 +272,9 @@ class MainActivity : ComponentActivity() {
                 backupFileCreator = backupFileCreator::create,
                 logFileCreator = logFileCreator::create,
                 outboundShareFileCreator = outboundShareFileCreator::create,
-                requestVpnPermission = vpnPermissionRequester::request,
             )
         }
     }
-
 }
 
 private val BackupFileMimeTypes = arrayOf(

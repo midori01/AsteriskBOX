@@ -64,8 +64,11 @@ abstract class BuildAsteriskdTask : DefaultTask() {
             execOperations.exec {
                 commandLine(
                     findNdkClang(ndkDir, target).absolutePath,
-                    "-O2",
+                    "-Oz",
                     "-flto=full",
+                    "-ffunction-sections",
+                    "-fdata-sections",
+                    "-fvisibility=hidden",
                     "-Wall",
                     "-Wextra",
                     "-std=c17",
@@ -74,6 +77,8 @@ abstract class BuildAsteriskdTask : DefaultTask() {
                     "-I${sourceDir.absolutePath}",
                     "-ldl",
                     "-lz",
+                    "-Wl,--gc-sections",
+                    "-Wl,--strip-all",
                     *sources.map(File::getAbsolutePath).toTypedArray(),
                     "-o",
                     output.absolutePath,

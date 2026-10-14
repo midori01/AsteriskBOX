@@ -11,7 +11,6 @@ import app.AppState
 import app.modes.isRootRunMode
 import engine.root.runtime.RootSupervisorController
 import engine.root.runtime.runningCorePid
-import engine.vpn.AsteriskVpnService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import system.AndroidRootShellGateway
@@ -31,7 +30,7 @@ internal data class ProcessStatsReading(
 )
 
 internal class AndroidProcessStatsSource(
-    private val context: Context,
+    context: Context,
     private val rootAccess: AndroidRootShellGateway,
 ) {
     private val rootSupervisor = RootSupervisorController(context, rootAccess)
@@ -41,30 +40,7 @@ internal class AndroidProcessStatsSource(
         if (appState.runMode.isRootRunMode()) readRootProcess() else readVpnProcess()
     }
 
-    private suspend fun readVpnProcess(): ProcessStatsReading? {
-        val stats = AsteriskVpnService.queryProcessStats(context) ?: return null
-        val snapshot = buildAppProcessTickSnapshot(
-            pid = stats.pid,
-            processCpuMillis = stats.cpuTimeMillis,
-            elapsedRealtimeMillis = stats.elapsedRealtimeMillis,
-            processorCount = Runtime.getRuntime().availableProcessors().coerceAtLeast(1),
-            processStartElapsedRealtimeMillis = stats.startElapsedRealtimeMillis,
-        ) ?: return null
-        val memoryBytes = stats.procStatm?.let { procStatm ->
-            runCatching {
-                parseProcessResidentMemoryBytes(
-                    procStatm = procStatm,
-                    pageSizeBytes = Os.sysconf(OsConstants._SC_PAGESIZE),
-                )
-            }.getOrNull()
-        }
-        return ProcessStatsReading(
-            snapshot = snapshot,
-            source = ProcessStatsSourceKind.VpnProcess,
-            uptimeMillis = (stats.elapsedRealtimeMillis - stats.startElapsedRealtimeMillis).coerceAtLeast(0L),
-            memoryBytes = memoryBytes,
-        )
-    }
+    private suspend fun readVpnProcess(): ProcessStatsReading? = null
 
     private suspend fun readRootProcess(): ProcessStatsReading? {
         val pid = runCatching { rootSupervisor.runningCorePid() }.getOrNull() ?: return null

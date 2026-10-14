@@ -31,9 +31,9 @@ internal fun buildAboutIdentityState(
     projectName: String,
     versionName: String,
     versionCode: Int,
-    androidLibBoxLiteVersion: String,
+    singBoxVersion: String,
 ): AboutIdentityState = AboutIdentityState(
     projectName = projectName,
     versionLabel = "v$versionName ($versionCode)",
-    runtimeSummary = "AndroidLibBoxLite $androidLibBoxLiteVersion",
+    runtimeSummary = "sing-box $singBoxVersion",
 )

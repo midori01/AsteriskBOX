@@ -40,7 +40,7 @@ internal fun RootStartConfig.buildAsteriskdConfig(
     val useDirectCidrs =
         mode != AsteriskdMode.Ebpf &&
         iptablesConfig.enableEbpfDirectCidrBypass &&
-        (matcher != null || mode == AsteriskdMode.Bpf2Socks)
+        matcher != null
     return AsteriskdConfig(
         owner = AsteriskdOwner.AsteriskBox,
         coreType = AsteriskdCoreType.SingBox,
@@ -55,7 +55,7 @@ internal fun RootStartConfig.buildAsteriskdConfig(
             readinessTimeoutMilliseconds = 15000,
             ageSecretKey = null,
         ),
-        network = if (mode == AsteriskdMode.Tun || mode == AsteriskdMode.Ebpf) {
+        network = if (mode == AsteriskdMode.Ebpf) {
             AsteriskdNetworkConfig(
                 enableIpv6 = enableIpv6,
                 disableSystemIpv6 = disableSystemIpv6,
@@ -64,12 +64,7 @@ internal fun RootStartConfig.buildAsteriskdConfig(
                 fakeDnsIpv4Pool = null,
                 ignoredInterfaces = emptyList(),
                 virtualInterfaces = emptyList(),
-                // Shared interfaces are used only for Android offload preparation.
-                hotspotInterfaces = if (mode == AsteriskdMode.Tun) {
-                    iptablesConfig.externalInterfacePrefixes.distinct()
-                } else {
-                    emptyList()
-                },
+                hotspotInterfaces = emptyList(),
                 proxyPrivateCidrs = emptyList(),
                 bypassPrivateCidrs = emptyList(),
                 appPolicy = AsteriskdAppPolicy(

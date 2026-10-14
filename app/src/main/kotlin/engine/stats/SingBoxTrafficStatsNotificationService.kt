@@ -3,6 +3,7 @@
 
 package engine.stats
 
+import android.app.Application
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -22,9 +23,9 @@ import engine.singbox.runtime.SingBoxCommandTarget
 import engine.singbox.runtime.SingBoxConnectionsState
 import engine.singbox.runtime.SingBoxProxiesState
 import engine.singbox.runtime.SingBoxTrafficSample
-import engine.vpn.AndroidLibboxRuntime
+import engine.singbox.runtime.SingBoxStatusMessage
 import features.logs.AndroidAppLogger
-import io.nekohasekai.libbox.StatusMessage
+import java.io.File
 import java.math.BigInteger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -191,8 +192,6 @@ class SingBoxTrafficStatsNotificationService : Service() {
     }
 
     private fun commandTraffic(runtime: SingBoxTrafficStatsRuntime): Flow<SingBoxTrafficSample> = callbackFlow {
-        // The local command socket needs libbox, which the `:service` process sets up on demand.
-        if (runtime.local) AndroidLibboxRuntime.setup(this@SingBoxTrafficStatsNotificationService)
         val client = SingBoxCommandClient(
             target = SingBoxCommandTarget(local = runtime.local, control = runtime.control),
             listener = object : SingBoxCommandListener {
@@ -202,7 +201,7 @@ class SingBoxTrafficStatsNotificationService : Service() {
                     close(IllegalStateException(message.ifBlank { "sing-box API disconnected" }))
                 }
 
-                override fun onStatus(status: StatusMessage) {
+                override fun onStatus(status: SingBoxStatusMessage) {
                     trySend(
                         SingBoxTrafficSample(
                             up = status.uplink,
@@ -336,6 +335,31 @@ class SingBoxTrafficStatsNotificationService : Service() {
             }
             // Without a start since the last stop, that stop already removed the notification.
             if (stopRequested) appContext.getSystemService(NotificationManager::class.java).cancel(NotificationId)
+        }
+
+        /** Must match `android:process` of this service in the manifest. */
+        internal const val ServiceProcessSuffix = ":service"
+
+        /**
+         * Whether [application] runs in the `:service` process, which hosts the traffic
+         * statistics service, and nothing that decides.
+         */
+        internal fun isServiceProcess(application: Application): Boolean {
+            return currentProcessName(application) == application.packageName + ServiceProcessSuffix
+        }
+
+        private fun currentProcessName(application: Application): String {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                Application.getProcessName()?.takeIf(String::isNotEmpty)?.let { return it }
+            }
+            // argv is NUL separated; its first entry is the process name.
+            runCatching { File("/proc/self/cmdline").readBytes() }.getOrNull()
+                ?.toString(Charsets.UTF_8)
+                ?.substringBefore('\u0000')
+                ?.takeIf(String::isNotEmpty)
+                ?.let { return it }
+            AndroidAppLogger.platformWarn(LogTag, "Unable to resolve the process name; assuming the app process")
+            return application.packageName
         }
     }
 }

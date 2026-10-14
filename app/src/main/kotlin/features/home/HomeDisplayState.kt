@@ -9,6 +9,7 @@ import engine.singbox.runtime.SingBoxTrafficState
 import engine.singbox.runtime.TrafficHistoryCapacity
 import features.monitoring.MonitoringState
 import utils.toReadableBytes
+import java.util.Locale
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -66,6 +67,7 @@ internal data class HomeMonitoringOverviewState(
     val serviceRunning: Boolean,
     val resourceCpuPercent: Double?,
     val resourceMemoryBytes: Long?,
+    val activeConnectionCount: Int?,
     val directConnectionCount: Int?,
     val proxyConnectionCount: Int?,
     val todayTrafficBytes: Long,
@@ -116,8 +118,9 @@ internal fun buildHomeNetworkActivityState(
 ): HomeNetworkActivityState {
     val trafficAvailable = appState.proxyRunning && traffic.connected
     return HomeNetworkActivityState(
-        accumulatedUploadBytes = traffic.totalUp.takeIf { appState.proxyRunning },
-        accumulatedDownloadBytes = traffic.totalDown.takeIf { appState.proxyRunning },
+        // Gate on a live traffic connection so a restart never shows the previous session's totals.
+        accumulatedUploadBytes = traffic.totalUp.takeIf { trafficAvailable },
+        accumulatedDownloadBytes = traffic.totalDown.takeIf { trafficAvailable },
         uploadBytesPerSecond = traffic.latest.up.takeIf { trafficAvailable },
         downloadBytesPerSecond = traffic.latest.down.takeIf { trafficAvailable },
         networkSamples = networkSamples.takeLast(HomeNetworkSampleLimit).takeIf { trafficAvailable }.orEmpty(),
@@ -130,6 +133,7 @@ internal fun buildHomeMonitoringOverviewState(
     serviceRunning = monitoringState.serviceRunning,
     resourceCpuPercent = monitoringState.resource.cpuPercent,
     resourceMemoryBytes = monitoringState.resource.memoryBytes,
+    activeConnectionCount = monitoringState.connections.activeCount,
     directConnectionCount = monitoringState.connections.directCount,
     proxyConnectionCount = monitoringState.connections.proxyCount,
     todayTrafficBytes = monitoringState.traffic.today.total,
@@ -154,13 +158,49 @@ internal enum class HomeServiceOperation { Idle, Starting, Stopping, Applying }
 internal class HomeServiceOperationState {
     var operation by mutableStateOf(HomeServiceOperation.Idle)
     var modeOperationInProgress by mutableStateOf(false)
+    var lastOperationFailed by mutableStateOf(false)
 }
 
-internal fun formatHomeServiceUptime(uptimeMillis: Long?): String? {
+internal data class HomeUptimeParts(val days: Long, val clock: String)
+
+internal fun homeServiceUptimeParts(uptimeMillis: Long?): HomeUptimeParts? {
     if (uptimeMillis == null || uptimeMillis < 0L) return null
     val seconds = uptimeMillis / 1_000L
-    val hours = (seconds / 3_600L).toString().padStart(2, '0')
-    val minutes = (seconds / 60L % 60L).toString().padStart(2, '0')
-    val remainingSeconds = (seconds % 60L).toString().padStart(2, '0')
-    return "$hours:$minutes:$remainingSeconds"
+    val days = seconds / 86_400L
+    val totalHours = seconds / 3_600L
+    val hours = if (days > 0L) totalHours % 24L else totalHours
+    val minutes = (seconds / 60L) % 60L
+    val remainingSeconds = seconds % 60L
+    val clock = "${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}"
+    return HomeUptimeParts(days, clock)
 }
+
+internal data class HomeCompactValue(val number: String, val unit: String)
+
+internal fun formatHomeCompactBytes(bytes: Long?): HomeCompactValue? {
+    if (bytes == null) return null
+    val nonNegative = bytes.coerceAtLeast(0L)
+    val units = arrayOf("B", "KB", "MB", "GB", "TB", "PB", "EB")
+    var value = nonNegative.toDouble()
+    var unitIndex = 0
+    // Thresholds account for rounding so the shown number never exceeds three significant digits
+    // (e.g. 999.6 KB becomes 0.98 MB rather than "1000 KB", 9.996 MB becomes "10.0 MB").
+    while (value >= 999.5 && unitIndex < units.lastIndex) {
+        value /= 1024.0
+        unitIndex++
+    }
+    val unit = units[unitIndex]
+    val number = if (unitIndex == 0) {
+        nonNegative.toString()
+    } else when {
+        value < 9.995 -> String.format(Locale.ROOT, "%.2f", value)
+        value < 99.95 -> String.format(Locale.ROOT, "%.1f", value)
+        else -> String.format(Locale.ROOT, "%.0f", value)
+    }
+    return HomeCompactValue(number, unit)
+}
+
+internal const val HomeSparklineMinScale = 2048L
+
+internal fun nextHomeSparklineScale(previous: Long, windowMax: Long): Long =
+    maxOf(windowMax, (previous * 0.85).toLong(), HomeSparklineMinScale)
