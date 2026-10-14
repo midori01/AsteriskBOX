@@ -383,6 +383,8 @@ internal fun SettingsBottomSheetsHost(
         show = sheetState.showTunSharedNetwork,
         showEbpfOptions = appState.runMode == RunModeEbpf,
         enableLocalDns = appState.enableLocalDns,
+        dynamicVpnTetheringBypass = sheetState.dynamicVpnTetheringBypassDraft,
+        onDynamicVpnTetheringBypassChange = { sheetState.dynamicVpnTetheringBypassDraft = it },
         ebpfSharedDataPlane = sheetState.ebpfSharedDataPlaneDraft,
         ebpfSharedDnsMode = sheetState.ebpfSharedDnsModeDraft,
         onEbpfSharedDataPlaneChange = { sheetState.ebpfSharedDataPlaneDraft = it },
@@ -393,12 +395,13 @@ internal fun SettingsBottomSheetsHost(
                 interfaces.sanitizeTunSharedNetworkInterfaces()
         },
         onDismissRequest = { sheetState.showTunSharedNetwork = false },
-        onSave = { interfaces, dataPlane, dnsMode ->
+        onSave = { interfaces, dataPlane, dnsMode, dynamicVpnBypass ->
             updateAppState { state ->
                 state.copy(
                     tunSharedNetworkInterfaces = interfaces.sanitizeTunSharedNetworkInterfaces(),
                     ebpfSharedDataPlane = if (state.runMode == RunModeEbpf) dataPlane else state.ebpfSharedDataPlane,
                     ebpfSharedDnsMode = if (state.runMode == RunModeEbpf) dnsMode else state.ebpfSharedDnsMode,
+                    dynamicVpnTetheringBypass = dynamicVpnBypass,
                 )
             }
             sheetState.showTunSharedNetwork = false

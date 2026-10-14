@@ -156,6 +156,7 @@ internal fun AppState.preferenceValues(): Map<String, AppPreferenceValue> = buil
     )
     stringList(KeyExternalInterfaces, externalInterfaces)
     stringList(KeyTunSharedNetworkInterfaces, tunSharedNetworkInterfaces)
+    boolean(KeyDynamicVpnTetheringBypass, dynamicVpnTetheringBypass)
     stringList(KeyIgnoredInterfaces, ignoredInterfaces)
     stringList(KeyPrivateAddressCidrs, privateAddressCidrs)
     int(KeyProxyAppListMode, proxyAppListMode)
