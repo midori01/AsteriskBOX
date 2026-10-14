@@ -5,30 +5,23 @@ package features.proxy.app
 
 import android.content.pm.PackageManager
 import android.util.Log
-import com.android.tools.smali.dexlib2.dexbacked.DexBackedDexFile
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.CancellationException
-import java.io.BufferedInputStream
-import java.io.File
-import java.util.zip.ZipFile
 import system.getPackageInfoCompat
 
 /**
- * Detects Chinese applications by inspecting package name, declared components,
- * and DEX bytecode for vendor prefixes that are characteristic of SDKs developed
- * by, or commonly bundled in, applications distributed from mainland China.
+ * Detects Chinese applications by inspecting package name and declared components
+ * for vendor prefixes that are characteristic of SDKs developed by, or commonly
+ * bundled in, applications distributed from mainland China.
  *
- * The heuristic is intentionally conservative: matches fall through four layers,
- * any positive match short-circuits to `true`, any clear negative match (whitelist
- * or firebase resource) short-circuits to `false`.
+ * Two layers run in order: the package name, then manifest-declared components. Any
+ * positive match short-circuits to `true`; a skip-listed package short-circuits to `false`.
  *
  * The single source of truth for the prefix list is [CHINA_APP_PREFIX_LIST].
  */
 internal object AppScanner {
     private const val TAG = "AsteriskBOX-AppScanner"
-
-    private const val LARGE_DEX_SIZE_BYTES: Long = 15_000_000L
 
     /**
      * Skip these prefixes outright. Anything matching is treated as definitively
@@ -48,8 +41,7 @@ internal object AppScanner {
      * Vendor and SDK prefixes characteristic of Chinese vendors, security
      * packers, analytics providers, and platform-specific OEM extensions.
      *
-     * Adding an entry here automatically widens detection across package name,
-     * declared components, and DEX class signatures.
+     * Adding an entry here widens detection across package name and declared components.
      */
     private val CHINA_APP_PREFIX_LIST: List<String> = listOf(
         "com.tencent",
@@ -91,10 +83,46 @@ internal object AppScanner {
         "andes.oplus",
         "com.unionpay",
         "cn.wps",
+        // Major publishers previously caught only by DEX class scanning.
+        "com.ss.android",
+        "com.smile.gifmaker",
+        "com.kuaishou",
+        "tv.danmaku.bili",
+        "com.sankuai",
+        "com.dianping",
+        "com.jingdong",
+        "com.jd",
+        "com.xunmeng",
+        "com.eg.android.AlipayGphone",
+        "com.xingin",
+        "com.zhihu",
+        "com.youku",
+        "com.iqiyi",
+        "com.qiyi",
+        "com.autonavi",
+        "ctrip.android",
+        "com.MobileTicket",
+        "com.sdu.didi",
+        "com.didi",
+        "com.kugou",
+        "com.ximalaya",
+        "com.duowan",
+        "com.yy",
+        "com.hupu",
+        "com.douban",
+        "com.tmall",
+        "com.cainiao",
+        "com.ele.me",
+        "me.ele",
+        "com.wuba",
+        "com.lianjia",
+        "cn.com",
+        "cn.gov",
     )
 
+    // Prefixes match whole package segments: "com.mx" covers "com.mx.foo" but not "com.mxtech".
     private val chinaAppRegex: Regex by lazy {
-        ("(" + CHINA_APP_PREFIX_LIST.joinToString("|").replace(".", "\\.") + ").*").toRegex()
+        ("(" + CHINA_APP_PREFIX_LIST.joinToString("|") { Regex.escape(it) } + ")(\\..*)?").toRegex()
     }
 
     /**
@@ -145,46 +173,6 @@ internal object AppScanner {
                 if (provider.name.matches(chinaAppRegex)) {
                     Log.d(TAG, "Match provider ${provider.name} in $packageName")
                     return true
-                }
-            }
-
-            val publicSourceDir = packageInfo.applicationInfo?.publicSourceDir ?: return false
-            ZipFile(File(publicSourceDir)).use { zip ->
-                // Cheap negative signal: a firebase resource hints Google ecosystem.
-                for (entry in zip.entries()) {
-                    currentCoroutineContext().ensureActive()
-                    if (entry.name.startsWith("firebase-")) {
-                        return false
-                    }
-                }
-                for (entry in zip.entries()) {
-                    currentCoroutineContext().ensureActive()
-                    if (!(entry.name.startsWith("classes") && entry.name.endsWith(".dex"))) {
-                        continue
-                    }
-                    if (entry.size > LARGE_DEX_SIZE_BYTES) {
-                        Log.d(TAG, "Confirm $packageName due to large dex file")
-                        return true
-                    }
-                    val input = BufferedInputStream(zip.getInputStream(entry), 65536)
-                    val dexFile = try {
-                        input.use { DexBackedDexFile.fromInputStream(null, it) }
-                    } catch (error: Exception) {
-                        Log.e(TAG, "Error reading dex file for $packageName", error)
-                        return false
-                    }
-                    for (clazz in dexFile.classes) {
-                        currentCoroutineContext().ensureActive()
-                        val rawType = clazz.type
-                        val clazzName = rawType
-                            .substring(1, rawType.length - 1)
-                            .replace("/", ".")
-                            .replace("$", ".")
-                        if (clazzName.matches(chinaAppRegex)) {
-                            Log.d(TAG, "Match $clazzName in $packageName")
-                            return true
-                        }
-                    }
                 }
             }
         } catch (error: CancellationException) {

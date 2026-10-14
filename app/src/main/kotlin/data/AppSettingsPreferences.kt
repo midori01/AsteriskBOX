@@ -14,6 +14,7 @@ import app.ServiceControlKeyguard
 import app.ServiceControlSettings
 import app.ServiceControlWifi
 import app.ServiceControlWifiRule
+import app.modes.normalizeRunMode
 import features.settings.servicecontrol.normalizeServiceControlSettings
 import engine.singbox.normalizedEbpfLocalDataPlane
 import java.util.UUID
@@ -41,30 +42,9 @@ internal class AppSettingsPreferences(
         }
     }
 
-    /**
-     * Whether the VPN Service tunnel was up when the process last ran. It is cleared on every
-     * orderly stop and survives only a process kill, which lets an app update restore the
-     * tunnel without starting one the user had stopped.
-     */
-    fun isVpnSessionActive(): Boolean = preferences.getBoolean(KeyVpnSessionActive, false)
-
-    @SuppressLint("UseKtx", "ApplySharedPref")
-    fun setVpnSessionActive(active: Boolean) {
-        if (isVpnSessionActive() == active) return
-        val editor = preferences.edit().putBoolean(KeyVpnSessionActive, active)
-        // A start is committed synchronously: an app update kills the process without a
-        // callback. A stop may also run on the main thread, so it is applied asynchronously.
-        if (active) editor.commit() else editor.apply()
-    }
-
     fun load(): AppState {
-        val defaults = AppState(singBoxControlSecret = UUID.randomUUID().toString())
-        val singBoxControlSecret = preferences
-            .getString(KeySingBoxControlSecret, null)
-            ?.takeIf(String::isNotBlank)
-            ?: defaults.singBoxControlSecret.also { secret ->
-                preferences.edit { putString(KeySingBoxControlSecret, secret) }
-            }
+        val defaults = AppState()
+        val singBoxControlSecret = ""
         return defaults.copy(
             colorMode = preferences.getInt(KeyColorMode, defaults.colorMode),
             languageMode = preferences.getInt(KeyLanguageMode, defaults.languageMode),
@@ -115,7 +95,7 @@ internal class AppSettingsPreferences(
             ),
             routeFinal = preferences.getString(KeyRouteFinal, defaults.routeFinal)
                 ?: defaults.routeFinal,
-            runMode = preferences.getInt(KeyRunMode, defaults.runMode),
+            runMode = normalizeRunMode(preferences.getInt(KeyRunMode, defaults.runMode)),
             singBoxMode = preferences.getInt(KeySingBoxMode, defaults.singBoxMode),
             singBoxProxyLayout = preferences.getInt(
                 KeySingBoxProxyLayout,
@@ -125,10 +105,7 @@ internal class AppSettingsPreferences(
                 KeySingBoxProxySort,
                 defaults.singBoxProxySort,
             ),
-            singBoxControlPort = preferences.getString(
-                KeySingBoxControlPort,
-                defaults.singBoxControlPort,
-            ) ?: defaults.singBoxControlPort,
+            singBoxControlPort = defaults.singBoxControlPort,
             singBoxControlSecret = singBoxControlSecret,
             enableLocalDns = preferences.getBoolean(KeyEnableLocalDns, defaults.enableLocalDns),
             localProxyPort = preferences.getString(KeyLocalProxyPort, defaults.localProxyPort)
@@ -149,21 +126,6 @@ internal class AppSettingsPreferences(
                 KeyLocalProxyPassword,
                 defaults.localProxyPassword,
             ) ?: defaults.localProxyPassword,
-            enableVpnAppendHttpProxy = preferences.getBoolean(
-                KeyEnableVpnAppendHttpProxy,
-                defaults.enableVpnAppendHttpProxy,
-            ),
-            enableVpnHevTun = preferences.getBoolean(
-                KeyEnableVpnHevTun,
-                defaults.enableVpnHevTun,
-            ),
-            tunMtu = preferences.getString(KeyTunMtu, defaults.tunMtu) ?: defaults.tunMtu,
-            tunVpnDns = preferences.getString(KeyTunVpnDns, defaults.tunVpnDns)
-                ?: defaults.tunVpnDns,
-            tunIpv4Cidr = preferences.getString(KeyTunIpv4Cidr, defaults.tunIpv4Cidr)
-                ?: defaults.tunIpv4Cidr,
-            tunIpv6Cidr = preferences.getString(KeyTunIpv6Cidr, defaults.tunIpv6Cidr)
-                ?: defaults.tunIpv6Cidr,
             enableConfigOverrideScript = preferences.getBoolean(KeyEnableConfigOverrideScript, defaults.enableConfigOverrideScript),
             configOverrideScript = preferences.getString(KeyConfigOverrideScript, defaults.configOverrideScript) ?: defaults.configOverrideScript,
             coreLogLevel = preferences.getString(KeyCoreLogLevel, defaults.coreLogLevel)
@@ -176,21 +138,17 @@ internal class AppSettingsPreferences(
                 KeyEnableBroadcastControl,
                 defaults.enableBroadcastControl,
             ),
-            enableAutoConnect = preferences.getBoolean(
-                KeyEnableAutoConnect,
-                defaults.enableAutoConnect,
-            ),
             enableResourceAutoUpdate = preferences.getBoolean(KeyEnableResourceAutoUpdate, defaults.enableResourceAutoUpdate),
             resourceAutoUpdateInterval = preferences.getString(KeyResourceAutoUpdateInterval, defaults.resourceAutoUpdateInterval)
                 ?: defaults.resourceAutoUpdateInterval,
+            enableAppAutoUpdateCheck = preferences.getBoolean(
+                KeyEnableAppAutoUpdateCheck,
+                defaults.enableAppAutoUpdateCheck,
+            ),
             resourceFileSource = preferences.getInt(
                 KeyResourceFileSource,
                 defaults.resourceFileSource,
             ),
-            customResourceFileGeositeCategoryAdsAllUrl = preferences.getString(
-                KeyCustomResourceFileGeositeCategoryAdsAllUrl,
-                defaults.customResourceFileGeositeCategoryAdsAllUrl,
-            ) ?: defaults.customResourceFileGeositeCategoryAdsAllUrl,
             customResourceFileGeositeGoogleUrl = preferences.getString(
                 KeyCustomResourceFileGeositeGoogleUrl,
                 defaults.customResourceFileGeositeGoogleUrl,
@@ -309,12 +267,6 @@ internal class AppSettingsPreferences(
                 KeyEnableRootIpv6Disabler,
                 defaults.enableRootIpv6Disabler,
             ),
-            socks5ProxyPort = preferences.getString(KeySocks5ProxyPort, defaults.socks5ProxyPort)
-                ?: defaults.socks5ProxyPort,
-            bpf2SocksBridgePort = preferences.getString(
-                KeyBpf2SocksBridgePort,
-                defaults.bpf2SocksBridgePort,
-            ) ?: defaults.bpf2SocksBridgePort,
             serviceControl = preferences.getServiceControl(defaults.serviceControl),
             externalInterfaces = preferences.getStringList(
                 KeyExternalInterfaces,
@@ -511,24 +463,15 @@ internal const val KeyEnableDynamicLocalProxyPort = "enable_dynamic_local_proxy_
 internal const val KeyLocalProxyListenAllInterfaces = "local_proxy_listen_all_interfaces"
 internal const val KeyLocalProxyUsername = "local_proxy_username"
 internal const val KeyLocalProxyPassword = "local_proxy_password"
-internal const val KeyEnableVpnAppendHttpProxy = "enable_vpn_append_http_proxy"
-internal const val KeyEnableVpnHevTun = "enable_vpn_hev_tun"
-internal const val KeyTunMtu = "tun_mtu"
-internal const val KeyTunVpnDns = "tun_vpn_dns"
-internal const val KeyTunIpv4Cidr = "tun_ipv4_cidr"
-internal const val KeyTunIpv6Cidr = "tun_ipv6_cidr"
 internal const val KeyEnableConfigOverrideScript = "enable_config_override_script"
 internal const val KeyConfigOverrideScript = "config_override_script"
 internal const val KeyCoreLogLevel = "core_log_level"
 internal const val KeyEnableTrafficStatsNotification = "enable_traffic_stats_notification"
 internal const val KeyEnableBroadcastControl = "enable_broadcast_control"
-internal const val KeyEnableAutoConnect = "enable_auto_connect"
-private const val KeyVpnSessionActive = "vpn_session_active"
 internal const val KeyEnableResourceAutoUpdate = "enable_resource_auto_update"
 internal const val KeyResourceAutoUpdateInterval = "resource_auto_update_interval"
+internal const val KeyEnableAppAutoUpdateCheck = "enable_app_auto_update_check"
 internal const val KeyResourceFileSource = "resource_file_source"
-internal const val KeyCustomResourceFileGeositeCategoryAdsAllUrl =
-    "custom_resource_file_geosite_category_ads_all_url"
 internal const val KeyCustomResourceFileGeositeGoogleUrl =
     "custom_resource_file_geosite_google_url"
 internal const val KeyCustomResourceFileGeositeCnUrl = "custom_resource_file_geosite_cn_url"
@@ -571,8 +514,6 @@ internal const val KeyEbpfEndpointConnectedBypassPort = "ebpf_endpoint_connected
 internal const val KeyEbpfLocalBypassIpCidr = "ebpf_local_bypass_ip_cidr"
 internal const val KeyEbpfLocalBypassPort = "ebpf_local_bypass_port"
 internal const val KeyEnableRootIpv6Disabler = "enable_root_ipv6_disabler"
-internal const val KeySocks5ProxyPort = "socks5_proxy_port"
-internal const val KeyBpf2SocksBridgePort = "bpf2socks_bridge_port"
 internal const val KeyServiceControlEnabled = "service_control_enabled"
 internal const val KeyServiceControlScheduleEnabled = "service_control_schedule_enabled"
 internal const val KeyServiceControlScheduleStartCron = "service_control_schedule_start_cron"

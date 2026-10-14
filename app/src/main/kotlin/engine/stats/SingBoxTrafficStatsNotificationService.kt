@@ -26,8 +26,8 @@ import engine.singbox.runtime.SingBoxConnectionsState
 import engine.singbox.runtime.SingBoxProxiesState
 import engine.singbox.runtime.SingBoxRuntimeRepository
 import engine.singbox.runtime.SingBoxTrafficSample
+import engine.singbox.runtime.SingBoxStatusMessage
 import features.logs.AndroidAppLogger
-import io.nekohasekai.libbox.StatusMessage
 import java.math.BigInteger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -220,7 +220,7 @@ class SingBoxTrafficStatsNotificationService : Service() {
                     close(IllegalStateException(message.ifBlank { "sing-box API disconnected" }))
                 }
 
-                override fun onStatus(status: StatusMessage) {
+                override fun onStatus(status: SingBoxStatusMessage) {
                     trySend(
                         SingBoxTrafficSample(
                             up = status.uplink,

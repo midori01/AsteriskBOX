@@ -54,12 +54,17 @@ abstract class BuildBpfMatcherTask : DefaultTask() {
             execOperations.exec {
                 commandLine(
                     findNdkClang(ndkDir, target).absolutePath,
-                    "-O2",
+                    "-Oz",
                     "-flto=full",
+                    "-ffunction-sections",
+                    "-fdata-sections",
+                    "-fvisibility=hidden",
                     "-Wall",
                     "-Wextra",
                     "-fPIE",
                     "-pie",
+                    "-Wl,--gc-sections",
+                    "-Wl,--strip-all",
                     source.absolutePath,
                     "-o",
                     output.absolutePath,

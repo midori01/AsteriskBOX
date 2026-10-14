@@ -17,6 +17,7 @@ import features.settings.servicecontrol.normalizeServiceControlSettings
 import app.ServiceControlSettings
 import app.ServiceControlWifi
 import app.ServiceControlWifiRule
+import app.modes.RunModeEbpf
 import app.CustomResourceFileState
 import app.OutboundGroupState
 import app.OutboundGroupUpdateStatus
@@ -30,7 +31,6 @@ import app.SingBoxSelectorState
 import app.isManagedSingBoxTag
 import app.selectableManagedOutbounds
 import app.withCanonicalManagedTagReferences
-import app.modes.RunModeVpnService
 
 internal fun AppState.toAppBackupFile(
     createdAtMillis: Long,
@@ -101,22 +101,15 @@ private fun AppState.toBackupSettings(): AppBackupSettings =
         localProxyListenAllInterfaces = localProxyListenAllInterfaces,
         localProxyUsername = localProxyUsername,
         localProxyPassword = localProxyPassword,
-        enableVpnAppendHttpProxy = enableVpnAppendHttpProxy,
-        enableVpnHevTun = enableVpnHevTun,
-        tunMtu = tunMtu,
-        tunVpnDns = tunVpnDns,
-        tunIpv4Cidr = tunIpv4Cidr,
-        tunIpv6Cidr = tunIpv6Cidr,
         enableConfigOverrideScript = enableConfigOverrideScript,
         configOverrideScript = configOverrideScript,
         coreLogLevel = coreLogLevel,
         enableTrafficStatsNotification = enableTrafficStatsNotification,
         enableBroadcastControl = enableBroadcastControl,
-        enableAutoConnect = enableAutoConnect,
         enableResourceAutoUpdate = enableResourceAutoUpdate,
         resourceAutoUpdateInterval = resourceAutoUpdateInterval,
+        enableAppAutoUpdateCheck = enableAppAutoUpdateCheck,
         resourceFileSource = resourceFileSource,
-        customResourceFileGeositeCategoryAdsAllUrl = customResourceFileGeositeCategoryAdsAllUrl,
         customResourceFileGeositeGoogleUrl = customResourceFileGeositeGoogleUrl,
         customResourceFileGeositeCnUrl = customResourceFileGeositeCnUrl,
         customResourceFileGeoipCnUrl = customResourceFileGeoipCnUrl,
@@ -151,8 +144,6 @@ private fun AppState.toBackupSettings(): AppBackupSettings =
         ebpfLocalBypassIpCidr = ebpfLocalBypassIpCidr,
         ebpfLocalBypassPort = ebpfLocalBypassPort,
         enableRootIpv6Disabler = enableRootIpv6Disabler,
-        socks5ProxyPort = socks5ProxyPort,
-        bpf2SocksBridgePort = bpf2SocksBridgePort,
         externalInterfaces = externalInterfaces,
         tunSharedNetworkInterfaces = tunSharedNetworkInterfaces,
         dynamicVpnTetheringBypass = dynamicVpnTetheringBypass,
@@ -330,7 +321,7 @@ private fun AppBackupData.toAppState(): AppState {
         routeFinal = settings.routeFinal,
         routeRules = routeRules,
         nextRouteRuleId = nextId(defaults.nextRouteRuleId, routeRules.map(SingBoxRouteRuleState::id)),
-        runMode = RunModeVpnService,
+        runMode = RunModeEbpf,
         enableAppListEnhancement = false,
         singBoxMode = settings.singBoxMode,
         singBoxProxyLayout = settings.singBoxProxyLayout,
@@ -343,23 +334,16 @@ private fun AppBackupData.toAppState(): AppState {
         localProxyListenAllInterfaces = settings.localProxyListenAllInterfaces,
         localProxyUsername = settings.localProxyUsername,
         localProxyPassword = settings.localProxyPassword,
-        enableVpnAppendHttpProxy = settings.enableVpnAppendHttpProxy,
-        enableVpnHevTun = settings.enableVpnHevTun,
-        tunMtu = settings.tunMtu,
-        tunVpnDns = settings.tunVpnDns,
-        tunIpv4Cidr = settings.tunIpv4Cidr,
-        tunIpv6Cidr = settings.tunIpv6Cidr,
         proxyRunning = false,
         enableConfigOverrideScript = settings.enableConfigOverrideScript,
         configOverrideScript = settings.configOverrideScript,
         coreLogLevel = settings.coreLogLevel,
         enableTrafficStatsNotification = settings.enableTrafficStatsNotification,
         enableBroadcastControl = settings.enableBroadcastControl,
-        enableAutoConnect = settings.enableAutoConnect,
         enableResourceAutoUpdate = settings.enableResourceAutoUpdate,
         resourceAutoUpdateInterval = settings.resourceAutoUpdateInterval,
+        enableAppAutoUpdateCheck = settings.enableAppAutoUpdateCheck,
         resourceFileSource = settings.resourceFileSource,
-        customResourceFileGeositeCategoryAdsAllUrl = settings.customResourceFileGeositeCategoryAdsAllUrl,
         customResourceFileGeositeGoogleUrl = settings.customResourceFileGeositeGoogleUrl,
         customResourceFileGeositeCnUrl = settings.customResourceFileGeositeCnUrl,
         customResourceFileGeoipCnUrl = settings.customResourceFileGeoipCnUrl,
@@ -407,8 +391,6 @@ private fun AppBackupData.toAppState(): AppState {
         ebpfLocalBypassIpCidr = settings.ebpfLocalBypassIpCidr,
         ebpfLocalBypassPort = settings.ebpfLocalBypassPort,
         enableRootIpv6Disabler = settings.enableRootIpv6Disabler,
-        socks5ProxyPort = settings.socks5ProxyPort,
-        bpf2SocksBridgePort = settings.bpf2SocksBridgePort,
         externalInterfaces = settings.externalInterfaces,
         tunSharedNetworkInterfaces = settings.tunSharedNetworkInterfaces
             ?: settings.legacyEbpfSharedNetworkInterfaces,

@@ -11,8 +11,6 @@ import features.resources.ResourceFileUpdateRequest
 import features.resources.runtime.AndroidResourceFileDownloadCancellation
 import android.app.Application
 import features.home.HomeServiceOperationState
-import app.modes.RunModeVpnService
-import features.boot.BootAutoConnect
 import data.AndroidAppStateStore
 import data.AppSettingsPreferences
 import engine.singbox.config.validateSingBoxRuntimeConfiguration
@@ -48,8 +46,6 @@ import kotlinx.coroutines.withContext
 import system.AndroidAppIconFetcher
 import engine.singbox.runtime.SingBoxRuntimeRepository
 import engine.proxy.AndroidProxyEngine
-import system.AndroidRootShellGateway
-import engine.vpn.AndroidLibboxRuntime
 import engine.proxy.VpnTetheringRelayManager
 import engine.root.runtime.RootSupervisorController
 import engine.stats.SingBoxTrafficStatsNotificationService
@@ -223,6 +219,15 @@ class AsteriskApplication : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()
+        // Boot scripts, tiles and broadcasts can start the proxy without the UI ever composing
+        // ResourceFileSynchronizer, so make sure the bundled core is extracted at process start too.
+        appScope.launch {
+            runCatching {
+                resourceFileUseCase.restoreBundledDefaults(stateStore.state.value.resourceFileSource)
+            }.onFailure { error ->
+                AndroidAppLogger.warn("AsteriskApplication", "Failed to restore bundled resources", error)
+            }
+        }
         appScope.launch {
             val scheduler = ResourceAutoUpdateScheduler(applicationContext)
             stateStore.state
@@ -230,20 +235,9 @@ class AsteriskApplication : Application(), SingletonImageLoader.Factory {
                 .distinctUntilChanged()
                 .collect(scheduler::reconcile)
         }
-        AndroidLibboxRuntime.setup(this)
         AndroidLogcatRepository.initialize(applicationContext)
         AndroidCoreLogRepository.initialize(applicationContext)
         AndroidAsteriskdLogRepository.initialize(applicationContext)
-        appScope.launch {
-            stateStore.state
-                .map { state ->
-                    state.enableAutoConnect && state.runMode == RunModeVpnService
-                }
-                .distinctUntilChanged()
-                .collect { enabled ->
-                    BootAutoConnect.setComponentEnabled(applicationContext, enabled)
-                }
-        }
         appScope.launch {
             stateStore.state
                 .map { state ->
