@@ -50,6 +50,7 @@ import engine.proxy.ProxyServiceResult
 import engine.proxy.withResolvedDynamicLocalProxyPort
 import features.resources.runtime.singBoxRuleSetFiles
 import features.settings.sheets.externalInterfacesSummary
+import features.settings.sheets.ebpfEndpointConnectedBypassSummary
 import features.settings.sheets.ignoredInterfacesSummary
 import features.settings.sheets.privateAddressCidrsSummary
 import features.settings.sheets.snifferSettingsSummary
@@ -270,6 +271,7 @@ private fun SettingsContent(
         selectedTags = appState.tunBypassRuleSetTags,
         choices = tunBypassRuleSetChoices,
     )
+    val ebpfEndpointConnectedBypassSummary = ebpfEndpointConnectedBypassSummary(appState.ebpfEndpointConnectedBypassEnabled)
     val externalInterfacesSummary = if (appState.runMode == RunModeEbpf || appState.runMode == RunModeTun) {
         tunSharedNetworkInterfacesSummary(appState.tunSharedNetworkInterfaces)
     } else {
@@ -333,6 +335,7 @@ private fun SettingsContent(
         localProxySummary = localProxySettingsSummary,
         tunSummary = tunSettingsSummary,
         tunBypassRuleSetsSummary = tunBypassRuleSetsSummary,
+        ebpfEndpointConnectedBypassSummary = ebpfEndpointConnectedBypassSummary,
         externalInterfacesSummary = externalInterfacesSummary,
         ignoredInterfacesSummary = ignoredInterfacesSummary,
         privateAddressesSummary = privateAddressCidrsSummary,
@@ -471,6 +474,7 @@ private fun SettingsContent(
                     enableRootEbpfDirectCidrBypass = appState.enableRootEbpfDirectCidrBypass,
                     enableRootEbpfPrivateAddressBypass = appState.enableRootEbpfPrivateAddressBypass,
                     tunBypassRuleSetsSummary = tunBypassRuleSetsSummary,
+                    ebpfEndpointConnectedBypassSummary = ebpfEndpointConnectedBypassSummary,
                     enableIpv6 = appState.enableIpv6,
                     enableRootIpv6Disabler = appState.enableRootIpv6Disabler,
                     externalInterfacesSummary = externalInterfacesSummary,
@@ -478,7 +482,16 @@ private fun SettingsContent(
                     privateAddressCidrsSummary = privateAddressCidrsSummary,
                     onOpenLocalProxySettings = { sheetState.openLocalProxySettings(appState) },
                     onEbpfLocalDataPlaneChange = { value ->
-                        updateAppState { state -> state.copy(ebpfLocalDataPlane = value) }
+                        updateAppState { state ->
+                            if (value == "cgroup") {
+                                state.copy(
+                                    ebpfLocalDataPlane = value,
+                                    ebpfEndpointConnectedBypassEnabled = false,
+                                )
+                            } else {
+                                state.copy(ebpfLocalDataPlane = value)
+                            }
+                        }
                     },
                     onEbpfLocalDnsModeChange = { value ->
                         updateAppState { state -> state.copy(ebpfLocalDnsMode = value) }
@@ -593,6 +606,9 @@ private fun SettingsContent(
                     },
                     onOpenTunBypassRuleSets = {
                         sheetState.openTunBypassRuleSets(appState)
+                    },
+                    onOpenEbpfEndpointConnectedBypass = {
+                        sheetState.openEbpfEndpointConnectedBypass(appState)
                     },
                     onEnableRootIpv6DisablerChange = { enabled ->
                         updateAppState { state -> state.copy(enableRootIpv6Disabler = enabled) }
