@@ -136,6 +136,8 @@ data class AppState(
     val ebpfEndpointConnectedBypassEnabled: Boolean = false,
     val ebpfEndpointConnectedBypassIpCidr: List<String> = emptyList(),
     val ebpfEndpointConnectedBypassPort: List<String> = emptyList(),
+    val ebpfLocalBypassIpCidr: List<String> = emptyList(),
+    val ebpfLocalBypassPort: List<String> = emptyList(),
     val enableRootIpv6Disabler: Boolean = false,
     val socks5ProxyPort: String = RootModeEngine.DefaultTun2SocksProxyPort.toString(),
     val bpf2SocksBridgePort: String = RootModeEngine.DefaultBpf2SocksBridgePort.toString(),
