@@ -20,6 +20,11 @@ import utils.toTrimmedNonEmptyDistinctList
 
 internal const val SingBoxTunDevice = "asterisk0"
 
+// Pinned to the Android defaults of newer sing-tun so every core uses the same marks; traffic
+// that must bypass auto_redirect is given the output mark in the raw table.
+internal const val SingBoxTunAutoRedirectInputMark = 0x400000
+internal const val SingBoxTunAutoRedirectOutputMark = 0x200000
+
 internal data class RootInboundUidPolicy(
     val includeUids: List<Int> = emptyList(),
     val excludeUids: List<Int> = emptyList(),

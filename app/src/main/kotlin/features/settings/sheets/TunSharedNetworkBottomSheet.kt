@@ -45,6 +45,8 @@ internal fun TunSharedNetworkBottomSheet(
     show: Boolean,
     showEbpfOptions: Boolean,
     enableLocalDns: Boolean,
+    dynamicVpnTetheringBypass: Boolean,
+    onDynamicVpnTetheringBypassChange: (Boolean) -> Unit,
     ebpfSharedDataPlane: String,
     ebpfSharedDnsMode: String,
     onEbpfSharedDataPlaneChange: (String) -> Unit,
@@ -52,7 +54,7 @@ internal fun TunSharedNetworkBottomSheet(
     interfaces: List<String>,
     onInterfacesChange: (List<String>) -> Unit,
     onDismissRequest: () -> Unit,
-    onSave: (List<String>, String, String) -> Unit,
+    onSave: (List<String>, String, String, Boolean) -> Unit,
 ) {
     var editorPending by remember(show) { mutableStateOf(false) }
     val invalidMessage = stringResource(R.string.settings_tun_shared_network_invalid)
@@ -69,7 +71,7 @@ internal fun TunSharedNetworkBottomSheet(
         },
         endAction = {
             AsteriskSaveButton(
-                onClick = { onSave(normalizedInterfaces, ebpfSharedDataPlane, ebpfSharedDnsMode) },
+                onClick = { onSave(normalizedInterfaces, ebpfSharedDataPlane, ebpfSharedDnsMode, dynamicVpnTetheringBypass) },
                 enabled = canSave,
             )
         },
@@ -109,6 +111,15 @@ internal fun TunSharedNetworkBottomSheet(
                             },
                         )
                     }
+                }
+                item("dynamic-vpn-tether-bypass") {
+                    SwitchPreference(
+                        title = stringResource(R.string.settings_dynamic_vpn_tether_bypass_title),
+                        icon = Icons.AutoMirrored.Rounded.AltRoute,
+                        summary = stringResource(R.string.settings_dynamic_vpn_tether_bypass_summary),
+                        checked = dynamicVpnTetheringBypass,
+                        onCheckedChange = onDynamicVpnTetheringBypassChange,
+                    )
                 }
                 item {
                     StringListEditor(
