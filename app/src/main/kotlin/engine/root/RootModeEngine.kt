@@ -11,11 +11,9 @@ import engine.proxy.ProxyEngineStatus
 import engine.proxy.mode.AndroidModeProxyEngine
 import engine.root.config.prepareRootConfigBuildContext
 import engine.root.config.RootModeStartConfig
-import engine.root.config.RootBpf2SocksDefaultBridgePort as ConfigRootBpf2SocksDefaultBridgePort
 import engine.root.mode.RootModeCatalog
 import engine.root.mode.RootModeDefinition
 import engine.root.mode.DefaultTproxyPort as ModeDefaultTproxyPort
-import engine.root.mode.DefaultTun2SocksProxyPort as ModeDefaultTun2SocksProxyPort
 import engine.root.publication.rootRuntimeLayout
 import engine.root.runtime.RootEbpfFailureAnalyzer
 import engine.root.runtime.RootFailureReport
@@ -190,8 +188,6 @@ internal class RootModeEngine(
 
     companion object {
         const val DefaultTproxyPort = ModeDefaultTproxyPort
-        const val DefaultTun2SocksProxyPort = ModeDefaultTun2SocksProxyPort
-        const val DefaultBpf2SocksBridgePort = ConfigRootBpf2SocksDefaultBridgePort
 
         fun createAll(context: Context, rootAccess: RootShellGateway): List<RootModeEngine> =
             RootModeCatalog.definitions.map { definition -> RootModeEngine(context, rootAccess, definition) }

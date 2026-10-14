@@ -4,7 +4,7 @@
 package engine.root.runtime
 
 import android.content.Context
-import app.modes.RunModeVpnService
+import app.modes.isRootRunMode
 import data.AndroidAppStateStore
 import engine.root.publication.RootRuntimeLayout
 import kotlinx.coroutines.CoroutineScope
@@ -42,7 +42,7 @@ internal object RootFailureWatcher {
     ) {
         lifecycle.withLock {
             val store = AndroidAppStateStore.get(context.applicationContext)
-            if (store.state.value.runMode == RunModeVpnService) return
+            if (!store.state.value.runMode.isRootRunMode()) return
             // Status streams may still contain Running from the previous service cycle.
             if (launchInProgress && running && !explicitRootAction) return
             if (explicitRootAction) launchInProgress = !running
@@ -62,7 +62,7 @@ internal object RootFailureWatcher {
             delivery.beginAttempt()
             job = scope.launch {
                 watch(context.applicationContext, shell, layout, baseline) {
-                    store.state.value.runMode != RunModeVpnService
+                    store.state.value.runMode.isRootRunMode()
                 }
             }
             if (running) startDeadline()

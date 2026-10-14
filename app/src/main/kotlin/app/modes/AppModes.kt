@@ -3,34 +3,25 @@
 
 package app.modes
 
-const val RunModeVpnService = 0
+// Values match the persisted ids of earlier releases (VPN=0, TUN2SOCKS=2, TUN=3, BPF2SOCKS=4 are retired).
 const val RunModeTproxy = 1
-const val RunModeTun2Socks = 2
-const val RunModeTun = 3
-const val RunModeBpf2Socks = 4
 const val RunModeEbpf = 5
 
 fun Int.isRootRunMode(): Boolean {
     return this == RunModeTproxy ||
-        this == RunModeTun ||
-        this == RunModeTun2Socks ||
-        this == RunModeBpf2Socks ||
         this == RunModeEbpf
 }
 
 fun normalizeRunMode(value: Int): Int = when (value) {
     RunModeTproxy,
-    RunModeTun,
-    RunModeTun2Socks,
-    RunModeBpf2Socks,
     RunModeEbpf,
     -> value
 
-    else -> RunModeVpnService
+    else -> RunModeEbpf
 }
 
 fun Int.supportsAppListEnhancement(): Boolean =
-    this == RunModeTproxy || this == RunModeTun2Socks || this == RunModeBpf2Socks
+    this == RunModeTproxy
 
 const val SingBoxModeRule = 0
 const val SingBoxModeGlobal = 1

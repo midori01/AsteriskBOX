@@ -9,12 +9,12 @@ import features.resources.ResourceFileDirectCidrIpv4Url
 import features.resources.ResourceFileDirectCidrIpv6Name
 import features.resources.ResourceFileDirectCidrIpv6Url
 import features.resources.ResourceFileGeoipCnUrl
-import features.resources.ResourceFileGeositeCategoryAdsAllUrl
 import features.resources.ResourceFileGeositeCnUrl
 import features.resources.ResourceFileGeositeGoogleUrl
 import features.resources.ResourceFileSingBoxCoreName
 import features.resources.ResourceFileSourceCustom
 import features.resources.ResourceFileSourceDefault
+import features.resources.SingBoxCoreVersion
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
@@ -268,7 +268,7 @@ enum class ResourceFileKind(
 
     val displayName: String
         get() = when (this) {
-            SingBoxCore -> "sing-box"
+            SingBoxCore -> "sing-box $SingBoxCoreVersion"
             else -> fileName
         }
 }
@@ -462,7 +462,6 @@ data class ResourceFilesStatus(
 
 data class ResourceFileUpdateSource(
     val id: Int,
-    val geositeCategoryAdsAllUrl: String,
     val geositeGoogleUrl: String,
     val geositeCnUrl: String,
     val geoipCnUrl: String,
@@ -473,7 +472,6 @@ data class ResourceFileUpdateSource(
 val ResourceFileUpdateSources = listOf(
     ResourceFileUpdateSource(
         id = ResourceFileSourceDefault,
-        geositeCategoryAdsAllUrl = ResourceFileGeositeCategoryAdsAllUrl,
         geositeGoogleUrl = ResourceFileGeositeGoogleUrl,
         geositeCnUrl = ResourceFileGeositeCnUrl,
         geoipCnUrl = ResourceFileGeoipCnUrl,
@@ -644,9 +642,6 @@ fun AppState.resourceFileUpdateSource(): ResourceFileUpdateSource {
     val fallback = ResourceFileUpdateSources.first()
     return ResourceFileUpdateSource(
         id = ResourceFileSourceCustom,
-        geositeCategoryAdsAllUrl = customResourceFileGeositeCategoryAdsAllUrl.trim().ifBlank {
-            fallback.geositeCategoryAdsAllUrl
-        },
         geositeGoogleUrl = customResourceFileGeositeGoogleUrl.trim().ifBlank {
             fallback.geositeGoogleUrl
         },

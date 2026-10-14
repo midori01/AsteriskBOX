@@ -3,7 +3,6 @@
 
 package features.settings
 
-import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -52,7 +51,6 @@ internal fun settingsTopLevelSearchItems(
     selectedRunModeIndex: Int,
     snifferSummary: String,
     localProxySummary: String,
-    tunSummary: String,
     tunBypassRuleSetsSummary: String,
     ebpfEndpointConnectedBypassSummary: String,
     externalInterfacesSummary: String,
@@ -185,32 +183,6 @@ internal fun settingsTopLevelSearchItems(
             value = optionValue(runModeOptions, selectedRunModeIndex),
             optionText = runModeOptions,
         ),
-        SettingsSearchItem(SettingsSectionId.Vpn, stringResource(R.string.settings_local_proxy), localProxySummary),
-        SettingsSearchItem(
-            SettingsSectionId.Vpn,
-            stringResource(R.string.settings_start_on_boot),
-            stringResource(R.string.settings_auto_connect_summary),
-        ),
-        SettingsSearchItem(
-            SettingsSectionId.Vpn,
-            stringResource(R.string.settings_traffic_stats_notification),
-            stringResource(R.string.settings_traffic_stats_notification_summary),
-        ),
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            SettingsSearchItem(
-                SettingsSectionId.Vpn,
-                stringResource(R.string.settings_vpn_append_http_proxy),
-                stringResource(R.string.settings_vpn_append_http_proxy_summary),
-            )
-        } else {
-            null
-        },
-        SettingsSearchItem(
-            SettingsSectionId.Vpn,
-            stringResource(R.string.settings_vpn_hev_tun),
-            stringResource(R.string.settings_vpn_hev_tun_summary),
-        ),
-        SettingsSearchItem(SettingsSectionId.Vpn, stringResource(R.string.settings_tun), tunSummary),
         SettingsSearchItem(
             SettingsSectionId.Tproxy,
             stringResource(R.string.settings_start_on_boot),
@@ -358,7 +330,6 @@ internal fun settingsNestedSearchEntries(
     onOpenDns: () -> Unit,
     onOpenSniffer: () -> Unit,
     onOpenLocalProxy: () -> Unit,
-    onOpenTun: () -> Unit,
     onOpenExternalInterfaces: () -> Unit,
     onOpenServiceControl: () -> Unit,
     onOpenIgnoredInterfaces: () -> Unit,
@@ -367,7 +338,6 @@ internal fun settingsNestedSearchEntries(
     val dns = stringResource(R.string.settings_dns)
     val sniffer = stringResource(R.string.settings_sniffer)
     val localProxy = stringResource(R.string.settings_local_proxy)
-    val tun = stringResource(R.string.settings_tun)
     val externalInterfaces = stringResource(
         if (useTunSharedNetwork) {
             R.string.settings_tun_shared_network
@@ -402,12 +372,7 @@ internal fun settingsNestedSearchEntries(
         stringResource(R.string.settings_local_proxy_username),
         stringResource(R.string.settings_local_proxy_password),
     )
-    val tunItems = listOf(
-        stringResource(R.string.settings_tun_mtu),
-        stringResource(R.string.settings_tun_vpn_dns),
-        stringResource(R.string.settings_tun_ipv4_cidr),
-        stringResource(R.string.settings_tun_ipv6_cidr),
-    )
+
     val externalItems = if (useTunSharedNetwork) {
         listOf(
             stringResource(R.string.settings_tun_shared_network_input),
@@ -438,7 +403,6 @@ internal fun settingsNestedSearchEntries(
         dnsItems.forEach { add(SettingsSearchEntry(it, dns, Icons.Rounded.Dns, IconAccent.MaskBlueVariant, onOpenDns)) }
         snifferItems.forEach { add(SettingsSearchEntry(it, sniffer, Icons.Rounded.TravelExplore, IconAccent.MaskGreen, onOpenSniffer)) }
         localProxyItems.forEach { add(SettingsSearchEntry(it, localProxy, Icons.Rounded.Router, IconAccent.MaskBlue, onOpenLocalProxy)) }
-        tunItems.forEach { add(SettingsSearchEntry(it, tun, Icons.Rounded.SettingsInputComponent, IconAccent.MaskBlueVariant, onOpenTun)) }
         externalItems.forEach { add(SettingsSearchEntry(it, externalInterfaces, Icons.Rounded.Cable, IconAccent.MaskGrey, onOpenExternalInterfaces)) }
         add(SettingsSearchEntry(serviceControl, serviceControl, Icons.Rounded.PowerSettingsNew, IconAccent.MaskPink, onOpenServiceControl))
         if (!useTunSharedNetwork) {

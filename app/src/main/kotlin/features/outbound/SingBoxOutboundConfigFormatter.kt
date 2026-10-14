@@ -4,9 +4,10 @@
 package features.outbound
 
 import android.content.Context
+import engine.singbox.config.encodeSingBoxJson
+import engine.singbox.config.parseSingBoxJson
 import engine.singbox.plugin.PluginOutbounds
 import features.resources.runtime.skipsBundledCoreConfigCheck
-import io.nekohasekai.libbox.Libbox
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -19,7 +20,7 @@ internal fun interface SingBoxOutboundConfigFormatter {
 }
 
 internal object LibboxSingBoxOutboundConfigFormatter : SingBoxOutboundConfigFormatter {
-    override fun format(content: String): String = Libbox.formatConfig(content).value
+    override fun format(content: String): String = encodeSingBoxJson(parseSingBoxJson(content))
 }
 
 /** Keeps outbounds as written for a custom ROOT core, which may accept fields libbox rejects. */

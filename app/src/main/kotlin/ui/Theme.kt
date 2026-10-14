@@ -31,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
@@ -60,6 +61,12 @@ import ui.theme.resolveTheme
 
 val LocalColorMode = compositionLocalOf { ColorModeSystem }
 private val LocalResolvedDarkTheme = compositionLocalOf { false }
+
+internal class SystemBarOverride {
+    var lightStatusBars: Boolean? by mutableStateOf(null)
+}
+
+internal val LocalSystemBarOverride = staticCompositionLocalOf { SystemBarOverride() }
 
 private const val ThemeSchemeSwitchFraction = 0.35f
 private const val ThemeTransitionMaxAlpha = 0.12f
@@ -163,16 +170,20 @@ fun AppTheme(
         transitionActive = false
     }
 
+    val systemBarOverride = remember { SystemBarOverride() }
+
     CompositionLocalProvider(
         LocalColorMode provides colorMode,
         LocalResolvedDarkTheme provides displayedIsDark,
         LocalReduceMotion provides !animationsEnabled,
+        LocalSystemBarOverride provides systemBarOverride,
     ) {
         CompositionLocalProvider(LocalSpacing provides AsteriskSpacing()) {
             AsteriskMaterialTheme(colorScheme = displayedScheme) {
                 SystemBarAppearance(
                     colorScheme = displayedScheme,
                     isDark = systemBarIsDark,
+                    systemBarOverride = systemBarOverride,
                 )
                 ThemeTransitionOverlay(
                     transitionActive = transitionActive,
@@ -272,14 +283,17 @@ private val DefaultSeedColor = Color(0xFF6750A4)
 private fun SystemBarAppearance(
     colorScheme: ColorScheme,
     isDark: Boolean,
+    systemBarOverride: SystemBarOverride,
 ) {
     val view = LocalView.current
     if (view.isInEditMode) return
+    // Read in composition (not inside SideEffect) so a page override recomposes only this function.
+    val lightStatusBarsOverride = systemBarOverride.lightStatusBars
     SideEffect {
         val window = (view.context as? Activity)?.window ?: return@SideEffect
         window.setBackgroundDrawable(colorScheme.surface.toArgb().toDrawable())
         WindowCompat.getInsetsController(window, view).apply {
-            isAppearanceLightStatusBars = !isDark
+            isAppearanceLightStatusBars = lightStatusBarsOverride ?: !isDark
             isAppearanceLightNavigationBars = !isDark
         }
     }

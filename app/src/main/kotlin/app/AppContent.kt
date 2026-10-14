@@ -46,6 +46,8 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
@@ -322,6 +324,9 @@ fun AppContent(
             // diagnostic immediately on the home page after a failed proxy start, regardless of
             // which tab they are on.
             features.singbox.ProxyErrorHost()
+
+            // Global update sheet host — visible across all screens when an update is available or downloading
+            features.updater.AppUpdateHost()
         }
     }
 }
@@ -530,6 +535,9 @@ internal class HomeServiceControl(private val operationState: HomeServiceOperati
     var modeOperationInProgress: Boolean
         get() = operationState.modeOperationInProgress
         set(value) { operationState.modeOperationInProgress = value }
+    var lastOperationFailed: Boolean
+        get() = operationState.lastOperationFailed
+        set(value) { operationState.lastOperationFailed = value }
     val serviceOperationInProgress: Boolean get() = operation != HomeServiceOperation.Idle
     val busy: Boolean get() = serviceOperationInProgress || modeOperationInProgress
     var toggleService: () -> Unit = {}
@@ -553,6 +561,7 @@ private fun rememberHomeServiceControl(): HomeServiceControl {
     suspend fun handleProxyServiceResult(result: ProxyServiceResult, wasRunning: Boolean) {
         when (result) {
             is ProxyServiceResult.Success -> {
+                control.lastOperationFailed = false
                 updateAppState { state ->
                     state.copy(
                         proxyRunning = result.proxyRunning,
@@ -569,6 +578,9 @@ private fun rememberHomeServiceControl(): HomeServiceControl {
             }
 
             is ProxyServiceResult.Failed -> {
+                if (!wasRunning) {
+                    control.lastOperationFailed = true
+                }
                 updateAppState { state -> state.copy(proxyRunning = false) }
                 services.tipNotifier.showError(
                     result.error,
@@ -580,6 +592,7 @@ private fun rememberHomeServiceControl(): HomeServiceControl {
 
     control.toggleService = toggle@{
         if (control.busy) return@toggle
+        control.lastOperationFailed = false
         val stateSnapshot = stateStore.state.value
         val wasRunning = stateSnapshot.proxyRunning
         control.operation = if (wasRunning) HomeServiceOperation.Stopping else HomeServiceOperation.Starting
@@ -598,6 +611,7 @@ private fun rememberHomeServiceControl(): HomeServiceControl {
 private fun HomeServicePowerButton(modifier: Modifier = Modifier) {
     val appState by LocalAppStateStore.current.collectAppState()
     val control = LocalHomeServiceControl.current
+    val hapticFeedback = LocalHapticFeedback.current
     val label = stringResource(
         when (control.operation) {
             HomeServiceOperation.Starting -> R.string.home_service_starting
@@ -609,7 +623,10 @@ private fun HomeServicePowerButton(modifier: Modifier = Modifier) {
     val status = stringResource(if (appState.proxyRunning) R.string.home_service_enabled else R.string.home_service_disabled)
     AsteriskFloatingNavigationAction(
         selected = appState.proxyRunning,
-        onClick = control.toggleService,
+        onClick = {
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.Confirm)
+            control.toggleService()
+        },
         enabled = !control.busy,
         modifier = modifier.semantics {
             contentDescription = label
