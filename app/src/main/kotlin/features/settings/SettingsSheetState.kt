@@ -56,6 +56,9 @@ internal class SettingsSheetState(
 
     var showTunBypassRuleSets by mutableStateOf(false)
     var tunBypassRuleSetTagsDraft by mutableStateOf(emptyList<String>())
+    var ebpfLocalBypassPrivateAddressDraft by mutableStateOf(true)
+    var ebpfLocalBypassIpCidrDraft by mutableStateOf(emptyList<String>())
+    var ebpfLocalBypassPortDraft by mutableStateOf(emptyList<String>())
 
     var showNetworkQualityTest by mutableStateOf(false)
     var showEbpfEndpointConnectedBypass by mutableStateOf(false)
@@ -120,6 +123,9 @@ internal class SettingsSheetState(
 
     fun openTunBypassRuleSets(appState: AppState) {
         tunBypassRuleSetTagsDraft = sanitizeTunBypassRuleSetTags(appState.tunBypassRuleSetTags)
+        ebpfLocalBypassPrivateAddressDraft = appState.enableRootEbpfPrivateAddressBypass
+        ebpfLocalBypassIpCidrDraft = appState.ebpfLocalBypassIpCidr
+        ebpfLocalBypassPortDraft = appState.ebpfLocalBypassPort
         showTunBypassRuleSets = true
     }
 
