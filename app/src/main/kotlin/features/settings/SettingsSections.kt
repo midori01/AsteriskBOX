@@ -374,6 +374,7 @@ internal fun SettingsProxyModeSections(
     enableRootEbpfDirectCidrBypass: Boolean,
     enableRootEbpfPrivateAddressBypass: Boolean,
     tunBypassRuleSetsSummary: String,
+    ebpfEndpointConnectedBypassSummary: String,
     enableIpv6: Boolean,
     enableRootIpv6Disabler: Boolean,
     externalInterfacesSummary: String,
@@ -392,6 +393,7 @@ internal fun SettingsProxyModeSections(
     onEnableRootEbpfDirectCidrBypassChange: (Boolean) -> Unit,
     onEnableRootEbpfPrivateAddressBypassChange: (Boolean) -> Unit,
     onOpenTunBypassRuleSets: () -> Unit,
+    onOpenEbpfEndpointConnectedBypass: () -> Unit,
     onEnableRootIpv6DisablerChange: (Boolean) -> Unit,
     onOpenExternalInterfaces: () -> Unit,
     onOpenServiceControl: () -> Unit,
@@ -570,6 +572,24 @@ internal fun SettingsProxyModeSections(
                 }
                 if (runMode.supportsAppListEnhancement()) {
                     EnhancementModulePreference()
+                }
+                AnimatedVisibility(
+                    visible = runMode == RunModeEbpf,
+                    enter = AsteriskMotion.contentEnter(),
+                    exit = AsteriskMotion.contentExit(),
+                ) {
+                    ArrowPreference(
+                        title = stringResource(R.string.settings_ebpf_endpoint_connected_bypass),
+                        icon = Icons.Rounded.Hub,
+                        summary = if (ebpfLocalDataPlane == "cgroup") {
+                            stringResource(R.string.settings_ebpf_endpoint_connected_bypass_requires_tc)
+                        } else {
+                            ebpfEndpointConnectedBypassSummary
+                        },
+                        onClick = onOpenEbpfEndpointConnectedBypass,
+                        enabled = ebpfLocalDataPlane != "cgroup",
+                        accent = IconAccent.MaskCyan,
+                    )
                 }
                 AnimatedVisibility(
                     visible = !enableIpv6,
