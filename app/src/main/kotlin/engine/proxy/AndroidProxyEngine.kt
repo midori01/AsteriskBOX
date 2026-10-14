@@ -35,7 +35,7 @@ import system.AndroidRootShellGateway
  */
 internal class AndroidProxyEngine(
     context: Context,
-    rootAccess: AndroidRootShellGateway,
+    private val rootAccess: AndroidRootShellGateway,
 ) : ProxyLifecycleLock {
     private val appContext = context.applicationContext
     private var requestVpnPermission: VpnPermissionRequester = DenyVpnPermission
@@ -45,6 +45,9 @@ internal class AndroidProxyEngine(
     )
     private val rootEngines = RootModeEngine.createAll(appContext, rootAccess)
     private val rootEnginesByRunMode = rootEngines.associateBy(RootModeEngine::runMode)
+    private val vpnTetheringRelayManager: VpnTetheringRelayManager
+        get() = (appContext as? app.AsteriskApplication)?.vpnTetheringRelayManager
+            ?: VpnTetheringRelayManager(appContext, rootAccess)
     private val operationMutex = Mutex()
     private val mutableRootStatusWatchGeneration = MutableStateFlow(0L)
     private var activeEngine: AndroidModeProxyEngine? = null
@@ -172,6 +175,11 @@ internal class AndroidProxyEngine(
                 rootEngine.reconfigureServiceControl(ProxyEngineStartRequest(resolvedState))
             }
             activeEngine = rootEngine.takeIf { wasRunning }
+            if (wasRunning) {
+                vpnTetheringRelayManager.update(resolvedState)
+            } else {
+                vpnTetheringRelayManager.stop()
+            }
             resolvedState.copy(proxyRunning = wasRunning)
         }
         mutableRootStatusWatchGeneration.update { generation -> generation + 1L }
@@ -212,6 +220,9 @@ internal class AndroidProxyEngine(
                     appContext,
                     request.appState.toSingBoxTrafficStatsRuntime(status.runMode ?: request.appState.runMode),
                 )
+                if (status.running) {
+                    vpnTetheringRelayManager.start(request.appState)
+                }
                 return@withContext status.copy(appState = request.appState)
             }
         }
@@ -224,6 +235,9 @@ internal class AndroidProxyEngine(
                     appContext,
                     request.appState.toSingBoxTrafficStatsRuntime(status.runMode ?: request.appState.runMode),
                 )
+                if (status.running) {
+                    vpnTetheringRelayManager.start(request.appState)
+                }
                 return@withContext resumed
             }
             rootResumeChecked = true
@@ -265,14 +279,19 @@ internal class AndroidProxyEngine(
                 null
             }
             SingBoxTrafficStatsNotificationService.reconcile(appContext, runtime)
+            if (status.running) {
+                vpnTetheringRelayManager.start(resolvedRequest.appState)
+            }
             status
         } catch (error: Throwable) {
             SingBoxTrafficStatsNotificationService.reconcile(appContext, null)
+            vpnTetheringRelayManager.stop()
             throw error
         }
     }
 
     private suspend fun stopUnlocked(preferredRunMode: Int? = null): ProxyEngineStatus = withContext(Dispatchers.Default) {
+        vpnTetheringRelayManager.stop()
         val engine = findEngineToStop(preferredRunMode)
         val stoppedMode = engine?.runMode
         engine?.stop()
@@ -282,6 +301,7 @@ internal class AndroidProxyEngine(
     }
 
     private suspend fun stopRunModeUnlocked(runMode: Int): ProxyEngineStatus = withContext(Dispatchers.Default) {
+        vpnTetheringRelayManager.stop()
         val engine = runMode.engine()
         activeEngine
             ?.takeIf { active -> active !== engine }
@@ -294,6 +314,7 @@ internal class AndroidProxyEngine(
 
     private suspend fun shutdownRunModeUnlocked(runMode: Int): ProxyEngineStatus =
         withContext(Dispatchers.Default) {
+            vpnTetheringRelayManager.stop()
             val engine = runMode.engine()
             activeEngine
                 ?.takeIf { active -> active !== engine }
@@ -331,6 +352,9 @@ internal class AndroidProxyEngine(
 
         fun accept(status: ProxyEngineStatus, source: AndroidModeProxyEngine): ProxyEngineStatus {
             activeEngine = status.runMode?.let(rootEnginesByRunMode::get) ?: source
+            if (status.running && appState != null) {
+                vpnTetheringRelayManager.start(appState)
+            }
             return status.withTrafficStatsReconciled(appState)
         }
 
