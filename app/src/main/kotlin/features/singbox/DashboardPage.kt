@@ -51,11 +51,8 @@ import app.LocalNavigator
 import app.LocalUpdateAppState
 import app.R
 import app.collectAppState
-import app.modes.RunModeBpf2Socks
 import app.modes.RunModeEbpf
 import app.modes.RunModeTproxy
-import app.modes.RunModeTun
-import app.modes.RunModeTun2Socks
 import app.modes.SingBoxModeDirect
 import app.modes.SingBoxModeGlobal
 import app.modes.SingBoxModeRule
@@ -312,7 +309,7 @@ private fun HomeControllerCard(
         modifier = HomeContentModifier,
         density = FocusDensity.Large,
         tone = homeFocusTone(controllerState.serviceStatus),
-        summary = runModeLabel(controllerState.runMode),
+        summary = "${stringResource(R.string.settings_run_mode)}: ${runModeLabel(controllerState.runMode)}",
         stateIcon = Icons.Rounded.PowerSettingsNew,
         metrics = {
             HomeFocusMetric(
@@ -554,11 +551,8 @@ private fun runModeLabel(runMode: Int): String {
     return stringResource(
         when (runMode) {
             RunModeTproxy -> R.string.settings_run_mode_tproxy
-            RunModeTun -> R.string.settings_run_mode_tun
-            RunModeTun2Socks -> R.string.settings_run_mode_tun2socks
-            RunModeBpf2Socks -> R.string.settings_run_mode_bpf2socks
             RunModeEbpf -> R.string.settings_run_mode_ebpf
-            else -> R.string.settings_run_mode_vpn_service
+            else -> R.string.settings_run_mode_ebpf
         },
     )
 }

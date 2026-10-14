@@ -3,12 +3,7 @@
 
 package features.settings
 
-import android.os.Build
-import app.modes.RunModeBpf2Socks
 import app.modes.RunModeEbpf
-import app.modes.RunModeTun
-import app.modes.RunModeTun2Socks
-import app.modes.RunModeVpnService
 import features.enhancement.EnhancementModulePreference
 import app.modes.supportsAppListEnhancement
 import app.modes.isRootRunMode
@@ -35,6 +30,7 @@ import engine.singbox.DefaultSingBoxLogLevel
 import engine.singbox.EbpfLocalDataPlanes
 import engine.singbox.EbpfDnsModes
 import app.R
+import app.ProjectInfo
 import system.AndroidLauncherIcon
 import ui.components.IconAccent
 import ui.components.WarningConfirmDialog
@@ -348,10 +344,6 @@ internal fun SettingsProxyModeSections(
     ebpfLocalDataPlane: String,
     ebpfLocalDnsMode: String,
     enableLocalDns: Boolean,
-    enableTrafficStatsNotification: Boolean,
-    enableVpnAppendHttpProxy: Boolean,
-    enableVpnHevTun: Boolean,
-    tunSettingsSummary: String,
     enableRootBootScript: Boolean,
     enableRootEbpfRules: Boolean,
     enableRootEbpfDirectCidrBypass: Boolean,
@@ -360,16 +352,13 @@ internal fun SettingsProxyModeSections(
     ebpfEndpointConnectedBypassSummary: String,
     enableIpv6: Boolean,
     enableRootIpv6Disabler: Boolean,
+    enableTrafficStatsNotification: Boolean,
     externalInterfacesSummary: String,
     ignoredInterfacesSummary: String,
     privateAddressCidrsSummary: String,
     onOpenLocalProxySettings: () -> Unit,
     onEbpfLocalDataPlaneChange: (String) -> Unit,
     onEbpfLocalDnsModeChange: (String) -> Unit,
-    onEnableTrafficStatsNotificationChange: (Boolean) -> Unit,
-    onEnableVpnAppendHttpProxyChange: (Boolean) -> Unit,
-    onEnableVpnHevTunChange: (Boolean) -> Unit,
-    onOpenTunSettings: () -> Unit,
     onEnableRootBootScriptChange: (Boolean) -> Unit,
     onEnableRootEbpfRulesChange: (Boolean) -> Unit,
     onEnableRootEbpfDirectCidrBypassChange: (Boolean) -> Unit,
@@ -377,6 +366,7 @@ internal fun SettingsProxyModeSections(
     onOpenTunBypassRuleSets: () -> Unit,
     onOpenEbpfEndpointConnectedBypass: () -> Unit,
     onEnableRootIpv6DisablerChange: (Boolean) -> Unit,
+    onEnableTrafficStatsNotificationChange: (Boolean) -> Unit,
     onOpenExternalInterfaces: () -> Unit,
     onOpenServiceControl: () -> Unit,
     onOpenIgnoredInterfaces: () -> Unit,
@@ -384,57 +374,6 @@ internal fun SettingsProxyModeSections(
 ) {
     val bypassControlEffectsMotion = AsteriskMotion.fastEffects<Float>()
     val bypassControlSizeMotion = AsteriskMotion.fastSpatial<IntSize>()
-    AnimatedVisibility(
-        visible = runMode == RunModeVpnService,
-        enter = AsteriskMotion.contentEnter(),
-        exit = ExitTransition.None,
-    ) {
-        Column {
-            SmallTitle(text = stringResource(R.string.settings_proxy_vpn_service))
-            SettingsSectionCard {
-                ArrowPreference(
-                    title = stringResource(R.string.settings_local_proxy),
-                    icon = Icons.Rounded.Router,
-                    summary = localProxySettingsSummary,
-                    onClick = onOpenLocalProxySettings,
-                    accent = IconAccent.MaskBlue,
-                )
-                SwitchPreference(
-                    title = stringResource(R.string.settings_traffic_stats_notification),
-                    icon = Icons.Rounded.Notifications,
-                    summary = stringResource(R.string.settings_traffic_stats_notification_summary),
-                    checked = enableTrafficStatsNotification,
-                    onCheckedChange = onEnableTrafficStatsNotificationChange,
-                    accent = IconAccent.MaskPink,
-                )
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    SwitchPreference(
-                        title = stringResource(R.string.settings_vpn_append_http_proxy),
-                        icon = Icons.Rounded.Http,
-                        summary = stringResource(R.string.settings_vpn_append_http_proxy_summary),
-                        checked = enableVpnAppendHttpProxy,
-                        onCheckedChange = onEnableVpnAppendHttpProxyChange,
-                        accent = IconAccent.MaskOrange,
-                    )
-                }
-                SwitchPreference(
-                    title = stringResource(R.string.settings_vpn_hev_tun),
-                    icon = Icons.Rounded.Memory,
-                    summary = stringResource(R.string.settings_vpn_hev_tun_summary),
-                    checked = enableVpnHevTun,
-                    onCheckedChange = onEnableVpnHevTunChange,
-                    accent = IconAccent.MaskYellow,
-                )
-                ArrowPreference(
-                    title = stringResource(R.string.settings_tun),
-                    icon = Icons.Rounded.SettingsInputComponent,
-                    summary = tunSettingsSummary,
-                    onClick = onOpenTunSettings,
-                    accent = IconAccent.MaskBlueVariant,
-                )
-            }
-        }
-    }
     AnimatedVisibility(
         visible = runMode.isRootRunMode(),
         enter = AsteriskMotion.contentEnter(),
@@ -444,10 +383,7 @@ internal fun SettingsProxyModeSections(
             SmallTitle(
                 text = stringResource(
                     when (runMode) {
-                        RunModeTun -> R.string.settings_proxy_tun
                         RunModeEbpf -> R.string.settings_proxy_ebpf
-                        RunModeTun2Socks -> R.string.settings_proxy_tun2socks
-                        RunModeBpf2Socks -> R.string.settings_proxy_bpf2socks
                         else -> R.string.settings_proxy_tproxy
                     },
                 ),
@@ -455,8 +391,8 @@ internal fun SettingsProxyModeSections(
             SettingsSectionCard {
                 AnimatedVisibility(
                     visible = runMode.isRootRunMode(),
-            enter = AsteriskMotion.contentEnter(),
-            exit = AsteriskMotion.contentExit(),
+                    enter = AsteriskMotion.contentEnter(),
+                    exit = AsteriskMotion.contentExit(),
                 ) {
                     SwitchPreference(
                         title = stringResource(R.string.settings_root_boot_script),
@@ -475,9 +411,9 @@ internal fun SettingsProxyModeSections(
                     accent = IconAccent.MaskPink,
                 )
                 AnimatedVisibility(
-                    visible = runMode != RunModeBpf2Socks && runMode != RunModeEbpf && runMode != RunModeTun,
-            enter = AsteriskMotion.contentEnter(),
-            exit = AsteriskMotion.contentExit(),
+                    visible = runMode != RunModeEbpf,
+                    enter = AsteriskMotion.contentEnter(),
+                    exit = AsteriskMotion.contentExit(),
                 ) {
                     SwitchPreference(
                         title = stringResource(R.string.settings_root_ebpf_matcher),
@@ -489,14 +425,12 @@ internal fun SettingsProxyModeSections(
                     )
                 }
                 AnimatedVisibility(
-                    visible = enableRootEbpfRules ||
-                        runMode == RunModeBpf2Socks ||
-                        (runMode == RunModeEbpf || runMode == RunModeTun),
-            enter = AsteriskMotion.contentEnter(),
-            exit = AsteriskMotion.contentExit(),
+                    visible = enableRootEbpfRules || runMode == RunModeEbpf,
+                    enter = AsteriskMotion.contentEnter(),
+                    exit = AsteriskMotion.contentExit(),
                 ) {
                     AnimatedContent(
-                        targetState = (runMode == RunModeEbpf || runMode == RunModeTun),
+                        targetState = runMode == RunModeEbpf,
                         modifier = Modifier.fillMaxWidth(),
                         transitionSpec = AsteriskMotion.fadeThrough(
                             effectsSpec = bypassControlEffectsMotion,
@@ -567,8 +501,8 @@ internal fun SettingsProxyModeSections(
                 }
                 AnimatedVisibility(
                     visible = !enableIpv6,
-            enter = AsteriskMotion.contentEnter(),
-            exit = AsteriskMotion.contentExit(),
+                    enter = AsteriskMotion.contentEnter(),
+                    exit = AsteriskMotion.contentExit(),
                 ) {
                     SwitchPreference(
                         title = stringResource(R.string.settings_root_ipv6_disabler),
@@ -628,20 +562,7 @@ internal fun SettingsProxyModeSections(
                     accent = IconAccent.MaskBlue,
                 )
                 AnimatedVisibility(
-                    visible = runMode == RunModeTun || runMode == RunModeTun2Socks,
-            enter = AsteriskMotion.contentEnter(),
-            exit = AsteriskMotion.contentExit(),
-                ) {
-                    ArrowPreference(
-                        title = stringResource(R.string.settings_tun),
-                        icon = Icons.Rounded.SettingsInputComponent,
-                        summary = tunSettingsSummary,
-                        onClick = onOpenTunSettings,
-                        accent = IconAccent.MaskBlueVariant,
-                    )
-                }
-                AnimatedVisibility(
-                    visible = (runMode == RunModeEbpf || runMode == RunModeTun),
+                    visible = runMode == RunModeEbpf,
                     enter = AsteriskMotion.contentEnter(),
                     exit = AsteriskMotion.contentExit(),
                 ) {
@@ -654,7 +575,7 @@ internal fun SettingsProxyModeSections(
                     )
                 }
                 AnimatedVisibility(
-                    visible = runMode != RunModeEbpf && runMode != RunModeTun,
+                    visible = runMode != RunModeEbpf,
                     enter = AsteriskMotion.contentEnter(),
                     exit = AsteriskMotion.contentExit(),
                 ) {
@@ -667,7 +588,7 @@ internal fun SettingsProxyModeSections(
                     )
                 }
                 AnimatedVisibility(
-                    visible = runMode != RunModeEbpf && runMode != RunModeTun,
+                    visible = runMode != RunModeEbpf,
                     enter = AsteriskMotion.contentEnter(),
                     exit = AsteriskMotion.contentExit(),
                 ) {
@@ -680,7 +601,7 @@ internal fun SettingsProxyModeSections(
                     )
                 }
                 AnimatedVisibility(
-                    visible = runMode != RunModeEbpf && runMode != RunModeTun,
+                    visible = runMode != RunModeEbpf,
                     enter = AsteriskMotion.contentEnter(),
                     exit = AsteriskMotion.contentExit(),
                 ) {
@@ -770,6 +691,9 @@ internal fun SettingsBackupRestoreSection(
 internal fun SettingsAboutSection(
     onOpenAbout: () -> Unit,
     onOpenLicenses: () -> Unit,
+    onCheckUpdate: () -> Unit,
+    autoCheckUpdate: Boolean,
+    onToggleAutoCheckUpdate: (Boolean) -> Unit,
 ) {
     SmallTitle(text = stringResource(R.string.settings_about))
     SettingsSectionCard(bottomPadding = 0.dp) {
@@ -778,6 +702,20 @@ internal fun SettingsAboutSection(
             icon = Icons.AutoMirrored.Rounded.Help,
             onClick = onOpenAbout,
             accent = IconAccent.MaskBlue,
+        )
+        ArrowPreference(
+            title = stringResource(R.string.settings_check_update),
+            summary = "v${ProjectInfo.VERSION_NAME} (${ProjectInfo.VERSION_CODE})",
+            icon = Icons.Rounded.Sync,
+            onClick = onCheckUpdate,
+            accent = IconAccent.MaskGreen,
+        )
+        SwitchPreference(
+            title = stringResource(R.string.settings_auto_check_update_title),
+            summary = stringResource(R.string.settings_auto_check_update_summary),
+            checked = autoCheckUpdate,
+            onCheckedChange = onToggleAutoCheckUpdate,
+            accent = IconAccent.MaskYellow,
         )
         ArrowPreference(
             title = stringResource(R.string.settings_open_source_licenses),
