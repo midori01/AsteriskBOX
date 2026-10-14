@@ -1653,7 +1653,6 @@
     <string name="license_title">Third Party Licenses</string>
     <string name="settings_about_project">About project</string>
     <string name="settings_open_source_licenses">Open source licenses</string>
-
     <!-- Protocol plugins -->
     <string name="settings_plugins">Plugins</string>
     <string name="settings_plugins_summary">Run protocols shipped as separate APKs</string>
@@ -1668,4 +1667,7 @@
     <string name="plugin_use_hysteria2_summary">Replaces the built-in implementation; port hopping is not supported</string>
     <string name="plugin_use_naive_summary">Replaces the built-in implementation; QUIC is not supported</string>
     <string name="plugin_missing_message">The %1$s plugin (%2$s) is not installed. Install it from Advanced settings → Plugins and try again.</string>
+
+    <string name="settings_dynamic_vpn_tether_bypass_title">Route tethering via system VPN</string>
+    <string name="settings_dynamic_vpn_tether_bypass_summary">Automatically route tethered traffic through active system VPN when connected, falling back to sing-box proxy when disconnected</string>
 </resources>

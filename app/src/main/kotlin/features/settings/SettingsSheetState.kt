@@ -51,6 +51,7 @@ internal class SettingsSheetState(
 
     var showTunSharedNetwork by mutableStateOf(false)
     var tunSharedNetworkInterfacesDraft by mutableStateOf(emptyList<String>())
+    var dynamicVpnTetheringBypassDraft by mutableStateOf(true)
     var ebpfSharedDataPlaneDraft by mutableStateOf(DefaultEbpfSharedDataPlane)
     var ebpfSharedDnsModeDraft by mutableStateOf(DefaultEbpfDnsMode)
 
@@ -116,6 +117,7 @@ internal class SettingsSheetState(
     fun openTunSharedNetwork(appState: AppState) {
         ebpfSharedDataPlaneDraft = appState.ebpfSharedDataPlane
         ebpfSharedDnsModeDraft = appState.ebpfSharedDnsMode
+        dynamicVpnTetheringBypassDraft = appState.dynamicVpnTetheringBypass
         tunSharedNetworkInterfacesDraft =
             appState.tunSharedNetworkInterfaces.sanitizeTunSharedNetworkInterfaces()
         showTunSharedNetwork = true
