@@ -48,10 +48,22 @@ import engine.singbox.runtime.SingBoxRuntimeRepository
 import engine.proxy.AndroidProxyEngine
 import system.AndroidRootShellGateway
 import engine.vpn.AndroidLibboxRuntime
+import engine.proxy.VpnTetheringRelayManager
+import engine.root.runtime.RootSupervisorController
+import engine.stats.SingBoxTrafficStatsNotificationService
+import engine.stats.SingBoxTrafficStatsRuntime
+import engine.stats.toSingBoxTrafficStatsRuntime
+import system.AndroidRootShellGateway
 
 class AsteriskApplication : Application(), SingletonImageLoader.Factory {
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     internal val homeServiceOperationState = HomeServiceOperationState()
+    internal val vpnTetheringRelayManager: VpnTetheringRelayManager by lazy {
+        VpnTetheringRelayManager(
+            context = applicationContext,
+            rootAccess = AndroidRootShellGateway(),
+        )
+    }
     internal val singBoxRuntime: SingBoxRuntimeRepository by lazy { SingBoxRuntimeRepository(appScope, this) }
     internal val outboundPingRuntime: OutboundPingRuntimeRepository by lazy {
         OutboundPingRuntimeRepository(
@@ -230,6 +242,32 @@ class AsteriskApplication : Application(), SingletonImageLoader.Factory {
                         stateStore.state.value.outboundGroups,
                     )
                 }
+        }
+        appScope.launch {
+            runCatching {
+                val supervisor = RootSupervisorController(applicationContext, AndroidRootShellGateway())
+                if (supervisor.ownsRuntime()) {
+                    stateStore.update { it.copy(proxyRunning = true) }
+                }
+            }
+            var activeTrafficRuntime: SingBoxTrafficStatsRuntime? = null
+            stateStore.state.collect { state ->
+                val runtime = if (state.proxyRunning) {
+                    state.toSingBoxTrafficStatsRuntime()
+                } else {
+                    null
+                }
+                if (runtime != activeTrafficRuntime) {
+                    activeTrafficRuntime = runtime
+                    SingBoxTrafficStatsNotificationService.reconcile(applicationContext, runtime)
+                }
+
+                if (state.proxyRunning && state.dynamicVpnTetheringBypass) {
+                    vpnTetheringRelayManager.start(state)
+                } else {
+                    vpnTetheringRelayManager.stop()
+                }
+            }
         }
     }
 

@@ -134,6 +134,7 @@ internal data class AppBackupSettings(
     @SerialName("ebpfSharedNetworkInterfaces")
     val legacyEbpfSharedNetworkInterfaces: List<String> = emptyList(),
     val tunSharedNetworkInterfaces: List<String>? = null,
+    val dynamicVpnTetheringBypass: Boolean = BackupDefaults.dynamicVpnTetheringBypass,
     val ignoredInterfaces: List<String> = BackupDefaults.ignoredInterfaces,
     val serviceControl: AppBackupServiceControl = AppBackupServiceControl(),
     val privateAddressCidrs: List<String> = BackupDefaults.privateAddressCidrs,

@@ -146,6 +146,7 @@ data class AppState(
 
     val externalInterfaces: List<String> = emptyList(),
     val tunSharedNetworkInterfaces: List<String> = emptyList(),
+    val dynamicVpnTetheringBypass: Boolean = true,
     val ignoredInterfaces: List<String> = emptyList(),
     val privateAddressCidrs: List<String> = emptyList(),
 
