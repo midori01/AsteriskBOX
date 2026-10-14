@@ -115,6 +115,8 @@ internal fun AppState.preferenceValues(): Map<String, AppPreferenceValue> = buil
     boolean(KeyEbpfEndpointConnectedBypassEnabled, ebpfEndpointConnectedBypassEnabled)
     stringList(KeyEbpfEndpointConnectedBypassIpCidr, ebpfEndpointConnectedBypassIpCidr)
     stringList(KeyEbpfEndpointConnectedBypassPort, ebpfEndpointConnectedBypassPort)
+    stringList(KeyEbpfLocalBypassIpCidr, ebpfLocalBypassIpCidr)
+    stringList(KeyEbpfLocalBypassPort, ebpfLocalBypassPort)
     boolean(KeyEnableRootIpv6Disabler, enableRootIpv6Disabler)
     string(KeySocks5ProxyPort, socks5ProxyPort)
     string(KeyBpf2SocksBridgePort, bpf2SocksBridgePort)
