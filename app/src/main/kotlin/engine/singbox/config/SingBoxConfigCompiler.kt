@@ -490,6 +490,8 @@ internal fun compileTunInbound(
         if (rootMode) {
             put("interface_name", SingBoxTunDevice)
             put("auto_redirect", true)
+            put("auto_redirect_input_mark", SingBoxTunAutoRedirectInputMark)
+            put("auto_redirect_output_mark", SingBoxTunAutoRedirectOutputMark)
             val sharedInterfaces = normalizeTunSharedNetworkInterfaces(appState.tunSharedNetworkInterfaces)
                 .filterNot { it == "lo" }
             require(sharedInterfaces.all(::isSingBoxSharedNetworkInterface)) {
