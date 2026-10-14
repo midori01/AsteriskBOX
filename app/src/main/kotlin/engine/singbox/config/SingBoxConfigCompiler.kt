@@ -52,6 +52,7 @@ import engine.singbox.plugin.compilePluginOutbounds
 import engine.singbox.plugin.pluginTarget
 import engine.singbox.plugin.withLocalizedVlessXrayErrors
 import engine.singbox.effectiveEbpfDnsMode
+import engine.singbox.normalizedEbpfLocalDataPlane
 import engine.singbox.EbpfLocalDataPlanes
 import engine.singbox.EbpfSharedDataPlanes
 import engine.singbox.singBoxControlConfig
@@ -391,7 +392,8 @@ internal fun compileEbpfInbound(
     require(sharedInterfaces.all(::isSingBoxSharedNetworkInterface)) {
         "eBPF shared interfaces must be exact, non-loopback interface names"
     }
-    require(appState.ebpfLocalDataPlane in EbpfLocalDataPlanes) {
+    val localDataPlane = appState.ebpfLocalDataPlane.normalizedEbpfLocalDataPlane()
+    require(localDataPlane in EbpfLocalDataPlanes) {
         "eBPF local data_plane must be socket_assign or cgroup"
     }
     require(sharedInterfaces.isEmpty() || appState.ebpfSharedDataPlane in EbpfSharedDataPlanes) {
@@ -403,7 +405,7 @@ internal fun compileEbpfInbound(
         put("tag", APP_ROOT_INBOUND)
         putJsonObject("local") {
             put("enabled", true)
-            put("data_plane", appState.ebpfLocalDataPlane)
+            put("data_plane", localDataPlane)
             put("dns_mode", appState.ebpfLocalDnsMode.effectiveEbpfDnsMode(appState.enableLocalDns))
             put("ipv6", appState.enableIpv6)
             put("bypass_private_address", appState.enableRootEbpfPrivateAddressBypass)
@@ -420,6 +422,31 @@ internal fun compileEbpfInbound(
             if (uidPolicy.excludeUids.isNotEmpty()) {
                 putJsonArray("exclude_uid") {
                     uidPolicy.excludeUids.distinct().sorted().forEach(::add)
+                }
+            }
+            val endpointBypassIpCidr = appState.ebpfEndpointConnectedBypassIpCidr
+                .map(String::trim)
+                .filter(String::isNotEmpty)
+                .map(::toSingBoxIpPrefix)
+                .distinct()
+            val endpointBypassPort = appState.ebpfEndpointConnectedBypassPort
+                .mapNotNull(String::toPortOrNull)
+                .distinct()
+            // sing-box rejects an enabled bypass without both ip_cidr and port, so omit an incomplete one.
+            if (
+                localDataPlane == "socket_assign" &&
+                appState.ebpfEndpointConnectedBypassEnabled &&
+                endpointBypassIpCidr.isNotEmpty() &&
+                endpointBypassPort.isNotEmpty()
+            ) {
+                putJsonObject("endpoint_connected_bypass") {
+                    put("enabled", true)
+                    putJsonArray("ip_cidr") {
+                        endpointBypassIpCidr.forEach(::add)
+                    }
+                    putJsonArray("port") {
+                        endpointBypassPort.forEach(::add)
+                    }
                 }
             }
         }
@@ -1137,3 +1164,10 @@ private fun compileExperimental(appState: AppState): JsonObject? {
 }
 
 private val RouteRejectMethods = setOf("default", "drop", "reply")
+
+// netip.Prefix requires an explicit prefix length; promote bare addresses to host prefixes.
+internal fun toSingBoxIpPrefix(value: String): String = when {
+    "/" in value -> value
+    ":" in value -> "$value/128"
+    else -> "$value/32"
+}
