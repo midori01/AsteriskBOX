@@ -129,6 +129,8 @@ internal data class AppBackupSettings(
     val ebpfEndpointConnectedBypassEnabled: Boolean = BackupDefaults.ebpfEndpointConnectedBypassEnabled,
     val ebpfEndpointConnectedBypassIpCidr: List<String> = BackupDefaults.ebpfEndpointConnectedBypassIpCidr,
     val ebpfEndpointConnectedBypassPort: List<String> = BackupDefaults.ebpfEndpointConnectedBypassPort,
+    val ebpfLocalBypassIpCidr: List<String> = BackupDefaults.ebpfLocalBypassIpCidr,
+    val ebpfLocalBypassPort: List<String> = BackupDefaults.ebpfLocalBypassPort,
     val enableRootIpv6Disabler: Boolean = BackupDefaults.enableRootIpv6Disabler,
     val socks5ProxyPort: String = BackupDefaults.socks5ProxyPort,
     val bpf2SocksBridgePort: String = BackupDefaults.bpf2SocksBridgePort,
