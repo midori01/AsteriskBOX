@@ -58,6 +58,8 @@
 #define SB_TC_FLAG_SHARED_BYPASS_PORT (1U << 21)
 #define SB_TC_FLAG_SHARED_BYPASS_IPV4 (1U << 22)
 #define SB_TC_FLAG_SHARED_BYPASS_IPV6 (1U << 23)
+#define SB_TC_FLAG_ENDPOINT_ENABLED (1U << 24)
+#define SB_TC_FLAG_ENDPOINT_READY (1U << 25)
 
 #define SB_TC_SOCKET_POLICY_BYPASS 1U
 #define SB_TC_SOCKET_POLICY_INTERCEPT 2U
@@ -248,6 +250,9 @@ SB_FORCE_MAPS(tc_shared);
 
 MAP(tc_local_bypass_port, struct sb_tc_port_key, __u8, BPF_MAP_TYPE_HASH, 4096U);
 MAP(tc_shared_bypass_port, struct sb_tc_port_key, __u8, BPF_MAP_TYPE_HASH, 4096U);
+MAP(tc_endpoint_ipv4, struct sb_tc_ipv4_lpm_key, __u8, BPF_MAP_TYPE_LPM_TRIE, 65536U);
+MAP(tc_endpoint_ipv6, struct sb_tc_ipv6_lpm_key, __u8, BPF_MAP_TYPE_LPM_TRIE, 65536U);
+MAP(tc_endpoint_port, struct sb_tc_port_key, __u8, BPF_MAP_TYPE_HASH, 4096U);
 
 static void *(*map_lookup)(void *map, const void *key) = (void *)BPF_FUNC_map_lookup_elem;
 static long (*map_update)(void *map, const void *key, const void *value, __u64 flags) =
@@ -418,6 +423,21 @@ INLINE bool host_destination(const struct sb_tc_control *control,
     return map_lookup(&tc_host_ipv6, &key) != 0;
 }
 
+INLINE bool endpoint_destination(const struct sb_tc_control *control,
+    const struct sb_tc_assign_key *flow) {
+    if ((control->flags & SB_TC_FLAG_ENDPOINT_ENABLED) == 0U) return false;
+    struct sb_tc_port_key port_key = {.protocol = flow->protocol, .port = flow->destination_port};
+    if (map_lookup(&tc_endpoint_port, &port_key) == 0) return false;
+    if (flow->family == AF_INET_VALUE) {
+        struct sb_tc_ipv4_lpm_key key = {.prefixlen = 32U};
+        __builtin_memcpy(key.address, flow->destination_addr, 4U);
+        return map_lookup(&tc_endpoint_ipv4, &key) != 0;
+    }
+    struct sb_tc_ipv6_lpm_key key = {.prefixlen = 128U};
+    __builtin_memcpy(key.address, flow->destination_addr, 16U);
+    return map_lookup(&tc_endpoint_ipv6, &key) != 0;
+}
+
 INLINE bool source_mac_excluded(const struct sb_tc_control *control, const __u8 source_mac[6]) {
     if ((control->flags & SB_TC_FLAG_EXCLUDE_SOURCE_MAC) == 0U) return false;
     struct sb_tc_mac_key key = {};
@@ -442,6 +462,12 @@ INLINE bool shared_source_selected(const struct sb_tc_control *control,
 INLINE bool local_selected(struct __sk_buff *skb, const struct sb_tc_control *control,
     const struct sb_tc_assign_key *key, __u32 socket_metadata_value) {
     if (force_intercept_destination(control, key, false)) return true;
+    if (endpoint_destination(control, key)) {
+        if ((control->flags & SB_TC_FLAG_ENDPOINT_READY) != 0U) {
+            return false;
+        }
+        return true;
+    }
     __u8 action = port_action(control, key, false);
     if ((action & ~SB_PORT_AFTER_SELECTORS) == SB_PORT_PASS) return false;
     if (action == SB_PORT_INTERCEPT) return true;
