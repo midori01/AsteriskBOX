@@ -1,0 +1,14 @@
+module github.com/CHIZI-0618/sing-ebpf
+
+go 1.26.0
+
+require (
+	github.com/cilium/ebpf v0.22.1-0.20261119135504-862b60f0fc93
+	github.com/sagernet/netlink v0.0.0-20261125120807-b006b90aa077
+	github.com/sagernet/sing v0.9.7-0.20261125122036-9b11dbe28a7d
+	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba
+	golang.org/x/net v0.61.0
+	golang.org/x/sys v0.49.0
+)
+
+require github.com/vishvananda/netns v0.0.5
