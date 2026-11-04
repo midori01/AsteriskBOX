@@ -36,6 +36,7 @@ func (i *Inbound) closeResources() error {
 	if dataPlane != nil {
 		disableErr = dataPlane.Disable()
 	}
+	i.removeAndroidEgressGuard()
 	cgroupErr := i.closeCgroupBackendOwner()
 	listenerErr, udpNATErr, udpReplySocketErr := i.closeUDPResources()
 	dataPlaneErr := i.closeTakenTCDataPlane(dataPlane)
