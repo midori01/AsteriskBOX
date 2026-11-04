@@ -151,6 +151,11 @@ func (i *Inbound) compileActionPolicy() (commonEBPF.CompiledPolicy, error) {
 	localFakeIPv4, localFakeIPv6 := i.fakeIPPrefixesForScope(false)
 	appendDestinationPolicy(&policy.Local, i.localPolicy.BypassPrivateAddress, i.localBypassPort, i.localDNSMode,
 		localFakeIPv4, localFakeIPv6, i.localBypassExclude, i.enableTCP, i.enableUDP)
+	for _, prefix := range i.localPolicy.BypassIPCIDR {
+		policy.Local.DestinationCIDR = append(policy.Local.DestinationCIDR, commonEBPF.CIDRDecision{
+			Prefix: prefix, Action: commonEBPF.DecisionPass,
+		})
+	}
 
 	policy.Shared.Default = sharedSourceDefault(len(i.sharedOptions.IncludeSourceCIDR), len(i.sharedIncludeMAC))
 	for _, prefix := range i.sharedOptions.IncludeSourceCIDR {
@@ -176,6 +181,11 @@ func (i *Inbound) compileActionPolicy() (commonEBPF.CompiledPolicy, error) {
 	sharedFakeIPv4, sharedFakeIPv6 := i.fakeIPPrefixesForScope(true)
 	appendDestinationPolicy(&policy.Shared, i.sharedBypassPrivate, i.sharedBypassPort, i.sharedDNSMode,
 		sharedFakeIPv4, sharedFakeIPv6, i.sharedBypassExclude, i.enableTCP, i.enableUDP)
+	for _, prefix := range i.sharedOptions.BypassIPCIDR {
+		policy.Shared.DestinationCIDR = append(policy.Shared.DestinationCIDR, commonEBPF.CIDRDecision{
+			Prefix: prefix, Action: commonEBPF.DecisionPass,
+		})
+	}
 	i.localInitialDestinations = destinationPassDecisions(policy.Local.DestinationCIDR)
 	i.sharedInitialDestinations = destinationPassDecisions(policy.Shared.DestinationCIDR)
 	return commonEBPF.CompileActionPolicy(policy)
