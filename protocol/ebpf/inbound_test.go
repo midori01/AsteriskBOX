@@ -244,7 +244,8 @@ func TestNormalizeLocalDataPlane(t *testing.T) {
 		{name: "explicit socket_assign", options: option.EBPFLocalOptions{DataPlane: "socket_assign"}, dataPlane: localDataPlaneSocketAssign},
 		{name: "cgroup root", options: option.EBPFLocalOptions{DataPlane: "cgroup"}, dataPlane: localDataPlaneCgroup},
 		{name: "explicit cgroup", options: option.EBPFLocalOptions{DataPlane: "cgroup", CgroupPath: "/sys/fs/cgroup/sing-box"}, dataPlane: localDataPlaneCgroup, cgroupPath: "/sys/fs/cgroup/sing-box"},
-		{name: "implicit cgroup path", options: option.EBPFLocalOptions{CgroupPath: "/sys/fs/cgroup/sing-box"}, dataPlane: localDataPlaneCgroup, cgroupPath: "/sys/fs/cgroup/sing-box"},
+		{name: "endpoint defaults to socket_assign", options: option.EBPFLocalOptions{EndpointConnectedBypass: option.EBPFEndpointConnectedBypassOptions{Enabled: true}}, dataPlane: localDataPlaneSocketAssign},
+		{name: "endpoint explicit socket_assign", options: option.EBPFLocalOptions{DataPlane: "socket_assign", EndpointConnectedBypass: option.EBPFEndpointConnectedBypassOptions{Enabled: true}}, dataPlane: localDataPlaneSocketAssign},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			dataPlane, path, err := normalizeLocalDataPlane(testCase.options)
@@ -260,9 +261,77 @@ func TestNormalizeLocalDataPlane(t *testing.T) {
 		{DataPlane: "invalid"},
 		{DataPlane: "tc", CgroupPath: "/sys/fs/cgroup/sing-box"},
 		{DataPlane: "cgroup", CgroupPath: "relative"},
+		{DataPlane: "cgroup", EndpointConnectedBypass: option.EBPFEndpointConnectedBypassOptions{Enabled: true}},
+		{CgroupPath: "/sys/fs/cgroup/sing-box", EndpointConnectedBypass: option.EBPFEndpointConnectedBypassOptions{Enabled: true}},
+		{DataPlane: "tc", CgroupPath: "/sys/fs/cgroup/sing-box", EndpointConnectedBypass: option.EBPFEndpointConnectedBypassOptions{Enabled: true}},
 	} {
 		if _, _, err := normalizeLocalDataPlane(options); err == nil {
 			t.Fatalf("expected invalid local data plane options to fail: %+v", options)
+		}
+	}
+}
+
+func TestNormalizeEndpointConnectedBypass(t *testing.T) {
+	for _, disabled := range []option.EBPFEndpointConnectedBypassOptions{
+		{},
+		{Enabled: false},
+		{
+			Enabled: false,
+			IPCIDR:  []netip.Prefix{netip.MustParsePrefix("192.0.2.0/24")},
+			Port:    []uint16{500},
+		},
+	} {
+		options, ports, enableTCP, enableUDP, err := normalizeEndpointConnectedBypass(disabled)
+		if err != nil || options.Enabled || len(options.IPCIDR) != 0 || len(ports) != 0 || enableTCP || enableUDP {
+			t.Fatalf("disabled endpoint policy was not accepted and cleared: options=%+v ports=%v err=%v", options, ports, err)
+		}
+	}
+
+	options, ports, enableTCP, enableUDP, err := normalizeEndpointConnectedBypass(option.EBPFEndpointConnectedBypassOptions{
+		Enabled: true,
+		IPCIDR: []netip.Prefix{
+			netip.MustParsePrefix("162.120.128.9/17"),
+			netip.MustParsePrefix("::ffff:192.0.2.1/120"),
+		},
+		Port: []uint16{4500, 500, 4500},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if enableTCP || !enableUDP {
+		t.Fatalf("omitted endpoint network did not default to UDP only: tcp=%v udp=%v", enableTCP, enableUDP)
+	}
+	wantPrefixes := []netip.Prefix{netip.MustParsePrefix("162.120.128.0/17"), netip.MustParsePrefix("192.0.2.0/24")}
+	if !slices.Equal([]netip.Prefix(options.IPCIDR), wantPrefixes) {
+		t.Fatalf("unexpected endpoint prefixes: %v", options.IPCIDR)
+	}
+	wantPorts := []portRange{{Start: 500, End: 500}, {Start: 4500, End: 4500}}
+	if !slices.Equal(ports, wantPorts) {
+		t.Fatalf("unexpected endpoint ports: %v", ports)
+	}
+	_, _, enableTCP, enableUDP, err = normalizeEndpointConnectedBypass(option.EBPFEndpointConnectedBypassOptions{
+		Enabled: true,
+		Network: option.NetworkList("udp"),
+		IPCIDR:  []netip.Prefix{netip.MustParsePrefix("192.0.2.0/24")},
+		Port:    []uint16{500},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if enableTCP || !enableUDP {
+		t.Fatalf("unexpected UDP-only endpoint network: tcp=%v udp=%v", enableTCP, enableUDP)
+	}
+	for _, invalid := range []option.EBPFEndpointConnectedBypassOptions{
+		{Enabled: true, Port: []uint16{500}},
+		{Enabled: true, IPCIDR: []netip.Prefix{netip.MustParsePrefix("192.0.2.0/24")}},
+		{Enabled: true, IPCIDR: []netip.Prefix{netip.MustParsePrefix("192.0.2.0/24")}, Port: []uint16{0}},
+		{Enabled: true, Network: option.NetworkList("icmp"), IPCIDR: []netip.Prefix{netip.MustParsePrefix("192.0.2.0/24")}, Port: []uint16{500}},
+		// Per-packet READY switching would reset established TCP connections.
+		{Enabled: true, Network: option.NetworkList("tcp"), IPCIDR: []netip.Prefix{netip.MustParsePrefix("192.0.2.0/24")}, Port: []uint16{500}},
+		{Enabled: true, Network: option.NetworkList("tcp,udp"), IPCIDR: []netip.Prefix{netip.MustParsePrefix("192.0.2.0/24")}, Port: []uint16{500}},
+	} {
+		if _, _, _, _, err = normalizeEndpointConnectedBypass(invalid); err == nil {
+			t.Fatalf("expected invalid endpoint policy to fail: %+v", invalid)
 		}
 	}
 }

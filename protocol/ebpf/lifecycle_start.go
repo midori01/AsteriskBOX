@@ -500,6 +500,9 @@ func (i *Inbound) checkKernelCapabilities() error {
 }
 
 func (i *Inbound) needsLPMPolicy() bool {
+	if i.endpointConnectedBypass.Enabled {
+		return true
+	}
 	if (i.localEnabled && (len(i.localBypassExclude) > 0 || i.localPolicy.BypassPrivateAddress)) ||
 		(i.sharedEnabled && (len(i.sharedBypassExclude) > 0 || i.sharedBypassPrivate)) {
 		return true

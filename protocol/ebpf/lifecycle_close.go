@@ -8,9 +8,13 @@ import (
 )
 
 func (i *Inbound) Close() error {
+	// The interface worker takes lifecycleAccess for each reconcile round, and
+	// stopping the monitor waits for that worker to exit. Stop it before taking
+	// the lock, or a round that passed its context check would deadlock Close.
+	monitorErr := i.stopTCInterfaceMonitor()
 	i.lifecycleAccess.Lock()
 	defer i.lifecycleAccess.Unlock()
-	return i.closeResources()
+	return E.Errors(monitorErr, i.closeResources())
 }
 
 func (i *Inbound) cleanupStartFailure() error {
