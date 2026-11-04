@@ -146,12 +146,25 @@ func (t *tcRealRetryTimer) Expired() <-chan time.Time { return t.timer.C }
 
 var tcRetryTimerFactory = newTCRetryTimer
 
-func (i *Inbound) runTCInterfaceUpdates(ctx context.Context, updates <-chan struct{}) {
-	runTCInterfaceUpdateLoopWithHealth(ctx, updates, i.interfaceDriftCheckInterval(), i.tcInterfaceHealthCheck, func(ctx context.Context) tcUpdateOutcome {
+const vpnInterfaceWatchInterval = time.Second
+
+func (i *Inbound) runTCInterfaceUpdates(ctx context.Context, updates <-chan struct{}, done chan<- struct{}) {
+	defer close(done)
+	var vpnTicks <-chan time.Time
+	if i.endpointConnectedBypass.Enabled {
+		i.syncVPNReadiness()
+		ticker := time.NewTicker(vpnInterfaceWatchInterval)
+		defer ticker.Stop()
+		vpnTicks = ticker.C
+	}
+	runTCInterfaceUpdateLoopWithHealthAndVPN(ctx, updates, i.interfaceDriftCheckInterval(), i.tcInterfaceHealthCheck, func(ctx context.Context) tcUpdateOutcome {
 		outcome := i.updateTCInterfaces(ctx)
 		i.recordTCUpdateOutcome(outcome)
+		if i.endpointConnectedBypass.Enabled {
+			i.syncVPNReadiness()
+		}
 		return outcome
-	}, i.recordNextRetryDeadline)
+	}, i.recordNextRetryDeadline, vpnTicks, i.syncVPNReadiness)
 }
 
 func (i *Inbound) interfaceDriftCheckInterval() time.Duration {
@@ -204,7 +217,7 @@ func runTCInterfaceUpdateLoop(
 	update func(context.Context) tcUpdateOutcome,
 	onScheduleChange func(deadline time.Time),
 ) {
-	runTCInterfaceUpdateLoopWithHealth(ctx, updates, driftCheckInterval, nil, update, onScheduleChange)
+	runTCInterfaceUpdateLoopWithHealthAndVPN(ctx, updates, driftCheckInterval, nil, update, onScheduleChange, nil, nil)
 }
 
 func runTCInterfaceUpdateLoopWithHealth(
@@ -214,6 +227,30 @@ func runTCInterfaceUpdateLoopWithHealth(
 	healthCheck func(context.Context) bool,
 	update func(context.Context) tcUpdateOutcome,
 	onScheduleChange func(deadline time.Time),
+) {
+	runTCInterfaceUpdateLoopWithHealthAndVPN(ctx, updates, driftCheckInterval, healthCheck, update, onScheduleChange, nil, nil)
+}
+
+func runTCInterfaceUpdateLoopWithVPN(
+	ctx context.Context,
+	updates <-chan struct{},
+	update func(context.Context) tcUpdateOutcome,
+	onScheduleChange func(time.Time),
+	vpnTicks <-chan time.Time,
+	syncVPN func(),
+) {
+	runTCInterfaceUpdateLoopWithHealthAndVPN(ctx, updates, 0, nil, update, onScheduleChange, vpnTicks, syncVPN)
+}
+
+func runTCInterfaceUpdateLoopWithHealthAndVPN(
+	ctx context.Context,
+	updates <-chan struct{},
+	driftCheckInterval time.Duration,
+	healthCheck func(context.Context) bool,
+	update func(context.Context) tcUpdateOutcome,
+	onScheduleChange func(time.Time),
+	vpnTicks <-chan time.Time,
+	syncVPN func(),
 ) {
 	retryTimer := tcRetryTimerFactory()
 	defer retryTimer.Disarm()
@@ -239,6 +276,12 @@ func runTCInterfaceUpdateLoopWithHealth(
 		select {
 		case <-ctx.Done():
 			return
+		case <-vpnTicks:
+			if ctx.Err() != nil {
+				return
+			}
+			syncVPN()
+			continue
 		case <-updates:
 		case <-driftCheckChannel:
 			triggeredByHealthCheck = true

@@ -8,6 +8,10 @@ import (
 )
 
 func (i *Inbound) Close() error {
+	// The interface worker takes lifecycleAccess for each reconcile round, and
+	// stopping the monitor waits for that worker to exit. Stop it before taking
+	// the lock, or a round that passed its context check would deadlock Close.
+	monitorErr := i.stopTCInterfaceMonitor()
 	// Record the inbound before releasing anything: a concurrent initialization
 	// then waits for this Close instead of missing resources it retains.
 	retainForRetry(i)
@@ -17,7 +21,7 @@ func (i *Inbound) Close() error {
 	if !i.retainsResources() {
 		releaseRetained(i)
 	}
-	return err
+	return E.Errors(monitorErr, err)
 }
 
 func (i *Inbound) cleanupStartFailure() error {
